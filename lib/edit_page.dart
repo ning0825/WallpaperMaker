@@ -242,16 +242,6 @@ class _EditHomeState extends State<EditHome> {
     'typo',
     'image',
   ];
-
-  _addImage() async {
-    File _fileImage = await ImagePicker.pickImage(source: ImageSource.gallery);
-    ui.Image img = await decodeImageFromList(await _fileImage.readAsBytes());
-    setState(() {
-      var size = rpbKey.currentContext.size;
-      data.selectables
-          .add(SelectableImage(img, Offset(size.width / 2, size.height / 2)));
-    });
-  }
 }
 
 typedef SliderCallback = void Function(double value);
@@ -813,7 +803,7 @@ class _ImageToolState extends State<ImageTool> {
       children: [
         RaisedButton(
           child: Text('image'),
-          onPressed: () => print('test'),
+          onPressed: () => _addImage(),
         ),
         RaisedButton(
           child: Text('crop'),
@@ -825,5 +815,15 @@ class _ImageToolState extends State<ImageTool> {
         ),
       ],
     ));
+  }
+
+  _addImage() async {
+    File _fileImage = await ImagePicker.pickImage(source: ImageSource.gallery);
+    ui.Image img = await decodeImageFromList(await _fileImage.readAsBytes());
+    setState(() {
+      var size = rpbKey.currentContext.size;
+      widget.data.selectables
+          .add(SelectableImage(img, Offset(size.width / 2, size.height / 2)));
+    });
   }
 }
