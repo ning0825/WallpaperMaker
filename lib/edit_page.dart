@@ -8,6 +8,7 @@ import 'inherited_config.dart';
 import 'package:wallpaper_maker/selectable_bean.dart';
 
 import 'cus_painter.dart';
+import 'inherited_config.dart';
 
 GlobalKey rpbKey = GlobalKey();
 Size size;
@@ -298,8 +299,11 @@ class _BuildColorWidget extends StatefulWidget {
   final bool b;
   final CheckboxCallback callback;
   final ColorCallback colorCallback;
+  final Color currentColor;
 
-  _BuildColorWidget({this.callback, this.b, this.colorCallback});
+  _BuildColorWidget({this.callback, this.b, this.colorCallback, this.currentColor}){
+    print(currentColor.toString() +'cons');
+  }
 
   @override
   __BuildColorWidgetState createState() => __BuildColorWidgetState();
@@ -324,9 +328,11 @@ class __BuildColorWidgetState extends State<_BuildColorWidget> {
 
   @override
   Widget build(BuildContext context) {
+    print(widget.currentColor.toString());
     return Container(
       height: 100,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           widget.b != null
               ? Checkbox(
@@ -347,9 +353,20 @@ class __BuildColorWidgetState extends State<_BuildColorWidget> {
                 itemCount: colors.length,
                 scrollDirection: Axis.horizontal,
                 itemBuilder: (_, index) {
-                  return RaisedButton(
-                    onPressed: () => widget.colorCallback(colors[index]),
-                    color: colors[index],
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        widget.colorCallback(colors[index]);
+                      });
+                    },
+                    child: Center(
+                                          child: Container(
+                        width: widget.currentColor.toString() == colors[index].toString()?60:40,
+                        height: widget.currentColor == colors[index]?60:40,
+                        color: colors[index],
+                      ),
+                    ),
+                    
                   );
                 }),
           ),
@@ -367,6 +384,7 @@ class _BuildMainTool extends StatelessWidget {
   _BuildMainTool({this.color, this.iconAsset, this.callback});
   @override
   Widget build(BuildContext context) {
+    
     return Expanded(
       child: Container(
         width: 80,
@@ -374,10 +392,11 @@ class _BuildMainTool extends StatelessWidget {
         child: InkWell(
           child: Padding(
             padding: const EdgeInsets.all(12.0),
-            child: SvgPicture.asset(
-              'assets/icons/' + iconAsset + '.svg',
-              color: Colors.white,
-            ),
+            // child: SvgPicture.asset(
+            //   'assets/icons/' + iconAsset + '.svg',
+            //   color: Colors.white,
+            // ),
+          child:Text(iconAsset),
           ),
           onTap: callback,
         ),
@@ -433,10 +452,13 @@ class _PenToolWidgetState extends State<PenToolWidget> {
                     setState(() {
                       subToolIndex = 0;
                       currentSubToolWidget = _BuildColorWidget(
-                          callback: (b) {},
+                          callback: (b) {
+
+                          },
                           colorCallback: (color) {
                             widget.data.setPenColor(color);
-                          });
+                          },
+                          currentColor: Colors.red,);
                     });
                   },
                 ),
@@ -707,7 +729,7 @@ class _TypoToolWidgetState extends State<TypoToolWidget> {
                   setState(() {
                     subToolIndex = 2;
                     currentSubToolWidget = _BuildWidth((value) {
-                      widget.data.config.typoWeight = value.round();
+                      widget.data.setTextWeight(value);
                     });
                   });
                 },
@@ -777,7 +799,6 @@ class _TypoToolWidgetState extends State<TypoToolWidget> {
           itemBuilder: (_, index) {
             return ListTile(
               title: Text(fontList[index]),
-              focusColor: Colors.red,
               onTap: () {
                 widget.data.setTextFont(fontList[index]);
               },

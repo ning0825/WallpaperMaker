@@ -203,13 +203,11 @@ class _CanvasPanelState extends State<CanvasPanel> {
 class MyCanvas extends CustomPainter {
   ConfigWidgetState data;
 
-  MyCanvas({this.data}) {
-    print('MyCanvas: Constructor');
-  }
+  MyCanvas({this.data}) ;
 
   @override
   void paint(Canvas canvas, Size size) {
-    print('MyCanvas: paint');
+   
     canvas.clipRect(
       Rect.fromCenter(
           center: Offset(size.width / 2, size.height / 2),

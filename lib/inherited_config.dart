@@ -91,6 +91,7 @@ class ConfigWidgetState extends State<ConfigWidget> {
   }
 
   Color getPenColor() {
+    print(config.penColor.toString()+'tet');
     return isSelectedMode
         ? (currentSelectable as SelectablePath).mPaint.color
         : config.penColor;
@@ -268,7 +269,7 @@ class ConfigWidgetState extends State<ConfigWidget> {
     config = Configuration()
       ..bgColor = Colors.white
       ..currentMode = 0
-      ..penColor = Colors.black
+      ..penColor = Colors.red
       ..penWidth = 5
       ..shapeType = 0
       ..shapeColor = Colors.black

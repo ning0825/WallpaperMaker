@@ -159,13 +159,13 @@ class SelectableText extends Selectable {
     ts = TextSpan(
       text: text,
       style: TextStyle(
-          color: Colors.black,
+          color: textColor,
           fontSize: 50,
           fontFamily: fontFamily ?? null,
           fontWeight: FontWeight.values[textWeight]),
     );
     totalOffset = offset * 2 + totalOffset;
-    TextPainter tp = TextPainter(text: ts, textDirection: TextDirection.ltr);
+    TextPainter tp = TextPainter(text: ts, textDirection: TextDirection.ltr,);
     tp.layout(minWidth: 50);
     rect = Rect.fromCenter(
         center: totalOffset, width: tp.width, height: tp.height);
