@@ -25,17 +25,6 @@ class EditPage extends StatelessWidget {
 }
 
 class EditHome extends StatefulWidget {
-  final colorList = [
-    Colors.red,
-    Colors.orange,
-    Colors.yellow,
-    Colors.green,
-    Colors.blue,
-    Colors.purple,
-    Colors.white,
-    Colors.black
-  ];
-
   @override
   _EditHomeState createState() => _EditHomeState();
 }
@@ -45,14 +34,6 @@ class _EditHomeState extends State<EditHome> {
   Widget currentTools;
   Widget currentSubtools;
   Widget currentToolWidget;
-
-  final colors = [
-    Colors.red,
-    Colors.orange,
-    Colors.yellow,
-    Colors.green,
-    Colors.blue
-  ];
 
   double sliderValue = 5.0;
 
@@ -295,21 +276,17 @@ class _BuildWidthState extends State<_BuildWidth> {
 typedef CheckboxCallback = void Function(bool b);
 typedef ColorCallback = void Function(Color color);
 
-class _BuildColorWidget extends StatefulWidget {
-  final bool b;
-  final CheckboxCallback callback;
-  final ColorCallback colorCallback;
-  final Color currentColor;
+class BuildColorWidget extends StatefulWidget {
+  final ConfigWidgetState data;
+  final int tool;
 
-  _BuildColorWidget({this.callback, this.b, this.colorCallback, this.currentColor}){
-    print(currentColor.toString() +'cons');
-  }
+  BuildColorWidget({this.data, @required this.tool});
 
   @override
-  __BuildColorWidgetState createState() => __BuildColorWidgetState();
+  _BuildColorWidgetState createState() => _BuildColorWidgetState();
 }
 
-class __BuildColorWidgetState extends State<_BuildColorWidget> {
+class _BuildColorWidgetState extends State<BuildColorWidget> {
   final colors = [
     Colors.red,
     Colors.orange,
@@ -318,30 +295,23 @@ class __BuildColorWidgetState extends State<_BuildColorWidget> {
     Colors.blue
   ];
 
-  bool stateB;
-
-  @override
-  void initState() {
-    stateB = widget.b;
-    super.initState();
-  }
+  var iconig;
 
   @override
   Widget build(BuildContext context) {
-    print(widget.currentColor.toString());
+    iconig = ConfigWidget.of(context);
+    print('_BuildColorWidgetState.build');
     return Container(
       height: 100,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          widget.b != null
+          widget.tool == 4
               ? Checkbox(
-                  value: stateB,
+                  value: widget.data.getShapeStyle(),
                   onChanged: (b) {
-                    widget.callback(b);
-                    setState(() {
-                      stateB = b;
-                    });
+                    widget.data.setShapeStyle(
+                        b ? PaintingStyle.fill : PaintingStyle.stroke);
                   },
                 )
               : SizedBox(
@@ -355,24 +325,67 @@ class __BuildColorWidgetState extends State<_BuildColorWidget> {
                 itemBuilder: (_, index) {
                   return InkWell(
                     onTap: () {
-                      setState(() {
-                        widget.colorCallback(colors[index]);
-                      });
+                      setColorTap(index);
                     },
                     child: Center(
-                                          child: Container(
-                        width: widget.currentColor.toString() == colors[index].toString()?60:40,
-                        height: widget.currentColor == colors[index]?60:40,
+                      child: Container(
+                        width: getSizeValue(index),
+                        height: getSizeValue(index),
                         color: colors[index],
                       ),
                     ),
-                    
                   );
                 }),
           ),
         ],
       ),
     );
+  }
+
+  void setColorTap(int index) {
+    switch (widget.tool) {
+      case 0:
+        widget.data.setPenColor(colors[index]);
+        break;
+      case 1:
+        widget.data.setShapeColor(colors[index]);
+        break;
+      case 2:
+        widget.data.setTextColor(colors[index]);
+        break;
+      case 4:
+        widget.data.setShapeFillColor(colors[index]);
+        break;
+      default:
+        break;
+    }
+    setState(() {});
+  }
+
+  double getSizeValue(int index) {
+    switch (widget.tool) {
+      case 0:
+        return widget.data.getPenColor().value == colors[index].value ? 60 : 40;
+        break;
+      case 1:
+        return widget.data.getShapeColor().value == colors[index].value
+            ? 60
+            : 40;
+        break;
+      case 2:
+        return widget.data.getTextColor().value == colors[index].value
+            ? 60
+            : 40;
+        break;
+      case 4:
+        return widget.data.getShapeFillColor().value == colors[index].value
+            ? 60
+            : 40;
+        break;
+      default:
+        break;
+    }
+    return 10;
   }
 }
 
@@ -384,7 +397,6 @@ class _BuildMainTool extends StatelessWidget {
   _BuildMainTool({this.color, this.iconAsset, this.callback});
   @override
   Widget build(BuildContext context) {
-    
     return Expanded(
       child: Container(
         width: 80,
@@ -396,7 +408,7 @@ class _BuildMainTool extends StatelessWidget {
             //   'assets/icons/' + iconAsset + '.svg',
             //   color: Colors.white,
             // ),
-          child:Text(iconAsset),
+            child: Text(iconAsset),
           ),
           onTap: callback,
         ),
@@ -414,25 +426,35 @@ class PenToolWidget extends StatefulWidget {
 
 class _PenToolWidgetState extends State<PenToolWidget> {
   int subToolIndex;
-  Widget currentSubToolWidget;
 
   @override
   void initState() {
     super.initState();
     subToolIndex = 0;
-    currentSubToolWidget = _BuildColorWidget(
-        callback: (b) {},
-        colorCallback: (color) {
-          widget.data.setPenColor(color);
-        });
   }
 
   @override
   Widget build(BuildContext context) {
+    print('PenTool.build');
     return Container(
       child: Column(
         children: [
-          Expanded(child: currentSubToolWidget),
+          Expanded(
+            // child: subToolIndex == 0
+            //     ? BuildColorWidget(
+            //         data: widget.data,
+            //         tool: 0,
+            //       )
+            //     : _BuildWidth((value) {
+            //         setState(() {
+            //           widget.data.setPenWidth(value);
+            //         });
+            //       }),
+            child: BuildColorWidget(
+              data: widget.data,
+              tool: 0,
+            ),
+          ),
           Container(
             child: Row(
               children: [
@@ -451,14 +473,6 @@ class _PenToolWidgetState extends State<PenToolWidget> {
                   onTap: () {
                     setState(() {
                       subToolIndex = 0;
-                      currentSubToolWidget = _BuildColorWidget(
-                          callback: (b) {
-
-                          },
-                          colorCallback: (color) {
-                            widget.data.setPenColor(color);
-                          },
-                          currentColor: Colors.red,);
                     });
                   },
                 ),
@@ -477,11 +491,6 @@ class _PenToolWidgetState extends State<PenToolWidget> {
                   onTap: () {
                     setState(() {
                       subToolIndex = 1;
-                      currentSubToolWidget = _BuildWidth((value) {
-                        setState(() {
-                          widget.data.setPenWidth(value);
-                        });
-                      });
                     });
                   },
                 ),
@@ -555,10 +564,9 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
                   onTap: () {
                     setState(() {
                       subToolIndex = 1;
-                      currentSubToolWidget =
-                          _BuildColorWidget(colorCallback: (color) {
-                        widget.data.setShapeColor(color);
-                      });
+                      currentSubToolWidget = BuildColorWidget(
+                        tool: 1,
+                      );
                     });
                   },
                 ),
@@ -577,15 +585,9 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
                   onTap: () {
                     setState(() {
                       subToolIndex = 2;
-                      currentSubToolWidget = _BuildColorWidget(
-                        callback: (b) {
-                          widget.data.setShapeStyle(
-                              b ? PaintingStyle.fill : PaintingStyle.stroke);
-                        },
-                        b: widget.data.config.shapeStyle == PaintingStyle.fill,
-                        colorCallback: (color) {
-                          widget.data.setShapeFillColor(color);
-                        },
+                      currentSubToolWidget = BuildColorWidget(
+                        data: widget.data,
+                        tool: 4,
                       );
                     });
                   },
@@ -626,23 +628,29 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            RaisedButton(
-              onPressed: () {
-                widget.data.setShapeType(0);
-              },
-              child: Text('line'),
+            InkWell(
+              child: Container(
+                width: widget.data.getShapeType() == 0 ? 60 : 40,
+                height: widget.data.getShapeType() == 0 ? 60 : 40,
+                child: Text('line'),
+              ),
+              onTap: () => widget.data.setShapeType(0),
             ),
-            RaisedButton(
-              onPressed: () {
-                widget.data.setShapeType(1);
-              },
-              child: Text('rect'),
+            InkWell(
+              child: Container(
+                width: widget.data.getShapeType() == 1 ? 60 : 40,
+                height: widget.data.getShapeType() == 1 ? 60 : 40,
+                child: Text('rect'),
+              ),
+              onTap: () => widget.data.setShapeType(1),
             ),
-            RaisedButton(
-              onPressed: () {
-                widget.data.setShapeType(2);
-              },
-              child: Text('circle'),
+            InkWell(
+              child: Container(
+                width: widget.data.getShapeType() == 2 ? 60 : 40,
+                height: widget.data.getShapeType() == 2 ? 60 : 40,
+                child: Text('line'),
+              ),
+              onTap: () => widget.data.setShapeType(2),
             ),
           ],
         ),
@@ -748,10 +756,9 @@ class _TypoToolWidgetState extends State<TypoToolWidget> {
                 onTap: () {
                   setState(() {
                     subToolIndex = 3;
-                    currentSubToolWidget = _BuildColorWidget(
-                      colorCallback: (color) {
-                        widget.data.setTextColor(color);
-                      },
+                    currentSubToolWidget = BuildColorWidget(
+                      tool: 2,
+                      data: widget.data,
                     );
                   });
                 },
@@ -763,8 +770,9 @@ class _TypoToolWidgetState extends State<TypoToolWidget> {
     );
   }
 
-  TextEditingController controller = TextEditingController(text: 'int');
+  TextEditingController controller = TextEditingController(text: 'text');
   _buildTextTool() {
+    controller.text = widget.data.getText();
     return Container(
       padding: EdgeInsets.all(10),
       child: Row(

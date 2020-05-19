@@ -23,6 +23,14 @@ class ConfigWidgetState extends State<ConfigWidget> {
   List<Selectable> selectables;
   int selectedIndex;
   Selectable currentSelectable;
+
+  BuildContext mContext;
+
+  void rebuildAll(Element el) {
+    el.markNeedsBuild();
+    el.visitChildren(rebuildAll);
+  }
+
   //---------------------------------------------------------------------------------
   //Selectables
   //---------------------------------------------------------------------------------
@@ -39,6 +47,7 @@ class ConfigWidgetState extends State<ConfigWidget> {
       currentSelectable = selectables[index];
       currentSelectable.isSelected = true;
     });
+    // (context as Element).visitChildren(rebuildAll);
   }
 
   setSeleteLast() {
@@ -84,6 +93,8 @@ class ConfigWidgetState extends State<ConfigWidget> {
     setit() {
       setState(() {
         (currentSelectable as SelectablePath).mPaint.color = color;
+        print('------setPenColor-----:' +
+            (currentSelectable as SelectablePath).mPaint.color.toString());
       });
     }
 
@@ -91,7 +102,10 @@ class ConfigWidgetState extends State<ConfigWidget> {
   }
 
   Color getPenColor() {
-    print(config.penColor.toString()+'tet');
+    if (isSelectedMode) {
+      print('------getPenColor-----' +
+          (currentSelectable as SelectablePath).mPaint.color.toString());
+    }
     return isSelectedMode
         ? (currentSelectable as SelectablePath).mPaint.color
         : config.penColor;
@@ -285,6 +299,7 @@ class ConfigWidgetState extends State<ConfigWidget> {
 
   @override
   Widget build(BuildContext context) {
+    mContext = context;
     return InheritedConfig(
       data: this,
       child: widget.child,
@@ -298,5 +313,5 @@ class InheritedConfig extends InheritedWidget {
   InheritedConfig({this.data, Widget child}) : super(child: child);
 
   @override
-  bool updateShouldNotify(InheritedConfig oldWidget) => oldWidget != this;
+  bool updateShouldNotify(InheritedConfig oldWidget) => true;
 }
