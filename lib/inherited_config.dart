@@ -65,6 +65,15 @@ class ConfigWidgetState extends State<ConfigWidget> {
     });
   }
 
+  setUnselected(){
+    setState(() {
+      currentSelectable.isSelected=false;
+    currentSelectable = null;
+    isSelectedMode =false;
+    selectedIndex = -1;
+    });
+  }
+
   //---------------------------------------------------------------------------------
   //Background
   //---------------------------------------------------------------------------------
@@ -93,8 +102,6 @@ class ConfigWidgetState extends State<ConfigWidget> {
     setit() {
       setState(() {
         (currentSelectable as SelectablePath).mPaint.color = color;
-        print('------setPenColor-----:' +
-            (currentSelectable as SelectablePath).mPaint.color.toString());
       });
     }
 
@@ -102,26 +109,25 @@ class ConfigWidgetState extends State<ConfigWidget> {
   }
 
   Color getPenColor() {
-    if (isSelectedMode) {
-      print('------getPenColor-----' +
-          (currentSelectable as SelectablePath).mPaint.color.toString());
-    }
     return isSelectedMode
         ? (currentSelectable as SelectablePath).mPaint.color
         : config.penColor;
   }
 
   setPenWidth(double width) {
-    setit() {
-      setState(() {
-        (currentSelectable as SelectablePath).mPaint.strokeWidth = width;
-      });
-    }
+    // setit() {
+    //   setState(() {
+    //     ;
+    //   });
+    // }
 
-    isSelectedMode ? setit() : config.penWidth = width;
+    setState(() {
+      isSelectedMode ?(currentSelectable as SelectablePath).mPaint.strokeWidth = width : config.penWidth = width;
+    });
   }
 
   double getPenWidth() {
+    print('getPenWidth' + config.penWidth.toString());
     return isSelectedMode
         ? (currentSelectable as SelectablePath).mPaint.strokeWidth
         : config.penWidth;
@@ -138,7 +144,9 @@ class ConfigWidgetState extends State<ConfigWidget> {
   }
 
   setShapeType(int type) {
-    config.shapeType = type;
+    setState(() {
+      config.shapeType = type;
+    });
   }
 
   int getShapeType() {

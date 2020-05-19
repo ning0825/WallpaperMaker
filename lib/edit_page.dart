@@ -10,8 +10,14 @@ import 'package:wallpaper_maker/selectable_bean.dart';
 import 'cus_painter.dart';
 import 'inherited_config.dart';
 
+//Used to get size and save image.
 GlobalKey rpbKey = GlobalKey();
 Size size;
+
+const penToolNum = 0;
+const shapeToolNum = 1; 
+const typoNum = 2;
+const shapeFillNUm =3;
 
 class EditPage extends StatelessWidget {
   @override
@@ -87,7 +93,7 @@ class _EditHomeState extends State<EditHome> {
                     currentMainToolIndex = 0;
                   });
                   data.config.currentMode = 0;
-                  currentToolWidget = currentTools = PenToolWidget(data);
+                  currentToolWidget = currentTools = PenToolWidget();
                 },
               ),
               _BuildMainTool(
@@ -97,7 +103,7 @@ class _EditHomeState extends State<EditHome> {
                   setState(() {
                     currentMainToolIndex = 1;
                     data.config.currentMode = 1;
-                    currentToolWidget = currentTools = ShapeToolWidget(data);
+                    currentToolWidget = currentTools = ShapeToolWidget();
                   });
                 },
               ),
@@ -239,37 +245,66 @@ class GapWidget extends StatelessWidget {
   }
 }
 
-class _BuildWidth extends StatefulWidget {
-  final SliderCallback sliderCallback;
+class BuildWidth extends StatefulWidget {
+  final int toolNum;
 
-  _BuildWidth(this.sliderCallback);
+  BuildWidth({this.toolNum});
 
   @override
   _BuildWidthState createState() => _BuildWidthState();
 }
 
-class _BuildWidthState extends State<_BuildWidth> {
+class _BuildWidthState extends State<BuildWidth> {
   double sliderValue = 1.0;
+  ConfigWidgetState data;
+
   @override
   Widget build(BuildContext context) {
+    data = ConfigWidget.of(context);
     return Container(
       height: 70,
       child: Slider(
-        value: sliderValue,
+        value: getToolWidth(),
         onChanged: (value) {
-          widget.sliderCallback(value);
-          setState(() {
-            sliderValue = value;
-            print(value);
-          });
+          setToolWidth(value);
         },
         min: 1.0,
-        max: 10.0,
+        max: 8.0,
         label: sliderValue.toString(),
         activeColor: Colors.black,
-        divisions: 9,
       ),
     );
+  }
+
+  setToolWidth(double value){
+    switch (widget.toolNum) {
+      case penToolNum:
+        data.setPenWidth(value);
+        break;
+        case shapeToolNum:
+        data.setShapeWidth(value);
+        break;
+        case typoNum:
+        data.setTextWeight(value);
+        break;
+      default:
+      break;
+    }
+  }
+
+  double getToolWidth(){
+    switch (widget.toolNum) {
+      case penToolNum:
+        print('-----------getToolWidth: ');
+        return data.getPenWidth();
+        case shapeToolNum:
+        return data.getShapeWidth();
+        case typoNum:
+        return data.getTextWeight().toDouble();
+      default:
+      break;
+    }
+    return 1.0;
   }
 }
 
@@ -277,10 +312,9 @@ typedef CheckboxCallback = void Function(bool b);
 typedef ColorCallback = void Function(Color color);
 
 class BuildColorWidget extends StatefulWidget {
-  final ConfigWidgetState data;
-  final int tool;
+  final int toolNum;
 
-  BuildColorWidget({this.data, @required this.tool});
+  BuildColorWidget({@required this.toolNum});
 
   @override
   _BuildColorWidgetState createState() => _BuildColorWidgetState();
@@ -295,22 +329,21 @@ class _BuildColorWidgetState extends State<BuildColorWidget> {
     Colors.blue
   ];
 
-  var iconig;
+  ConfigWidgetState data;
 
   @override
   Widget build(BuildContext context) {
-    iconig = ConfigWidget.of(context);
-    print('_BuildColorWidgetState.build');
+    data = ConfigWidget.of(context);
     return Container(
       height: 100,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          widget.tool == 4
+          widget.toolNum == 4
               ? Checkbox(
-                  value: widget.data.getShapeStyle(),
+                  value: data.getShapeStyle(),
                   onChanged: (b) {
-                    widget.data.setShapeStyle(
+                    data.setShapeStyle(
                         b ? PaintingStyle.fill : PaintingStyle.stroke);
                   },
                 )
@@ -343,18 +376,18 @@ class _BuildColorWidgetState extends State<BuildColorWidget> {
   }
 
   void setColorTap(int index) {
-    switch (widget.tool) {
-      case 0:
-        widget.data.setPenColor(colors[index]);
+    switch (widget.toolNum) {
+      case penToolNum:
+        data.setPenColor(colors[index]);
         break;
-      case 1:
-        widget.data.setShapeColor(colors[index]);
+      case shapeToolNum:
+        data.setShapeColor(colors[index]);
         break;
-      case 2:
-        widget.data.setTextColor(colors[index]);
+      case typoNum:
+        data.setTextColor(colors[index]);
         break;
-      case 4:
-        widget.data.setShapeFillColor(colors[index]);
+      case shapeFillNUm:
+        data.setShapeFillColor(colors[index]);
         break;
       default:
         break;
@@ -363,22 +396,22 @@ class _BuildColorWidgetState extends State<BuildColorWidget> {
   }
 
   double getSizeValue(int index) {
-    switch (widget.tool) {
-      case 0:
-        return widget.data.getPenColor().value == colors[index].value ? 60 : 40;
+    switch (widget.toolNum) {
+      case penToolNum:
+        return data.getPenColor().value == colors[index].value ? 60 : 40;
         break;
-      case 1:
-        return widget.data.getShapeColor().value == colors[index].value
+      case shapeToolNum:
+        return data.getShapeColor().value == colors[index].value
             ? 60
             : 40;
         break;
-      case 2:
-        return widget.data.getTextColor().value == colors[index].value
+      case shapeToolNum:
+        return data.getTextColor().value == colors[index].value
             ? 60
             : 40;
         break;
-      case 4:
-        return widget.data.getShapeFillColor().value == colors[index].value
+      case shapeFillNUm:
+        return data.getShapeFillColor().value == colors[index].value
             ? 60
             : 40;
         break;
@@ -418,8 +451,7 @@ class _BuildMainTool extends StatelessWidget {
 }
 
 class PenToolWidget extends StatefulWidget {
-  final ConfigWidgetState data;
-  PenToolWidget(this.data);
+
   @override
   _PenToolWidgetState createState() => _PenToolWidgetState();
 }
@@ -435,25 +467,15 @@ class _PenToolWidgetState extends State<PenToolWidget> {
 
   @override
   Widget build(BuildContext context) {
-    print('PenTool.build');
     return Container(
       child: Column(
         children: [
           Expanded(
-            // child: subToolIndex == 0
-            //     ? BuildColorWidget(
-            //         data: widget.data,
-            //         tool: 0,
-            //       )
-            //     : _BuildWidth((value) {
-            //         setState(() {
-            //           widget.data.setPenWidth(value);
-            //         });
-            //       }),
-            child: BuildColorWidget(
-              data: widget.data,
-              tool: 0,
-            ),
+            child: subToolIndex == 0
+                ? BuildColorWidget(
+                    toolNum: penToolNum,
+                  )
+                : BuildWidth(toolNum:penToolNum),
           ),
           Container(
             child: Row(
@@ -504,8 +526,6 @@ class _PenToolWidgetState extends State<PenToolWidget> {
 }
 
 class ShapeToolWidget extends StatefulWidget {
-  final ConfigWidgetState data;
-  ShapeToolWidget(this.data);
   @override
   _ShapeToolWidgetState createState() => _ShapeToolWidgetState();
 }
@@ -514,19 +534,42 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
   int subToolIndex;
   Widget currentSubToolWidget;
 
+  ConfigWidgetState data;
+
   @override
   void initState() {
     super.initState();
     subToolIndex = 0;
-    currentSubToolWidget = _buildShapeTypeTool();
+  }
+
+  Widget getCurrentWidget(){
+    print('getCurrentWidget:-----------------------');
+    switch (subToolIndex) {
+      case 0:
+        return _buildShapeTypeTool();
+      case 1:
+        return BuildColorWidget(
+                        toolNum: shapeToolNum,
+                      );
+                      case 2:
+                      return BuildColorWidget(
+                        toolNum: shapeFillNUm,
+                      );
+                      case 3:
+                      return BuildWidth(toolNum: shapeToolNum);
+
+      default:
+      return Text('no widget found! check subToolIndex: $subToolIndex');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    data = ConfigWidget.of(context);
     return Container(
       child: Column(
         children: [
-          Expanded(child: currentSubToolWidget),
+          Expanded(child: getCurrentWidget()),
           Container(
             child: Row(
               children: [
@@ -545,7 +588,6 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
                   onTap: () {
                     setState(() {
                       subToolIndex = 0;
-                      currentSubToolWidget = _buildShapeTypeTool();
                     });
                   },
                 ),
@@ -564,9 +606,6 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
                   onTap: () {
                     setState(() {
                       subToolIndex = 1;
-                      currentSubToolWidget = BuildColorWidget(
-                        tool: 1,
-                      );
                     });
                   },
                 ),
@@ -585,10 +624,7 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
                   onTap: () {
                     setState(() {
                       subToolIndex = 2;
-                      currentSubToolWidget = BuildColorWidget(
-                        data: widget.data,
-                        tool: 4,
-                      );
+                      
                     });
                   },
                 ),
@@ -607,10 +643,7 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
                   onTap: () {
                     setState(() {
                       subToolIndex = 3;
-                      currentSubToolWidget = _BuildWidth((value) {
-                        widget.data.setShapeWidth(value);
-                      });
-                    });
+                      },);
                   },
                 ),
               ],
@@ -630,32 +663,48 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
           children: [
             InkWell(
               child: Container(
-                width: widget.data.getShapeType() == 0 ? 60 : 40,
-                height: widget.data.getShapeType() == 0 ? 60 : 40,
+                color: Colors.grey,
+                width: getSizeValue(0),
+                height: getSizeValue(0),
                 child: Text('line'),
               ),
-              onTap: () => widget.data.setShapeType(0),
+              onTap: () => data.setShapeType(0),
             ),
             InkWell(
               child: Container(
-                width: widget.data.getShapeType() == 1 ? 60 : 40,
-                height: widget.data.getShapeType() == 1 ? 60 : 40,
+                color: Colors.grey,
+                width: getSizeValue(1),
+                height: getSizeValue(1),
                 child: Text('rect'),
               ),
-              onTap: () => widget.data.setShapeType(1),
+              onTap: () => data.setShapeType(1),
             ),
             InkWell(
               child: Container(
-                width: widget.data.getShapeType() == 2 ? 60 : 40,
-                height: widget.data.getShapeType() == 2 ? 60 : 40,
-                child: Text('line'),
+                color: Colors.grey,
+                width: getSizeValue(2),
+                height: getSizeValue(2),
+                child: Text('circle'),
               ),
-              onTap: () => widget.data.setShapeType(2),
+              onTap: () => data.setShapeType(2),
             ),
           ],
         ),
       ),
     );
+  }
+
+  double getSizeValue(int type){
+switch (type) {
+  case 0:
+    return data.getShapeType() == 0 ? 60:40;
+  case 1:
+  return data.getShapeType()== 1 ? 60:40;
+  case 2:
+  return data.getShapeType()== 2 ? 60:40;
+  default:
+}
+return 10;
   }
 }
 
@@ -736,9 +785,7 @@ class _TypoToolWidgetState extends State<TypoToolWidget> {
                 onTap: () {
                   setState(() {
                     subToolIndex = 2;
-                    currentSubToolWidget = _BuildWidth((value) {
-                      widget.data.setTextWeight(value);
-                    });
+                    currentSubToolWidget = BuildWidth(toolNum: typoNum,);
                   });
                 },
               ),
@@ -757,8 +804,7 @@ class _TypoToolWidgetState extends State<TypoToolWidget> {
                   setState(() {
                     subToolIndex = 3;
                     currentSubToolWidget = BuildColorWidget(
-                      tool: 2,
-                      data: widget.data,
+                      toolNum: shapeToolNum,
                     );
                   });
                 },

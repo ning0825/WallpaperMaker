@@ -95,7 +95,7 @@ class _CanvasPanelState extends State<CanvasPanel> {
           //All selectables failed in hittest.
           if (!selectDone) {
             if (data.isSelectedMode) {
-              data.isSelectedMode = false;
+              data.setUnselected();
             } else if (data.config.currentMode == 2) {
               setState(() {
                 // data.selectables.add(

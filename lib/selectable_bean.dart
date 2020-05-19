@@ -223,7 +223,7 @@ class SelectableShape extends Selectable {
   Paint fillPaint;
 
   SelectableShape(this.startPoint, this.shapeType, Paint paint)
-      : totalOffset = Offset.zero {
+      : totalOffset = Offset.zero, endPoint = startPoint{
     fill = false;
     mPaint = paint;
     fillColor = mPaint.color;
@@ -236,6 +236,9 @@ class SelectableShape extends Selectable {
   void draw(Canvas canvas) {
     totalOffset = offset + totalOffset;
 
+    print('startPoint: $startPoint');
+    print('totalOffset: $totalOffset');
+    print('endPOint: $endPoint');
     rect = Rect.fromPoints(
             startPoint + totalOffset * 2, endPoint + totalOffset * 2)
         .inflate(10);
