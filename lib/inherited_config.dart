@@ -26,13 +26,16 @@ class ConfigWidgetState extends State<ConfigWidget> {
 
   BuildContext mContext;
 
-  void rebuildAll(Element el) {
-    el.markNeedsBuild();
-    el.visitChildren(rebuildAll);
-  }
+  //size of canvas.
+  Size size;
+
+  // void rebuildAll(Element el) {
+  //   el.markNeedsBuild();
+  //   el.visitChildren(rebuildAll);
+  // }
 
   //---------------------------------------------------------------------------------
-  //Selectables
+  //Selectable
   //---------------------------------------------------------------------------------
   addSelectable(Selectable selectable) {
     setState(() {
@@ -52,6 +55,9 @@ class ConfigWidgetState extends State<ConfigWidget> {
 
   setSeleteLast() {
     setState(() {
+      if (isSelectedMode) {
+        currentSelectable.isSelected = false;
+      }
       isSelectedMode = true;
       selectedIndex = selectables.length - 1;
       currentSelectable = selectables.last;
@@ -65,12 +71,50 @@ class ConfigWidgetState extends State<ConfigWidget> {
     });
   }
 
-  setUnselected(){
+  setUnselected() {
     setState(() {
-      currentSelectable.isSelected=false;
-    currentSelectable = null;
-    isSelectedMode =false;
-    selectedIndex = -1;
+      currentSelectable.isSelected = false;
+      currentSelectable = null;
+      isSelectedMode = false;
+      selectedIndex = -1;
+    });
+  }
+
+  //---------------------------------------------------------------------------------
+  //Size
+  //---------------------------------------------------------------------------------
+  setSize({double height, double ratio}) {
+    setState(() {
+      size = Size(height / ratio, height);
+    });
+  }
+
+  //---------------------------------------------------------------------------------
+  //Align
+  //---------------------------------------------------------------------------------
+  setLeftAlign() {
+    setState(() {
+      currentSelectable.offset.translate(-currentSelectable.offset.dx, 0.0);
+    });
+  }
+
+  setTopAlign() {
+    setState(() {
+      currentSelectable.offset.translate(0.0, -currentSelectable.offset.dy);
+    });
+  }
+
+  setRightAlign() {
+    setState(() {
+      currentSelectable.offset
+          .translate(size.width - currentSelectable.offset.dx, 0.0);
+    });
+  }
+
+  setBottomAlign() {
+    setState(() {
+      currentSelectable.offset
+          .translate(0.0, size.height - currentSelectable.offset.dy);
     });
   }
 
@@ -122,12 +166,13 @@ class ConfigWidgetState extends State<ConfigWidget> {
     // }
 
     setState(() {
-      isSelectedMode ?(currentSelectable as SelectablePath).mPaint.strokeWidth = width : config.penWidth = width;
+      isSelectedMode
+          ? (currentSelectable as SelectablePath).mPaint.strokeWidth = width
+          : config.penWidth = width;
     });
   }
 
   double getPenWidth() {
-    print('getPenWidth' + config.penWidth.toString());
     return isSelectedMode
         ? (currentSelectable as SelectablePath).mPaint.strokeWidth
         : config.penWidth;
@@ -189,29 +234,25 @@ class ConfigWidgetState extends State<ConfigWidget> {
   }
 
   setShapeFillColor(Color color) {
-    setit() {
+    if (isSelectedMode) {
       setState(() {
-        (currentSelectable as SelectableShape).fillColor = color;
+        (currentSelectable as SelectableShape).fillPaint.color = color;
       });
     }
-
-    isSelectedMode ? setit() : config.shapeColor = color;
   }
 
   Color getShapeFillColor() {
     return isSelectedMode
-        ? (currentSelectable as SelectableShape).fillColor
-        : config.shapeFillColor;
+        ? (currentSelectable as SelectableShape).fillPaint.color
+        : null;
   }
 
   setShapeWidth(double width) {
-    setit() {
-      setState(() {
-        (currentSelectable as SelectableShape).mPaint.strokeWidth = width;
-      });
-    }
-
-    isSelectedMode ? setit() : config.shapeWidth = width;
+    setState(() {
+      isSelectedMode
+          ? (currentSelectable as SelectableShape).mPaint.strokeWidth = width
+          : config.shapeWidth = width;
+    });
   }
 
   double getShapeWidth() {
@@ -223,6 +264,12 @@ class ConfigWidgetState extends State<ConfigWidget> {
   //---------------------------------------------------------------------------------
   //Text
   //---------------------------------------------------------------------------------
+  SelectableText assembleSelectableText(String text, Offset offset) {
+    return SelectableText(text: text, totalOffset: offset)
+      ..textColor = config.textColor
+      ..textWeight = 3;
+  }
+
   setText(String text) {
     setit() {
       setState(() {
@@ -294,15 +341,18 @@ class ConfigWidgetState extends State<ConfigWidget> {
       ..penColor = Colors.red
       ..penWidth = 5
       ..shapeType = 0
-      ..shapeColor = Colors.black
+      ..shapeColor = Colors.red
       ..shapeStyle = PaintingStyle.stroke
+      ..shapeFillColor = Colors.red
       ..shapeWidth = 5
       ..font = 'default'
       ..typoWeight = 3
-      ..textColor = Colors.black;
+      ..textColor = Colors.red;
 
     selectables = List();
     isSelectedMode = false;
+
+    size = Size(0.0, 0.0);
   }
 
   @override

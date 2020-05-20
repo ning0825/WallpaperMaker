@@ -32,21 +32,22 @@ class _CanvasPanelState extends State<CanvasPanel> {
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       setState(() {
         widgetHeight = context.size.height;
+        data.setSize(height: widgetHeight, ratio: 2);
       });
     });
 
     textEditingController = TextEditingController();
   }
 
-  @override
-  void didUpdateWidget(CanvasPanel oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      setState(() {
-        widgetHeight = context.size.height;
-      });
-    });
-  }
+  // @override
+  // void didUpdateWidget(CanvasPanel oldWidget) {
+  //   super.didUpdateWidget(oldWidget);
+  //   WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+  //     setState(() {
+  //       widgetHeight = context.size.height;
+  //     });
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +60,7 @@ class _CanvasPanelState extends State<CanvasPanel> {
         child: RepaintBoundary(
           key: widget.rKey,
           child: CustomPaint(
-            size: Size(widgetHeight / 2, widgetHeight),
+            size: data.size,
             painter: MyCanvas(data: data),
           ),
         ),
@@ -203,11 +204,10 @@ class _CanvasPanelState extends State<CanvasPanel> {
 class MyCanvas extends CustomPainter {
   ConfigWidgetState data;
 
-  MyCanvas({this.data}) ;
+  MyCanvas({this.data});
 
   @override
   void paint(Canvas canvas, Size size) {
-   
     canvas.clipRect(
       Rect.fromCenter(
           center: Offset(size.width / 2, size.height / 2),

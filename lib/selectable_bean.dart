@@ -150,9 +150,7 @@ class SelectableText extends Selectable {
 
   int textWeight;
 
-  SelectableText({this.text, this.totalOffset}) {
-    textWeight = 3;
-  }
+  SelectableText({this.text, this.totalOffset});
 
   @override
   void draw(Canvas canvas) {
@@ -161,12 +159,15 @@ class SelectableText extends Selectable {
       style: TextStyle(
           color: textColor,
           fontSize: 50,
-          fontFamily: fontFamily ?? null,
+          fontFamily: fontFamily,
           fontWeight: FontWeight.values[textWeight]),
     );
     totalOffset = offset * 2 + totalOffset;
-    TextPainter tp = TextPainter(text: ts, textDirection: TextDirection.ltr,);
-    tp.layout(minWidth: 50);
+    TextPainter tp = TextPainter(
+      text: ts,
+      textDirection: TextDirection.ltr,
+    );
+    tp.layout(maxWidth: 30);
     rect = Rect.fromCenter(
         center: totalOffset, width: tp.width, height: tp.height);
     selectedPath = toPath(rect, rotRadians, scaleRadio, scaleRadio);
@@ -219,26 +220,22 @@ class SelectableShape extends Selectable {
   Offset totalOffset;
 
   bool fill;
-  Color fillColor;
   Paint fillPaint;
 
   SelectableShape(this.startPoint, this.shapeType, Paint paint)
-      : totalOffset = Offset.zero, endPoint = startPoint{
+      : totalOffset = Offset.zero,
+        endPoint = startPoint {
     fill = false;
     mPaint = paint;
-    fillColor = mPaint.color;
     fillPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = fillColor;
+      ..color = mPaint.color;
   }
 
   @override
   void draw(Canvas canvas) {
     totalOffset = offset + totalOffset;
 
-    print('startPoint: $startPoint');
-    print('totalOffset: $totalOffset');
-    print('endPOint: $endPoint');
     rect = Rect.fromPoints(
             startPoint + totalOffset * 2, endPoint + totalOffset * 2)
         .inflate(10);

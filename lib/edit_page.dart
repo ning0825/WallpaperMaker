@@ -15,9 +15,10 @@ GlobalKey rpbKey = GlobalKey();
 Size size;
 
 const penToolNum = 0;
-const shapeToolNum = 1; 
-const typoNum = 2;
-const shapeFillNUm =3;
+const shapeToolNum = 1;
+const typoToolNum = 2;
+const shapeFillNum = 3;
+const backgroundColorNum = 4;
 
 class EditPage extends StatelessWidget {
   @override
@@ -91,6 +92,9 @@ class _EditHomeState extends State<EditHome> {
                 callback: () {
                   setState(() {
                     currentMainToolIndex = 0;
+                    if (data.isSelectedMode) {
+                      data.setUnselected();
+                    }
                   });
                   data.config.currentMode = 0;
                   currentToolWidget = currentTools = PenToolWidget();
@@ -103,6 +107,9 @@ class _EditHomeState extends State<EditHome> {
                   setState(() {
                     currentMainToolIndex = 1;
                     data.config.currentMode = 1;
+                    if (data.isSelectedMode) {
+                      data.setUnselected();
+                    }
                     currentToolWidget = currentTools = ShapeToolWidget();
                   });
                 },
@@ -114,7 +121,10 @@ class _EditHomeState extends State<EditHome> {
                   setState(() {
                     currentMainToolIndex = 2;
                     data.config.currentMode = 2;
-                    currentToolWidget = currentTools = TypoToolWidget(data);
+                    if (data.isSelectedMode) {
+                      data.setUnselected();
+                    }
+                    currentToolWidget = currentTools = TypoToolWidget();
                   });
                 },
               ),
@@ -125,6 +135,9 @@ class _EditHomeState extends State<EditHome> {
                   setState(() {
                     currentMainToolIndex = 3;
                     data.config.currentMode = 3;
+                    if (data.isSelectedMode) {
+                      data.setUnselected();
+                    }
                     currentToolWidget = currentTools = ImageTool(data: data);
                   });
                 },
@@ -156,7 +169,9 @@ class _EditHomeState extends State<EditHome> {
         children: <Widget>[
           Spacer(),
           InkWell(
-            onTap: () => print('tap'),
+            onTap: () {
+              currentToolWidget = BuildColorWidget(toolNum: backgroundColorNum);
+            },
             child: Container(
               width: 50,
               height: 40,
@@ -276,33 +291,32 @@ class _BuildWidthState extends State<BuildWidth> {
     );
   }
 
-  setToolWidth(double value){
+  setToolWidth(double value) {
     switch (widget.toolNum) {
       case penToolNum:
         data.setPenWidth(value);
         break;
-        case shapeToolNum:
+      case shapeToolNum:
         data.setShapeWidth(value);
         break;
-        case typoNum:
+      case typoToolNum:
         data.setTextWeight(value);
         break;
       default:
-      break;
+        break;
     }
   }
 
-  double getToolWidth(){
+  double getToolWidth() {
     switch (widget.toolNum) {
       case penToolNum:
-        print('-----------getToolWidth: ');
         return data.getPenWidth();
-        case shapeToolNum:
+      case shapeToolNum:
         return data.getShapeWidth();
-        case typoNum:
+      case typoToolNum:
         return data.getTextWeight().toDouble();
       default:
-      break;
+        break;
     }
     return 1.0;
   }
@@ -339,10 +353,11 @@ class _BuildColorWidgetState extends State<BuildColorWidget> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          widget.toolNum == 4
+          widget.toolNum == shapeFillNum
               ? Checkbox(
                   value: data.getShapeStyle(),
                   onChanged: (b) {
+                    setState(() {});
                     data.setShapeStyle(
                         b ? PaintingStyle.fill : PaintingStyle.stroke);
                   },
@@ -383,11 +398,14 @@ class _BuildColorWidgetState extends State<BuildColorWidget> {
       case shapeToolNum:
         data.setShapeColor(colors[index]);
         break;
-      case typoNum:
+      case typoToolNum:
         data.setTextColor(colors[index]);
         break;
-      case shapeFillNUm:
+      case shapeFillNum:
         data.setShapeFillColor(colors[index]);
+        break;
+      case backgroundColorNum:
+        data.setBackgroundColor(colors[index]);
         break;
       default:
         break;
@@ -401,19 +419,18 @@ class _BuildColorWidgetState extends State<BuildColorWidget> {
         return data.getPenColor().value == colors[index].value ? 60 : 40;
         break;
       case shapeToolNum:
-        return data.getShapeColor().value == colors[index].value
-            ? 60
-            : 40;
+        return data.getShapeColor().value == colors[index].value ? 60 : 40;
         break;
-      case shapeToolNum:
-        return data.getTextColor().value == colors[index].value
-            ? 60
-            : 40;
+      case typoToolNum:
+        return data.getTextColor().value == colors[index].value ? 60 : 40;
         break;
-      case shapeFillNUm:
-        return data.getShapeFillColor().value == colors[index].value
-            ? 60
-            : 40;
+      case shapeFillNum:
+        if (data.getShapeFillColor() != null &&
+            data.getShapeFillColor().value == colors[index].value) {
+          return 60;
+        } else {
+          return 40;
+        }
         break;
       default:
         break;
@@ -451,7 +468,6 @@ class _BuildMainTool extends StatelessWidget {
 }
 
 class PenToolWidget extends StatefulWidget {
-
   @override
   _PenToolWidgetState createState() => _PenToolWidgetState();
 }
@@ -475,7 +491,7 @@ class _PenToolWidgetState extends State<PenToolWidget> {
                 ? BuildColorWidget(
                     toolNum: penToolNum,
                   )
-                : BuildWidth(toolNum:penToolNum),
+                : BuildWidth(toolNum: penToolNum),
           ),
           Container(
             child: Row(
@@ -542,24 +558,23 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
     subToolIndex = 0;
   }
 
-  Widget getCurrentWidget(){
-    print('getCurrentWidget:-----------------------');
+  Widget getCurrentWidget() {
     switch (subToolIndex) {
       case 0:
         return _buildShapeTypeTool();
       case 1:
         return BuildColorWidget(
-                        toolNum: shapeToolNum,
-                      );
-                      case 2:
-                      return BuildColorWidget(
-                        toolNum: shapeFillNUm,
-                      );
-                      case 3:
-                      return BuildWidth(toolNum: shapeToolNum);
+          toolNum: shapeToolNum,
+        );
+      case 2:
+        return BuildColorWidget(
+          toolNum: shapeFillNum,
+        );
+      case 3:
+        return BuildWidth(toolNum: shapeToolNum);
 
       default:
-      return Text('no widget found! check subToolIndex: $subToolIndex');
+        return Text('no widget found! check subToolIndex: $subToolIndex');
     }
   }
 
@@ -624,7 +639,6 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
                   onTap: () {
                     setState(() {
                       subToolIndex = 2;
-                      
                     });
                   },
                 ),
@@ -641,9 +655,11 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
                     child: Text('width'),
                   ),
                   onTap: () {
-                    setState(() {
-                      subToolIndex = 3;
-                      },);
+                    setState(
+                      () {
+                        subToolIndex = 3;
+                      },
+                    );
                   },
                 ),
               ],
@@ -664,8 +680,8 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
             InkWell(
               child: Container(
                 color: Colors.grey,
-                width: getSizeValue(0),
-                height: getSizeValue(0),
+                width: _getSizeValue(0),
+                height: _getSizeValue(0),
                 child: Text('line'),
               ),
               onTap: () => data.setShapeType(0),
@@ -673,8 +689,8 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
             InkWell(
               child: Container(
                 color: Colors.grey,
-                width: getSizeValue(1),
-                height: getSizeValue(1),
+                width: _getSizeValue(1),
+                height: _getSizeValue(1),
                 child: Text('rect'),
               ),
               onTap: () => data.setShapeType(1),
@@ -682,8 +698,8 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
             InkWell(
               child: Container(
                 color: Colors.grey,
-                width: getSizeValue(2),
-                height: getSizeValue(2),
+                width: _getSizeValue(2),
+                height: _getSizeValue(2),
                 child: Text('circle'),
               ),
               onTap: () => data.setShapeType(2),
@@ -694,37 +710,48 @@ class _ShapeToolWidgetState extends State<ShapeToolWidget> {
     );
   }
 
-  double getSizeValue(int type){
-switch (type) {
-  case 0:
-    return data.getShapeType() == 0 ? 60:40;
-  case 1:
-  return data.getShapeType()== 1 ? 60:40;
-  case 2:
-  return data.getShapeType()== 2 ? 60:40;
-  default:
-}
-return 10;
+  double _getSizeValue(int type) {
+    switch (type) {
+      case 0:
+        return data.getShapeType() == 0 ? 60 : 40;
+      case 1:
+        return data.getShapeType() == 1 ? 60 : 40;
+      case 2:
+        return data.getShapeType() == 2 ? 60 : 40;
+      default:
+    }
+    return 10;
   }
 }
 
 class TypoToolWidget extends StatefulWidget {
-  final ConfigWidgetState data;
-
-  TypoToolWidget(this.data);
+  TypoToolWidget();
   @override
   _TypoToolWidgetState createState() => _TypoToolWidgetState();
 }
 
 class _TypoToolWidgetState extends State<TypoToolWidget> {
   int subToolIndex;
-  Widget currentSubToolWidget;
 
   @override
   void initState() {
     super.initState();
     subToolIndex = 0;
-    currentSubToolWidget = _buildTextTool();
+  }
+
+  Widget _getCurrentWidget() {
+    switch (subToolIndex) {
+      case 0:
+        return TypoTextWidget();
+      case 1:
+        return TypoFontWidget();
+      case 2:
+        return BuildWidth(toolNum: typoToolNum);
+      case 3:
+        return BuildColorWidget(toolNum: typoToolNum);
+      default:
+    }
+    return Text('No widget found! check TypoTool\'s subToolIndex');
   }
 
   @override
@@ -732,7 +759,7 @@ class _TypoToolWidgetState extends State<TypoToolWidget> {
     return Container(
       child: Column(
         children: [
-          Expanded(child: currentSubToolWidget),
+          Expanded(child: _getCurrentWidget()),
           Row(
             children: [
               InkWell(
@@ -749,7 +776,6 @@ class _TypoToolWidgetState extends State<TypoToolWidget> {
                 onTap: () {
                   setState(() {
                     subToolIndex = 0;
-                    currentSubToolWidget = _buildTextTool();
                   });
                 },
               ),
@@ -767,7 +793,6 @@ class _TypoToolWidgetState extends State<TypoToolWidget> {
                 onTap: () {
                   setState(() {
                     subToolIndex = 1;
-                    currentSubToolWidget = _buildTextFont();
                   });
                 },
               ),
@@ -785,7 +810,6 @@ class _TypoToolWidgetState extends State<TypoToolWidget> {
                 onTap: () {
                   setState(() {
                     subToolIndex = 2;
-                    currentSubToolWidget = BuildWidth(toolNum: typoNum,);
                   });
                 },
               ),
@@ -803,9 +827,6 @@ class _TypoToolWidgetState extends State<TypoToolWidget> {
                 onTap: () {
                   setState(() {
                     subToolIndex = 3;
-                    currentSubToolWidget = BuildColorWidget(
-                      toolNum: shapeToolNum,
-                    );
                   });
                 },
               ),
@@ -815,10 +836,56 @@ class _TypoToolWidgetState extends State<TypoToolWidget> {
       ),
     );
   }
+}
 
-  TextEditingController controller = TextEditingController(text: 'text');
-  _buildTextTool() {
-    controller.text = widget.data.getText();
+class TypoFontWidget extends StatefulWidget {
+  @override
+  _TypoFontWidgetState createState() => _TypoFontWidgetState();
+}
+
+class _TypoFontWidgetState extends State<TypoFontWidget> {
+  ConfigWidgetState data;
+  var fontList = ['default', 'polingo', 'PlayfairDisplay'];
+  String currentFont;
+
+  @override
+  Widget build(BuildContext context) {
+    data = ConfigWidget.of(context);
+    currentFont = data.getTextFont();
+    return Container(
+      child: ListView.builder(
+          itemCount: fontList.length,
+          itemBuilder: (_, index) {
+            return ListTile(
+              title: Text(fontList[index]),
+              onTap: () {
+                data.setTextFont(fontList[index]);
+              },
+            );
+          }),
+    );
+  }
+}
+
+class TypoTextWidget extends StatefulWidget {
+  @override
+  _TypoTextWidgetState createState() => _TypoTextWidgetState();
+}
+
+class _TypoTextWidgetState extends State<TypoTextWidget> {
+  TextEditingController controller;
+  ConfigWidgetState data;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = TextEditingController();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    data = ConfigWidget.of(context);
+    controller.text = data.getText();
     return Container(
       padding: EdgeInsets.all(10),
       child: Row(
@@ -830,34 +897,18 @@ class _TypoToolWidgetState extends State<TypoToolWidget> {
           ),
           RaisedButton(
             onPressed: () {
-              widget.data.addSelectable(
-                SelectableText(
-                  text: controller.text,
-                  totalOffset: Offset(size.height / 2 / 2, size.height / 2),
+              data.addSelectable(
+                data.assembleSelectableText(
+                  controller.text,
+                  Offset(size.height / 2 / 2, size.height / 2),
                 ),
               );
-              widget.data.setSeleteLast();
+              data.setSeleteLast();
             },
             child: Text('OK'),
           ),
         ],
       ),
-    );
-  }
-
-  var fontList = ['default', 'polingo', 'PlayfairDisplay'];
-  _buildTextFont() {
-    return Container(
-      child: ListView.builder(
-          itemCount: fontList.length,
-          itemBuilder: (_, index) {
-            return ListTile(
-              title: Text(fontList[index]),
-              onTap: () {
-                widget.data.setTextFont(fontList[index]);
-              },
-            );
-          }),
     );
   }
 }
@@ -882,11 +933,11 @@ class _ImageToolState extends State<ImageTool> {
         ),
         RaisedButton(
           child: Text('crop'),
-          onPressed: () => print('test'),
+          onPressed: () => print('TODO: navigate to crop route.'),
         ),
         RaisedButton(
           child: Text('frame'),
-          onPressed: () => print('test'),
+          onPressed: () => print('TODO: add frame for image.'),
         ),
       ],
     ));
@@ -900,5 +951,34 @@ class _ImageToolState extends State<ImageTool> {
       widget.data.selectables
           .add(SelectableImage(img, Offset(size.width / 2, size.height / 2)));
     });
+  }
+}
+
+class AlignTool extends StatefulWidget {
+  @override
+  _AlignToolState createState() => _AlignToolState();
+}
+
+class _AlignToolState extends State<AlignTool> {
+  ConfigWidgetState data;
+
+  @override
+  Widget build(BuildContext context) {
+    data = ConfigWidget.of(context);
+    return Container(
+      child: Row(
+        children: [
+          RaisedButton(
+            onPressed: () {
+              setState(() {
+                var distance = data.currentSelectable.offset.dy;
+                data.currentSelectable.offset.translate(0.0, -distance);
+              });
+            },
+            child: Text('top'),
+          ),
+        ],
+      ),
+    );
   }
 }
