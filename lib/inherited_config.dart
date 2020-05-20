@@ -1,5 +1,9 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart' hide SelectableText;
+import 'package:flutter/rendering.dart';
 import 'package:wallpaper_maker/configuration.dart';
+import 'package:wallpaper_maker/utils.dart';
 
 import 'selectable_bean.dart';
 
@@ -118,6 +122,46 @@ class ConfigWidgetState extends State<ConfigWidget> {
     });
   }
 
+  //---------------------------------------------------------------------------------
+  //Rotation
+  //---------------------------------------------------------------------------------
+  resetRotation(){
+    setState(() {
+      currentSelectable.rotRadians = 0;
+    });
+  }
+
+  rotate(double radians){
+    setState(() {
+      currentSelectable.rotRadians = currentSelectable.rotRadians + radians;
+    });
+  }
+
+  //---------------------------------------------------------------------------------
+  //Undo
+  //---------------------------------------------------------------------------------
+  //TODO undo action, not selectable.
+  undo(){
+    setState(() {
+      selectables.removeLast();
+    });
+  }
+
+  //---------------------------------------------------------------------------------
+  //clean
+  //---------------------------------------------------------------------------------
+  clear(){
+    setState(() {
+      selectables.clear();
+    });
+  }
+
+    //---------------------------------------------------------------------------------
+  //save image
+  //---------------------------------------------------------------------------------
+  save(GlobalKey key){
+    saveImage(key);
+  }
   //---------------------------------------------------------------------------------
   //Background
   //---------------------------------------------------------------------------------

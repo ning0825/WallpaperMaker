@@ -170,7 +170,9 @@ class _EditHomeState extends State<EditHome> {
           Spacer(),
           InkWell(
             onTap: () {
-              currentToolWidget = BuildColorWidget(toolNum: backgroundColorNum);
+              setState(() {
+                currentToolWidget = BuildColorWidget(toolNum: backgroundColorNum);
+              });
             },
             child: Container(
               width: 50,
@@ -184,7 +186,11 @@ class _EditHomeState extends State<EditHome> {
           ),
           GapWidget(),
           InkWell(
-            onTap: () => print('tap'),
+            onTap: () {
+              setState(() {
+                currentToolWidget = AlignTool();
+              });
+            },
             child: Container(
               width: 50,
               height: 40,
@@ -210,7 +216,7 @@ class _EditHomeState extends State<EditHome> {
           ),
           GapWidget(),
           InkWell(
-            onTap: () => print('tap'),
+            onTap: () => data.undo(),
             child: Container(
               width: 50,
               height: 40,
