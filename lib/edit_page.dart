@@ -1013,6 +1013,23 @@ class _AlignToolState extends State<AlignTool> {
             },
             child: Text('bottom'),
           ),
+          RaisedButton(
+            onPressed: () {
+              setState(() {
+                data.setCenterHorizonAlign();
+              });
+            },
+            child: Text('centerH'),
+          ),
+        RaisedButton(
+            onPressed: () {
+              setState(() {
+                data.setCenterVerticalAlign();
+              });
+            },
+            child: Text('centerV'),
+          ),
+        
         ],
       ),
     );

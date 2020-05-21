@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' hide SelectableText;
 import 'package:flutter/rendering.dart';
@@ -100,30 +99,48 @@ class ConfigWidgetState extends State<ConfigWidget> {
   //---------------------------------------------------------------------------------
   setLeftAlign() {
     setState(() {
-      currentSelectable.offset = currentSelectable.offset
-          .translate(-currentSelectable.rect.left / 2, 0.0);
+          _setAlign(Offset(-currentSelectable.rect.left, 0.0));
     });
   }
 
   setTopAlign() {
     setState(() {
-      currentSelectable.offset = currentSelectable.offset
-          .translate(0.0, -currentSelectable.rect.top / 2);
+          _setAlign(Offset(0.0, -currentSelectable.rect.top));
     });
   }
 
   setRightAlign() {
     setState(() {
-      currentSelectable.offset = currentSelectable.offset
-          .translate((size.width - currentSelectable.rect.right) / 2, 0.0);
+      _setAlign(Offset(size.width - currentSelectable.rect.right, 0.0));
     });
   }
 
   setBottomAlign() {
     setState(() {
-      currentSelectable.offset = currentSelectable.offset
-          .translate(0.0, (size.height - currentSelectable.rect.bottom) / 2);
+          _setAlign(Offset(0.0, size.height - currentSelectable.rect.bottom));
     });
+  }
+
+  setCenterHorizonAlign(){
+    setState(() {
+      _setAlign(Offset(size.width/2 - currentSelectable.rect.center.dx, 0.0));
+    });
+  }
+
+  setCenterVerticalAlign(){
+    setState(() {
+      _setAlign(Offset(0.0, size.height/2 - currentSelectable.rect.center.dy));
+    });
+  }
+
+  _setAlign(Offset transOffset){
+if (currentSelectable.runtimeType.toString() == 'SelectablePath') {
+            (currentSelectable as SelectablePath).path = (currentSelectable as SelectablePath).path.shift(transOffset);
+          }
+          if (currentSelectable.runtimeType.toString() == 'SelectableShape') {
+            (currentSelectable as SelectableShape).startPoint = (currentSelectable as SelectableShape).startPoint + transOffset;
+            (currentSelectable as SelectableShape).endPoint = (currentSelectable as SelectableShape).endPoint + transOffset;
+          }
   }
 
   //---------------------------------------------------------------------------------
