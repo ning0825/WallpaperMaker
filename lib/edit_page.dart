@@ -5,13 +5,13 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'inherited_config.dart';
-import 'package:wallpaper_maker/selectable_bean.dart';
-
+import 'selectable_bean.dart';
 import 'cus_painter.dart';
-import 'inherited_config.dart';
 
 //Used to get size and save image.
 GlobalKey rpbKey = GlobalKey();
+
+GlobalKey stageKey;
 Size size;
 
 const penToolNum = 0;
@@ -50,6 +50,8 @@ class _EditHomeState extends State<EditHome> {
   void initState() {
     super.initState();
 
+    stageKey = GlobalKey();
+
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       size = rpbKey.currentContext.size;
     });
@@ -66,6 +68,7 @@ class _EditHomeState extends State<EditHome> {
       backgroundColor: Colors.grey[200],
       body: SafeArea(
           child: Column(
+        key: stageKey,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
@@ -171,7 +174,8 @@ class _EditHomeState extends State<EditHome> {
           InkWell(
             onTap: () {
               setState(() {
-                currentToolWidget = BuildColorWidget(toolNum: backgroundColorNum);
+                currentToolWidget =
+                    BuildColorWidget(toolNum: backgroundColorNum);
               });
             },
             child: Container(
@@ -974,17 +978,57 @@ class _AlignToolState extends State<AlignTool> {
     return Container(
       child: Row(
         children: [
+          RawMaterialButton(
+            constraints: BoxConstraints(maxWidth: 30),
+            onPressed: () {
+              print('set left align');
+              setState(() {
+                data.stageSize = stageKey.currentContext.size;
+                data.setLeftAlign();
+              });
+            },
+            child: Text('left'),
+          ),
           RaisedButton(
             onPressed: () {
               setState(() {
-                var distance = data.currentSelectable.offset.dy;
-                data.currentSelectable.offset.translate(0.0, -distance);
+                data.setTopAlign();
               });
             },
             child: Text('top'),
           ),
+          RaisedButton(
+            onPressed: () {
+              setState(() {
+                data.setRightAlign();
+              });
+            },
+            child: Text('right'),
+          ),
+          RaisedButton(
+            onPressed: () {
+              setState(() {
+                data.setBottomAlign();
+              });
+            },
+            child: Text('bottom'),
+          ),
         ],
       ),
     );
+  }
+}
+
+class RotationTool extends StatefulWidget {
+  @override
+  _RotationToolState createState() => _RotationToolState();
+}
+
+class _RotationToolState extends State<RotationTool> {
+  ConfigWidgetState data;
+  @override
+  Widget build(BuildContext context) {
+    data = ConfigWidget.of(context);
+    return Container();
   }
 }

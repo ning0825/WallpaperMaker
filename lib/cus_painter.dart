@@ -94,18 +94,12 @@ class _CanvasPanelState extends State<CanvasPanel> {
           }
 
           //All selectables failed in hittest.
-          if (!selectDone) {
-            if (data.isSelectedMode) {
-              data.setUnselected();
-            } else if (data.config.currentMode == 2) {
-              setState(() {
-                // data.selectables.add(
-                //     SelectableText(data.config.text, details.localPosition));
-              });
-            }
+          if (!selectDone && data.isSelectedMode) {
+            data.setUnselected();
           }
         },
         onScaleStart: (details) {
+          print('on scale start');
           setState(() {
             if (data.isSelectedMode) {
               lastPoint = details.localFocalPoint;
@@ -135,6 +129,7 @@ class _CanvasPanelState extends State<CanvasPanel> {
           });
         },
         onScaleUpdate: (details) {
+          print('on scale update');
           setState(() {
             if (!data.isSelectedMode) {
               switch (data.config.currentMode) {
@@ -182,6 +177,7 @@ class _CanvasPanelState extends State<CanvasPanel> {
           });
         },
         onScaleEnd: (details) {
+          print('on scale end');
           if (data.isSelectedMode) {
             data.selectables[data.selectedIndex].lastScale =
                 data.selectables[data.selectedIndex].tmpScale;

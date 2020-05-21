@@ -32,6 +32,8 @@ class ConfigWidgetState extends State<ConfigWidget> {
 
   //size of canvas.
   Size size;
+  //size of stage area.
+  Size stageSize;
 
   // void rebuildAll(Element el) {
   //   el.markNeedsBuild();
@@ -98,40 +100,42 @@ class ConfigWidgetState extends State<ConfigWidget> {
   //---------------------------------------------------------------------------------
   setLeftAlign() {
     setState(() {
-      currentSelectable.offset.translate(-currentSelectable.offset.dx, 0.0);
+      currentSelectable.offset = currentSelectable.offset
+          .translate(-currentSelectable.rect.left / 2, 0.0);
     });
   }
 
   setTopAlign() {
     setState(() {
-      currentSelectable.offset.translate(0.0, -currentSelectable.offset.dy);
+      currentSelectable.offset = currentSelectable.offset
+          .translate(0.0, -currentSelectable.rect.top / 2);
     });
   }
 
   setRightAlign() {
     setState(() {
-      currentSelectable.offset
-          .translate(size.width - currentSelectable.offset.dx, 0.0);
+      currentSelectable.offset = currentSelectable.offset
+          .translate((size.width - currentSelectable.rect.right) / 2, 0.0);
     });
   }
 
   setBottomAlign() {
     setState(() {
-      currentSelectable.offset
-          .translate(0.0, size.height - currentSelectable.offset.dy);
+      currentSelectable.offset = currentSelectable.offset
+          .translate(0.0, (size.height - currentSelectable.rect.bottom) / 2);
     });
   }
 
   //---------------------------------------------------------------------------------
   //Rotation
   //---------------------------------------------------------------------------------
-  resetRotation(){
+  resetRotation() {
     setState(() {
       currentSelectable.rotRadians = 0;
     });
   }
 
-  rotate(double radians){
+  rotate(double radians) {
     setState(() {
       currentSelectable.rotRadians = currentSelectable.rotRadians + radians;
     });
@@ -141,7 +145,7 @@ class ConfigWidgetState extends State<ConfigWidget> {
   //Undo
   //---------------------------------------------------------------------------------
   //TODO undo action, not selectable.
-  undo(){
+  undo() {
     setState(() {
       selectables.removeLast();
     });
@@ -150,18 +154,19 @@ class ConfigWidgetState extends State<ConfigWidget> {
   //---------------------------------------------------------------------------------
   //clean
   //---------------------------------------------------------------------------------
-  clear(){
+  clear() {
     setState(() {
       selectables.clear();
     });
   }
 
-    //---------------------------------------------------------------------------------
+  //---------------------------------------------------------------------------------
   //save image
   //---------------------------------------------------------------------------------
-  save(GlobalKey key){
+  save(GlobalKey key) {
     saveImage(key);
   }
+
   //---------------------------------------------------------------------------------
   //Background
   //---------------------------------------------------------------------------------
