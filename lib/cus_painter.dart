@@ -1,9 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart' hide SelectableText;
-import 'package:wallpaper_maker/configuration.dart';
+import 'package:wallpaper_maker/cus_gesture.dart';
 import 'package:wallpaper_maker/inherited_config.dart';
-import 'selectable_bean.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/painting.dart';
 
 class CanvasPanel extends StatefulWidget {
@@ -18,13 +16,6 @@ class CanvasPanel extends StatefulWidget {
 class _CanvasPanelState extends State<CanvasPanel> {
   double widgetHeight = 0;
   ConfigWidgetState data;
-  AssetBundle rootBundle;
-
-  Offset lastPoint = Offset.zero;
-
-  TextEditingController textEditingController;
-
-  String text;
 
   @override
   void initState() {
@@ -35,28 +26,33 @@ class _CanvasPanelState extends State<CanvasPanel> {
         data.setSize(height: widgetHeight, ratio: 2);
       });
     });
-
-    textEditingController = TextEditingController();
   }
-
-  // @override
-  // void didUpdateWidget(CanvasPanel oldWidget) {
-  //   super.didUpdateWidget(oldWidget);
-  //   WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-  //     setState(() {
-  //       widgetHeight = context.size.height;
-  //     });
-  //   });
-  // }
 
   @override
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
-    rootBundle = DefaultAssetBundle.of(context);
 
     return Container(
       color: Colors.amber,
-      child: GestureDetector(
+      // child: GestureDetector(
+      //   child: RepaintBoundary(
+      //     key: widget.rKey,
+      //     child: CustomPaint(
+      //       size: data.size,
+      //       painter: MyCanvas(data: data),
+      //     ),
+      //   ),
+      //   onTapUp: (details) => data.handleTapUp(details),
+      //   onScaleStart: (details) {
+      //     data.handleScaleStart(details);
+      //   },
+      //   onScaleUpdate: (details) {
+      //     data.handleScaleUpdate(details);
+      //   },
+      //   onScaleEnd: (details) => data.handleScaleEnd(details),
+      //   onTapDown: (details) => data.handleTapDown(details),
+      // ),
+      child: CanvasGestureDetector(
         child: RepaintBoundary(
           key: widget.rKey,
           child: CustomPaint(
@@ -64,136 +60,16 @@ class _CanvasPanelState extends State<CanvasPanel> {
             painter: MyCanvas(data: data),
           ),
         ),
-        onTapUp: (details) {
-          print('on tap up');
-          var offset =
-              Offset(details.localPosition.dx, details.localPosition.dy);
-          var newSelectables = data.selectables.reversed;
-
-          var selectDone = false;
-
-          for (var i = 0; i < newSelectables.length; i++) {
-            var item = newSelectables.elementAt(i);
-
-            if (selectDone) {
-              setState(() {
-                item.isSelected = false;
-              });
-            } else if (item.hitTest(offset)) {
-              if (item.runtimeType.toString() == 'SelectableText' &&
-                  item.isSelected) {}
-              setState(() {
-                data.setSelected(newSelectables.length - 1 - i);
-              });
-              selectDone = true;
-            } else {
-              setState(() {
-                item.isSelected = false;
-              });
-            }
-          }
-
-          //All selectables failed in hittest.
-          if (!selectDone && data.isSelectedMode) {
-            data.setUnselected();
-          }
-        },
-        onScaleStart: (details) {
-          print('on scale start');
-          setState(() {
-            if (data.isSelectedMode) {
-              lastPoint = details.localFocalPoint;
-              return;
-            }
-
-            switch (data.config.currentMode) {
-              case 0:
-                data.selectables.add(
-                  SelectablePath(
-                      Path()
-                        ..moveTo(details.localFocalPoint.dx,
-                            details.localFocalPoint.dy),
-                      data.getCurrentPen()),
-                );
-                break;
-              case 1:
-                data.selectables.add(SelectableShape(
-                    Offset(
-                        details.localFocalPoint.dx, details.localFocalPoint.dy),
-                    data.config.shapeType,
-                    data.getCurrentShape()));
-                break;
-
-              default:
-            }
-          });
-        },
-        onScaleUpdate: (details) {
-          print('on scale update');
-          setState(() {
-            if (!data.isSelectedMode) {
-              switch (data.config.currentMode) {
-                case 0:
-                  (data.selectables[data.selectables.length - 1]
-                          as SelectablePath)
-                      .path
-                      .lineTo(details.localFocalPoint.dx,
-                          details.localFocalPoint.dy);
-                  break;
-                case 1:
-                  (data.selectables[data.selectables.length - 1]
-                              as SelectableShape)
-                          .endPoint =
-                      Offset(details.localFocalPoint.dx,
-                          details.localFocalPoint.dy);
-                  break;
-                default:
-              }
-            } else if (details.scale != 1.0) {
-              //Scale
-              data.selectables[data.selectedIndex].isScale = true;
-              data.selectables[data.selectedIndex].scaleRadio =
-                  data.selectables[data.selectedIndex].lastScale *
-                      details.scale;
-              data.selectables[data.selectedIndex].tmpScale =
-                  data.selectables[data.selectedIndex].lastScale *
-                      details.scale;
-
-              //Rotation
-              data.selectables[data.selectedIndex].isRot = true;
-
-              data.selectables[data.selectedIndex].rotRadians =
-                  details.rotation +
-                      data.selectables[data.selectedIndex].lastAngle;
-              data.selectables[data.selectedIndex].tmpAngle = details.rotation +
-                  data.selectables[data.selectedIndex].lastAngle;
-            } else {
-              //Translate
-              data.selectables[data.selectedIndex].offset =
-                  details.localFocalPoint - lastPoint;
-
-              lastPoint = details.localFocalPoint;
-            }
-          });
-        },
-        onScaleEnd: (details) {
-          print('on scale end');
-          if (data.isSelectedMode) {
-            data.selectables[data.selectedIndex].lastScale =
-                data.selectables[data.selectedIndex].tmpScale;
-
-            data.selectables[data.selectedIndex].lastAngle =
-                data.selectables[data.selectedIndex].tmpAngle;
-
-            data.selectables[data.selectedIndex].offset = Offset.zero;
-          }
-          if (!data.isSelectedMode) {
-            data.setSelected(data.selectables.length - 1);
-          }
-        },
-        onDoubleTap: () => print('double tap'),
+        onTapDownCallback: (details) => data.handleTapDown(details),
+        onScaleStartCallback: (details) => data.handleScaleStart(details),
+        onScaleUpdateCallback: (details) => print('on SCALE update'),
+        onTapUpdateCallback: (details) => printsomething(details),
       ),
     );
+  }
+
+  printsomething(DragUpdateDetails details) {
+    print('some thing: ${details.globalPosition}');
   }
 }
 

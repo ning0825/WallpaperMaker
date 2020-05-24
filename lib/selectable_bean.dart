@@ -9,23 +9,22 @@ abstract class Selectable {
   Path selectedPath;
 
   Paint mPaint;
-  double tmpScale = 1.0;
+  double tmpScaleX = 1.0;
+  double tmpScaleY = 1.0;
   double tmpAngle = 0.0;
 
   bool isSelected = false;
   bool isRot = false;
   bool isTrans = false;
-  bool isScale = false;
 
   Offset offset = Offset(0, 0);
   double rotRadians = 0.0;
-  double scaleRadio = 1.0;
+  double scaleRadioX = 1.0;
+  double scaleRadioY = 1.0;
 
-  double lastScale = 1.0;
+  double lastScaleX = 1.0;
+  double lastScaleY = 1.0;
   double lastAngle = 0.0;
-
-  Offset ctrlTopStartPoint;
-  Offset ctrlTopEndPoint;
 
 //------------------Draw Controller------------------
   var controllerLength = 10;
@@ -34,22 +33,63 @@ abstract class Selectable {
   Rect topControlRect;
   Rect rightControlRect;
   Rect bottomControlRect;
+  Rect tlControlRect;
+  Rect trControlRect;
+  Rect blControlRect;
+  Rect brControlRect;
+
+  int currentControlPoint;
 
   ///todo
   Rect rightBottomControlRect;
+
+  Offset testPoint = Offset.zero;
 
   /// Return which controller user has touched.
   /// 0: left
   /// 1: top
   /// 2: right
   /// 3: bottom
+  /// 4: tl
+  /// 5: tr
+  /// 6: bl
+  /// 7: br
   /// -1: none
-  int hitTestControl(Offset offset) {
-    if (leftControlRect.contains(offset)) return 0;
-    if (topControlRect.contains(offset)) return 1;
-    if (rightControlRect.contains(offset)) return 2;
-    if (bottomControlRect.contains(offset)) return 3;
-    return -1;
+  bool hitTestControl(Offset offset) {
+    // if (leftControlRect.contains(offset)) {
+    //   currentControlPoint = 0;
+    //   return true;
+    // }
+    // if (topControlRect.contains(offset)) {
+    //   currentControlPoint = 1;
+    //   return true;
+    // }
+    // if (rightControlRect.contains(offset)) {
+    //   currentControlPoint = 2;
+    //   return true;
+    // }
+    // if (bottomControlRect.contains(offset)) {
+    //   currentControlPoint = 3;
+    //   return true;
+    // }
+    // if (tlControlRect.contains(offset)) {
+    //   currentControlPoint = 4;
+    //   return true;
+    // }
+    // if (trControlRect.contains(offset)) {
+    //   currentControlPoint = 5;
+    //   return true;
+    // }
+    // if (blControlRect.contains(offset)) {
+    //   currentControlPoint = 6;
+    //   return true;
+    // }
+    // if (brControlRect.contains(offset)) {
+    //   currentControlPoint = 7;
+    //   return true;
+    // }
+    testPoint = offset;
+    return topControlRect.contains(offset);
   }
 
   bool hitTest(Offset offset) => selectedPath.contains(offset);
@@ -59,8 +99,8 @@ abstract class Selectable {
   void drawSelected(Canvas canvas) {
     rect = Rect.fromCenter(
         center: rect.center,
-        width: rect.width * scaleRadio,
-        height: rect.height * scaleRadio);
+        width: rect.width * scaleRadioX,
+        height: rect.height * scaleRadioY);
 
     if (isSelected) {
       canvas.drawPath(
@@ -69,11 +109,61 @@ abstract class Selectable {
             ..color = Colors.grey
             ..strokeWidth = 2
             ..style = PaintingStyle.stroke);
-      canvas.drawLine(
-          ctrlTopStartPoint,
-          ctrlTopEndPoint,
+      canvas.drawOval(
+          leftControlRect,
           Paint()
             ..color = Colors.grey
+            ..strokeWidth = 4
+            ..style = PaintingStyle.stroke);
+      canvas.drawOval(
+          topControlRect,
+          Paint()
+            ..color = Colors.grey
+            ..strokeWidth = 4
+            ..style = PaintingStyle.stroke);
+      canvas.drawOval(
+          rightControlRect,
+          Paint()
+            ..color = Colors.grey
+            ..strokeWidth = 4
+            ..style = PaintingStyle.stroke);
+      canvas.drawOval(
+          bottomControlRect,
+          Paint()
+            ..color = Colors.grey
+            ..strokeWidth = 4
+            ..style = PaintingStyle.stroke);
+
+      canvas.drawOval(
+          tlControlRect,
+          Paint()
+            ..color = Colors.grey
+            ..strokeWidth = 4
+            ..style = PaintingStyle.stroke);
+      canvas.drawOval(
+          trControlRect,
+          Paint()
+            ..color = Colors.grey
+            ..strokeWidth = 4
+            ..style = PaintingStyle.stroke);
+      canvas.drawOval(
+          blControlRect,
+          Paint()
+            ..color = Colors.grey
+            ..strokeWidth = 4
+            ..style = PaintingStyle.stroke);
+      canvas.drawOval(
+          brControlRect,
+          Paint()
+            ..color = Colors.grey
+            ..strokeWidth = 4
+            ..style = PaintingStyle.stroke);
+
+      canvas.drawCircle(
+          testPoint,
+          10,
+          Paint()
+            ..color = Colors.red
             ..strokeWidth = 4
             ..style = PaintingStyle.stroke);
     }
@@ -113,20 +203,50 @@ abstract class Selectable {
     var newBLx = rect.center.dx - cos(c3) * r;
     var newBLy = rect.center.dy + sin(c3) * r;
 
+//CtlrLeft
+    var leftCenterPoint = Offset((newTLx + newBLx) / 2, (newTLy + newBLy) / 2);
+    leftControlRect =
+        Rect.fromCenter(center: leftCenterPoint, width: 20, height: 20);
+
+//CtlrTop
     var topCenterPoint = Offset((newTLx + newTRx) / 2, (newTLy + newTRy) / 2);
+    topControlRect =
+        Rect.fromCenter(center: topCenterPoint, width: 20, height: 20);
 
-    var ctlrTopStartX = topCenterPoint.dx -
-        (topCenterPoint.dx - newTLx) * controllerLength / (rect.width / 2);
-    var ctlrTopStartY = topCenterPoint.dy -
-        (topCenterPoint.dy - newTLy) * controllerLength / (rect.width / 2);
+//CtlrRight
+    var rightCenterPoint = Offset((newTRx + newBRx) / 2, (newTRy + newBRy) / 2);
+    rightControlRect =
+        Rect.fromCenter(center: rightCenterPoint, width: 20, height: 20);
 
-    var ctlrTopEndX = topCenterPoint.dx +
-        (topCenterPoint.dx - newTLx) * controllerLength / (rect.width / 2);
-    var ctlrTopEndY = topCenterPoint.dy +
-        (topCenterPoint.dy - newTLy) * controllerLength / (rect.width / 2);
+//CtlrBottom
+    var bottomCenterPoint =
+        Offset((newBLx + newBRx) / 2, (newBLy + newBRy) / 2);
+    bottomControlRect =
+        Rect.fromCenter(center: bottomCenterPoint, width: 20, height: 20);
 
-    ctrlTopStartPoint = Offset(ctlrTopStartX, ctlrTopStartY);
-    ctrlTopEndPoint = Offset(ctlrTopEndX, ctlrTopEndY);
+    tlControlRect =
+        Rect.fromCenter(center: Offset(newTLx, newTLy), width: 20, height: 20);
+    trControlRect =
+        Rect.fromCenter(center: Offset(newTRx, newTRy), width: 20, height: 20);
+    blControlRect =
+        Rect.fromCenter(center: Offset(newBLx, newBLy), width: 20, height: 20);
+    brControlRect =
+        Rect.fromCenter(center: Offset(newBRx, newBRy), width: 20, height: 20);
+
+    // var ctlrTopStartX = topCenterPoint.dx -
+    //     (topCenterPoint.dx - newTLx) * controllerLength / (rect.width / 2);
+    // var ctlrTopStartY = topCenterPoint.dy -
+    //     (topCenterPoint.dy - newTLy) * controllerLength / (rect.width / 2);
+
+    // var ctlrTopEndX = topCenterPoint.dx +
+    //     (topCenterPoint.dx - newTLx) * controllerLength / (rect.width / 2);
+    // var ctlrTopEndY = topCenterPoint.dy +
+    //     (topCenterPoint.dy - newTLy) * controllerLength / (rect.width / 2);
+
+    // ctrlTopStartPoint = Offset(ctlrTopStartX, ctlrTopStartY);
+    // ctrlTopEndPoint = Offset(ctlrTopEndX, ctlrTopEndY);
+    // topControlRect =
+    //     Rect.fromCenter(center: topCenterPoint, width: 20, height: 20);
 
     return Path()
       ..moveTo(newTLx, newTLy)
@@ -170,12 +290,12 @@ class SelectableText extends Selectable {
     tp.layout(maxWidth: 30);
     rect = Rect.fromCenter(
         center: totalOffset, width: tp.width, height: tp.height);
-    selectedPath = toPath(rect, rotRadians, scaleRadio, scaleRadio);
+    selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
 
     canvas.save();
     canvas.translate(rect.center.dx, rect.center.dy);
     canvas.rotate(rotRadians);
-    canvas.scale(scaleRadio);
+    canvas.scale(scaleRadioX, scaleRadioY);
     canvas.translate(-rect.center.dx, -rect.center.dy);
     tp.paint(
         canvas, totalOffset - Offset(tp.size.width / 2, tp.size.height / 2));
@@ -197,11 +317,11 @@ class SelectableImage extends Selectable {
         center: totalOffset,
         width: img.width.toDouble(),
         height: img.height.toDouble());
-    selectedPath = toPath(rect, rotRadians, scaleRadio, scaleRadio);
+    selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
     canvas.save();
     canvas.translate(rect.center.dx, rect.center.dy);
     canvas.rotate(rotRadians);
-    canvas.scale(scaleRadio);
+    canvas.scale(scaleRadioX, scaleRadioY);
     canvas.translate(-rect.center.dx, -rect.center.dy);
     //TODO: Too small rect will cause pixel compression.
     paintImage(canvas: canvas, rect: rect, image: img);
@@ -239,11 +359,11 @@ class SelectableShape extends Selectable {
     rect = Rect.fromPoints(
             startPoint + totalOffset * 2, endPoint + totalOffset * 2)
         .inflate(10);
-    selectedPath = toPath(rect, rotRadians, scaleRadio, scaleRadio);
+    selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
     canvas.save();
     canvas.translate(rect.center.dx, rect.center.dy);
     canvas.rotate(rotRadians);
-    canvas.scale(scaleRadio);
+    canvas.scale(scaleRadioX, scaleRadioY);
     canvas.translate(-rect.center.dx, -rect.center.dy);
 
     switch (shapeType) {
@@ -305,11 +425,11 @@ class SelectablePath extends Selectable {
     canvas.translate(path.getBounds().center.dx, path.getBounds().center.dy);
     canvas.rotate(rotRadians);
 
-    canvas.scale(scaleRadio);
+    canvas.scale(scaleRadioX, scaleRadioY);
     canvas.translate(-path.getBounds().center.dx, -path.getBounds().center.dy);
     canvas.drawPath(path, mPaint);
     canvas.restore();
     rect = path.getBounds();
-    selectedPath = toPath(rect, rotRadians, scaleRadio, scaleRadio);
+    selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
   }
 }

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart' hide SelectableText;
 import 'package:flutter/rendering.dart';
 import 'package:wallpaper_maker/configuration.dart';
@@ -34,10 +33,20 @@ class ConfigWidgetState extends State<ConfigWidget> {
   //size of stage area.
   Size stageSize;
 
+  int currentMainTool = 0;
+
+  bool isScaling = false;
+
   // void rebuildAll(Element el) {
   //   el.markNeedsBuild();
   //   el.visitChildren(rebuildAll);
   // }
+
+  setCurrentMainTool(int index) {
+    setState(() {
+      currentMainTool = index;
+    });
+  }
 
   //---------------------------------------------------------------------------------
   //Selectable
@@ -54,6 +63,22 @@ class ConfigWidgetState extends State<ConfigWidget> {
       selectedIndex = index;
       currentSelectable = selectables[index];
       currentSelectable.isSelected = true;
+
+      switch (currentSelectable.runtimeType.toString()) {
+        case 'SelectablePath':
+          currentMainTool = 0;
+          break;
+        case 'SelectableShape':
+          currentMainTool = 1;
+          break;
+        case 'SelectableText':
+          currentMainTool = 2;
+          break;
+        case 'SelectableImage':
+          currentMainTool = 3;
+          break;
+        default:
+      }
     });
     // (context as Element).visitChildren(rebuildAll);
   }
@@ -99,13 +124,13 @@ class ConfigWidgetState extends State<ConfigWidget> {
   //---------------------------------------------------------------------------------
   setLeftAlign() {
     setState(() {
-          _setAlign(Offset(-currentSelectable.rect.left, 0.0));
+      _setAlign(Offset(-currentSelectable.rect.left, 0.0));
     });
   }
 
   setTopAlign() {
     setState(() {
-          _setAlign(Offset(0.0, -currentSelectable.rect.top));
+      _setAlign(Offset(0.0, -currentSelectable.rect.top));
     });
   }
 
@@ -117,30 +142,34 @@ class ConfigWidgetState extends State<ConfigWidget> {
 
   setBottomAlign() {
     setState(() {
-          _setAlign(Offset(0.0, size.height - currentSelectable.rect.bottom));
+      _setAlign(Offset(0.0, size.height - currentSelectable.rect.bottom));
     });
   }
 
-  setCenterHorizonAlign(){
+  setCenterHorizonAlign() {
     setState(() {
-      _setAlign(Offset(size.width/2 - currentSelectable.rect.center.dx, 0.0));
+      _setAlign(Offset(size.width / 2 - currentSelectable.rect.center.dx, 0.0));
     });
   }
 
-  setCenterVerticalAlign(){
+  setCenterVerticalAlign() {
     setState(() {
-      _setAlign(Offset(0.0, size.height/2 - currentSelectable.rect.center.dy));
+      _setAlign(
+          Offset(0.0, size.height / 2 - currentSelectable.rect.center.dy));
     });
   }
 
-  _setAlign(Offset transOffset){
-if (currentSelectable.runtimeType.toString() == 'SelectablePath') {
-            (currentSelectable as SelectablePath).path = (currentSelectable as SelectablePath).path.shift(transOffset);
-          }
-          if (currentSelectable.runtimeType.toString() == 'SelectableShape') {
-            (currentSelectable as SelectableShape).startPoint = (currentSelectable as SelectableShape).startPoint + transOffset;
-            (currentSelectable as SelectableShape).endPoint = (currentSelectable as SelectableShape).endPoint + transOffset;
-          }
+  _setAlign(Offset transOffset) {
+    if (currentSelectable.runtimeType.toString() == 'SelectablePath') {
+      (currentSelectable as SelectablePath).path =
+          (currentSelectable as SelectablePath).path.shift(transOffset);
+    }
+    if (currentSelectable.runtimeType.toString() == 'SelectableShape') {
+      (currentSelectable as SelectableShape).startPoint =
+          (currentSelectable as SelectableShape).startPoint + transOffset;
+      (currentSelectable as SelectableShape).endPoint =
+          (currentSelectable as SelectableShape).endPoint + transOffset;
+    }
   }
 
   //---------------------------------------------------------------------------------
@@ -225,12 +254,6 @@ if (currentSelectable.runtimeType.toString() == 'SelectablePath') {
   }
 
   setPenWidth(double width) {
-    // setit() {
-    //   setState(() {
-    //     ;
-    //   });
-    // }
-
     setState(() {
       isSelectedMode
           ? (currentSelectable as SelectablePath).mPaint.strokeWidth = width
@@ -396,6 +419,133 @@ if (currentSelectable.runtimeType.toString() == 'SelectablePath') {
     return isSelectedMode
         ? (currentSelectable as SelectableText).textWeight
         : config.typoWeight.round();
+  }
+
+  var lastPoint;
+
+  handleTapDown(TapDownDetails details) {
+    print('on tap down');
+  }
+
+  handleScaleStart(ScaleStartDetails details) {
+    if (isSelectedMode) {
+      if (currentSelectable.hitTestControl(details.localFocalPoint)) {
+        isScaling = true;
+      }
+      lastPoint = details.localFocalPoint;
+      return;
+    }
+
+    switch (config.currentMode) {
+      case 0:
+        selectables.add(
+          SelectablePath(
+              Path()
+                ..moveTo(
+                    details.localFocalPoint.dx, details.localFocalPoint.dy),
+              getCurrentPen()),
+        );
+        break;
+      case 1:
+        selectables.add(SelectableShape(
+            Offset(details.localFocalPoint.dx, details.localFocalPoint.dy),
+            config.shapeType,
+            getCurrentShape()));
+        break;
+
+      default:
+    }
+  }
+
+  handleScaleUpdate(ScaleUpdateDetails details) {
+    setState(() {
+      if (!isSelectedMode) {
+        switch (config.currentMode) {
+          case 0:
+            (selectables[selectables.length - 1] as SelectablePath)
+                .path
+                .lineTo(details.localFocalPoint.dx, details.localFocalPoint.dy);
+            break;
+          case 1:
+            (selectables[selectables.length - 1] as SelectableShape).endPoint =
+                Offset(details.localFocalPoint.dx, details.localFocalPoint.dy);
+            break;
+          default:
+        }
+      } else if (details.scale != 1.0) {
+        //Scale
+        currentSelectable.scaleRadioX =
+            currentSelectable.lastScaleX * details.scale;
+        currentSelectable.scaleRadioY =
+            currentSelectable.lastScaleY * details.scale;
+        currentSelectable.tmpScaleX =
+            currentSelectable.lastScaleX * details.scale;
+        currentSelectable.tmpScaleY =
+            currentSelectable.lastScaleY * details.scale;
+
+        //Rotation
+        currentSelectable.isRot = true;
+
+        currentSelectable.rotRadians =
+            details.rotation + currentSelectable.lastAngle;
+        currentSelectable.tmpAngle =
+            details.rotation + currentSelectable.lastAngle;
+      } else {
+        //Translate
+        currentSelectable.offset = details.localFocalPoint - lastPoint;
+
+        lastPoint = details.localFocalPoint;
+      }
+    });
+  }
+
+  handleScaleEnd(ScaleEndDetails details) {
+    if (isSelectedMode) {
+      currentSelectable.lastScaleX = currentSelectable.tmpScaleX;
+      currentSelectable.lastScaleY = currentSelectable.tmpScaleY;
+
+      currentSelectable.lastAngle = currentSelectable.tmpAngle;
+
+      currentSelectable.offset = Offset.zero;
+
+      if (isScaling) isScaling = false;
+    }
+    if (!isSelectedMode) {
+      setSelected(selectables.length - 1);
+    }
+  }
+
+  handleTapUp(TapUpDetails details) {
+    var offset = Offset(details.localPosition.dx, details.localPosition.dy);
+    var newSelectables = selectables.reversed;
+
+    var selectDone = false;
+
+    for (var i = 0; i < newSelectables.length; i++) {
+      var item = newSelectables.elementAt(i);
+
+      if (selectDone) {
+        setState(() {
+          item.isSelected = false;
+        });
+      } else if (item.hitTest(offset)) {
+        if (item.runtimeType.toString() == 'SelectableText' &&
+            item.isSelected) {}
+        setState(() {
+          setSelected(newSelectables.length - 1 - i);
+        });
+        selectDone = true;
+      } else {
+        setState(() {
+          item.isSelected = false;
+        });
+      }
+    }
+
+    //All selectables failed in hittest.
+    if (!selectDone && isSelectedMode) {
+      setUnselected();
+    }
   }
 
   @override

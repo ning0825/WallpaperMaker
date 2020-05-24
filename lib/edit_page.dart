@@ -63,6 +63,7 @@ class _EditHomeState extends State<EditHome> {
   @override
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
+    currentMainToolIndex = data.currentMainTool;
 
     return Scaffold(
       backgroundColor: Colors.grey[200],
@@ -94,13 +95,12 @@ class _EditHomeState extends State<EditHome> {
                 iconAsset: 'pen',
                 callback: () {
                   setState(() {
-                    currentMainToolIndex = 0;
+                    data.setCurrentMainTool(0);
                     if (data.isSelectedMode) {
                       data.setUnselected();
                     }
                   });
                   data.config.currentMode = 0;
-                  currentToolWidget = currentTools = PenToolWidget();
                 },
               ),
               _BuildMainTool(
@@ -108,7 +108,7 @@ class _EditHomeState extends State<EditHome> {
                 iconAsset: 'geometry',
                 callback: () {
                   setState(() {
-                    currentMainToolIndex = 1;
+                    data.setCurrentMainTool(1);
                     data.config.currentMode = 1;
                     if (data.isSelectedMode) {
                       data.setUnselected();
@@ -122,7 +122,7 @@ class _EditHomeState extends State<EditHome> {
                 iconAsset: 'typo',
                 callback: () {
                   setState(() {
-                    currentMainToolIndex = 2;
+                    data.setCurrentMainTool(2);
                     data.config.currentMode = 2;
                     if (data.isSelectedMode) {
                       data.setUnselected();
@@ -136,7 +136,7 @@ class _EditHomeState extends State<EditHome> {
                 iconAsset: 'image',
                 callback: () {
                   setState(() {
-                    currentMainToolIndex = 3;
+                    data.setCurrentMainTool(3);
                     data.config.currentMode = 3;
                     if (data.isSelectedMode) {
                       data.setUnselected();
@@ -152,7 +152,7 @@ class _EditHomeState extends State<EditHome> {
               children: <Widget>[
                 _buildGenericTool(),
                 Expanded(
-                  child: currentToolWidget,
+                  child: _getCurrentToolWidget(),
                 )
               ],
             ),
@@ -160,6 +160,20 @@ class _EditHomeState extends State<EditHome> {
         ],
       ),
     );
+  }
+
+  _getCurrentToolWidget() {
+    switch (currentMainToolIndex) {
+      case 0:
+        return PenToolWidget();
+      case 1:
+        return ShapeToolWidget();
+      case 2:
+        return TypoToolWidget();
+      case 3:
+        return ImageTool(data: data);
+      default:
+    }
   }
 
   ///add/undo/align/rotate/clean/save
@@ -981,7 +995,6 @@ class _AlignToolState extends State<AlignTool> {
           RawMaterialButton(
             constraints: BoxConstraints(maxWidth: 30),
             onPressed: () {
-              print('set left align');
               setState(() {
                 data.stageSize = stageKey.currentContext.size;
                 data.setLeftAlign();
@@ -1021,7 +1034,7 @@ class _AlignToolState extends State<AlignTool> {
             },
             child: Text('centerH'),
           ),
-        RaisedButton(
+          RaisedButton(
             onPressed: () {
               setState(() {
                 data.setCenterVerticalAlign();
@@ -1029,7 +1042,6 @@ class _AlignToolState extends State<AlignTool> {
             },
             child: Text('centerV'),
           ),
-        
         ],
       ),
     );
