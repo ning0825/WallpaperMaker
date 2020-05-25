@@ -11,6 +11,8 @@ enum TapState {
 class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
   GestureTapDownCallback onTapDownCallback;
   GestureDragUpdateCallback onUpdateCallback;
+  PanGestureRecognizer test;
+  RaisedButton button;
 
   List<int> pointerList;
 
@@ -19,15 +21,7 @@ class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
   Offset currentPosition;
 
   @override
-  void addPointer(PointerDownEvent event) {
-    // TODO: implement addPointer
-    super.addPointer(event);
-    print('add pointer');
-  }
-
-  @override
   void addAllowedPointer(PointerDownEvent event) {
-    print('add allowed pointer: ${event.localPosition.toString()}');
     startTrackingPointer(event.pointer);
     if (state == TapState.idle) {
       pointerList = [];
@@ -36,22 +30,22 @@ class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
 
   @override
   void startTrackingPointer(int pointer, [Matrix4 transform]) {
-    print('start tracking pointer');
     super.startTrackingPointer(pointer, transform);
   }
 
   @override
   void handleEvent(PointerEvent event) {
+    print('handle event');
     currentPosition = event.localPosition;
     if (event is PointerDownEvent) {
+      ///test
+      resolve(GestureDisposition.rejected);
       pointerList.add(event.pointer);
       if (state == TapState.idle) {
-        Timer(Duration(milliseconds: 100), () => resolveIfNeeded());
+        Timer(Duration(milliseconds: 10), () => resolveIfNeeded());
         state = TapState.onePointer;
+        invokeCallback('tapDown', () => onTapDownCallback(TapDownDetails()));
       }
-    }
-    if (event is PointerDownEvent) {
-      invokeCallback('tapDown', () => onTapDownCallback(TapDownDetails()));
     }
     if (state == TapState.onePointer) {
       invokeCallback(
@@ -76,10 +70,10 @@ class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
   resolveIfNeeded() {
     print('resolveIfNeeded: Length: ${pointerList.length}');
     if (pointerList.length < 2) {
-      resolve(GestureDisposition.accepted);
+      resolve(GestureDisposition.rejected);
       pointerList.clear();
     } else {
-      // didStopTrackingLastPointer(0);
+      resolve(GestureDisposition.rejected);
     }
   }
 
