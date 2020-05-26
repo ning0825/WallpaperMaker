@@ -38,13 +38,6 @@ abstract class Selectable {
   Rect blControlRect;
   Rect brControlRect;
 
-  int currentControlPoint;
-
-  ///todo
-  Rect rightBottomControlRect;
-
-  Offset testPoint = Offset.zero;
-
   /// Return which controller user has touched.
   /// 0: left
   /// 1: top
@@ -55,41 +48,50 @@ abstract class Selectable {
   /// 6: bl
   /// 7: br
   /// -1: none
+  int currentControlPoint;
+
+  ///down 事件命中某个控制点
+  bool isCtrling;
+
+  ///todo
+  Rect rightBottomControlRect;
+
+  Offset testPoint = Offset.zero;
+
   bool hitTestControl(Offset offset) {
-    // if (leftControlRect.contains(offset)) {
-    //   currentControlPoint = 0;
-    //   return true;
-    // }
-    // if (topControlRect.contains(offset)) {
-    //   currentControlPoint = 1;
-    //   return true;
-    // }
-    // if (rightControlRect.contains(offset)) {
-    //   currentControlPoint = 2;
-    //   return true;
-    // }
-    // if (bottomControlRect.contains(offset)) {
-    //   currentControlPoint = 3;
-    //   return true;
-    // }
-    // if (tlControlRect.contains(offset)) {
-    //   currentControlPoint = 4;
-    //   return true;
-    // }
-    // if (trControlRect.contains(offset)) {
-    //   currentControlPoint = 5;
-    //   return true;
-    // }
-    // if (blControlRect.contains(offset)) {
-    //   currentControlPoint = 6;
-    //   return true;
-    // }
-    // if (brControlRect.contains(offset)) {
-    //   currentControlPoint = 7;
-    //   return true;
-    // }
-    testPoint = offset;
-    return topControlRect.contains(offset);
+    if (leftControlRect.contains(offset)) {
+      currentControlPoint = 0;
+      return true;
+    }
+    if (topControlRect.contains(offset)) {
+      currentControlPoint = 1;
+      return true;
+    }
+    if (rightControlRect.contains(offset)) {
+      currentControlPoint = 2;
+      return true;
+    }
+    if (bottomControlRect.contains(offset)) {
+      currentControlPoint = 3;
+      return true;
+    }
+    if (tlControlRect.contains(offset)) {
+      currentControlPoint = 4;
+      return true;
+    }
+    if (trControlRect.contains(offset)) {
+      currentControlPoint = 5;
+      return true;
+    }
+    if (blControlRect.contains(offset)) {
+      currentControlPoint = 6;
+      return true;
+    }
+    if (brControlRect.contains(offset)) {
+      currentControlPoint = 7;
+      return true;
+    }
+    return false;
   }
 
   bool hitTest(Offset offset) => selectedPath.contains(offset);

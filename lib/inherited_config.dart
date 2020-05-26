@@ -424,54 +424,102 @@ class ConfigWidgetState extends State<ConfigWidget> {
   var lastPoint;
 
   handleTapDown(TapDownDetails details) {
-    print('on tap down');
+    print('handle tap down');
+    if (isSelectedMode) {
+      currentSelectable.isCtrling =
+          currentSelectable.hitTestControl(details.localPosition);
+    } else {
+      switch (config.currentMode) {
+        case 0:
+          selectables.add(
+            SelectablePath(
+                Path()
+                  ..moveTo(details.localPosition.dx, details.localPosition.dy),
+                getCurrentPen()),
+          );
+          break;
+        case 1:
+          selectables.add(SelectableShape(
+              Offset(details.localPosition.dx, details.localPosition.dy),
+              config.shapeType,
+              getCurrentShape()));
+          break;
+
+        default:
+      }
+    }
   }
 
-  handleScaleStart(ScaleStartDetails details) {
-    if (isSelectedMode) {
-      if (currentSelectable.hitTestControl(details.localFocalPoint)) {
-        isScaling = true;
+  double tempSize = 0;
+  handleTapUpdate(DragUpdateDetails details) {
+    print('handle tap update');
+    setState(() {
+      if (isSelectedMode) {
+        print('is selected mode');
+        var ctrlIndex = currentSelectable.currentControlPoint;
+        print('ctrlIndex is $ctrlIndex');
+        switch (ctrlIndex) {
+          case 0:
+            print('ctrl index is 0');
+            tempSize = currentSelectable.rect.width;
+            var ratio =
+                (currentSelectable.rect.right - details.localPosition.dx) /
+                    tempSize;
+            var trans = (tempSize - tempSize * ratio) / 2;
+            // currentSelectable.offset =
+            //     currentSelectable.offset + Offset(trans, 0.0);
+            currentSelectable.offset = Offset(details.delta.dx, 0.0);
+            currentSelectable.scaleRadioX = ratio;
+            break;
+          case 1:
+            break;
+          case 2:
+            break;
+          case 3:
+            break;
+          case 4:
+            break;
+          case 5:
+            break;
+          case 6:
+            break;
+          case 7:
+            break;
+          default:
+        }
+      } else {
+        switch (config.currentMode) {
+          case 0:
+            print('case 0');
+            (selectables[selectables.length - 1] as SelectablePath)
+                .path
+                .lineTo(details.localPosition.dx, details.localPosition.dy);
+            break;
+          case 1:
+            print('case 1');
+            (selectables[selectables.length - 1] as SelectableShape).endPoint =
+                Offset(details.localPosition.dx, details.localPosition.dy);
+            break;
+          default:
+        }
       }
-      lastPoint = details.localFocalPoint;
-      return;
-    }
+    });
+  }
 
-    switch (config.currentMode) {
-      case 0:
-        selectables.add(
-          SelectablePath(
-              Path()
-                ..moveTo(
-                    details.localFocalPoint.dx, details.localFocalPoint.dy),
-              getCurrentPen()),
-        );
-        break;
-      case 1:
-        selectables.add(SelectableShape(
-            Offset(details.localFocalPoint.dx, details.localFocalPoint.dy),
-            config.shapeType,
-            getCurrentShape()));
-        break;
+  handleTapEnd() {}
 
-      default:
-    }
+  handleScaleStart(ScaleStartDetails details) {
+    // if (isSelectedMode) {
+    //   if (currentSelectable.hitTestControl(details.localFocalPoint)) {
+    //     isScaling = true;
+    //   }
+    //   lastPoint = details.localFocalPoint;
+    // }
   }
 
   handleScaleUpdate(ScaleUpdateDetails details) {
     setState(() {
       if (!isSelectedMode) {
-        switch (config.currentMode) {
-          case 0:
-            (selectables[selectables.length - 1] as SelectablePath)
-                .path
-                .lineTo(details.localFocalPoint.dx, details.localFocalPoint.dy);
-            break;
-          case 1:
-            (selectables[selectables.length - 1] as SelectableShape).endPoint =
-                Offset(details.localFocalPoint.dx, details.localFocalPoint.dy);
-            break;
-          default:
-        }
       } else if (details.scale != 1.0) {
         //Scale
         currentSelectable.scaleRadioX =
@@ -516,6 +564,8 @@ class ConfigWidgetState extends State<ConfigWidget> {
   }
 
   handleTapUp(TapUpDetails details) {
+    print('handle tap up');
+    selectables.removeLast();
     var offset = Offset(details.localPosition.dx, details.localPosition.dy);
     var newSelectables = selectables.reversed;
 

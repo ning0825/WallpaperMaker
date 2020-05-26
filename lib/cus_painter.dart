@@ -34,24 +34,6 @@ class _CanvasPanelState extends State<CanvasPanel> {
 
     return Container(
       color: Colors.amber,
-      // child: GestureDetector(
-      //   child: RepaintBoundary(
-      //     key: widget.rKey,
-      //     child: CustomPaint(
-      //       size: data.size,
-      //       painter: MyCanvas(data: data),
-      //     ),
-      //   ),
-      //   onTapUp: (details) => data.handleTapUp(details),
-      //   onScaleStart: (details) {
-      //     data.handleScaleStart(details);
-      //   },
-      //   onScaleUpdate: (details) {
-      //     data.handleScaleUpdate(details);
-      //   },
-      //   onScaleEnd: (details) => data.handleScaleEnd(details),
-      //   onTapDown: (details) => data.handleTapDown(details),
-      // ),
       child: CanvasGestureDetector(
         child: RepaintBoundary(
           key: widget.rKey,
@@ -61,10 +43,12 @@ class _CanvasPanelState extends State<CanvasPanel> {
           ),
         ),
         onTapDownCallback: (details) => data.handleTapDown(details),
-        onScaleStartCallback: (details) => data.handleScaleStart(details),
-        onScaleUpdateCallback: (details) => print('on SCALE update'),
-        onTapUpdateCallback: (details) =>
-            print('on TAP update: ${details.toString()}'),
+        onDragUpdateCallback: (details) => data.handleTapUpdate(details),
+        ondragEndCallback: (details) => print('on tap end'),
+        onScaleStartCallback: (details) => print('on scale start callback'),
+        onScaleUpdateCallback: (details) => print('on scale update callback'),
+        onScaleEndCallback: (details) => print('on scale end callback'),
+        onTapUpCallback: (details) => data.handleTapUp(details),
       ),
     );
   }

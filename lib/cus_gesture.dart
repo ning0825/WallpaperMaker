@@ -9,73 +9,48 @@ enum TapState {
 }
 
 class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
-  GestureTapDownCallback onTapDownCallback;
-  GestureDragUpdateCallback onUpdateCallback;
-  PanGestureRecognizer test;
-  RaisedButton button;
-
-  List<int> pointerList;
+  GestureTapDownCallback onDown;
+  GestureDragUpdateCallback onUpdate;
+  GestureDragEndCallback onEnd;
 
   TapState state = TapState.idle;
 
-  Offset currentPosition;
+  Offset currentLocalPosition;
+  Offset currentGlobalPosition;
 
   @override
   void addAllowedPointer(PointerDownEvent event) {
-    startTrackingPointer(event.pointer);
-    if (state == TapState.idle) {
-      pointerList = [];
-    }
-  }
-
-  @override
-  void startTrackingPointer(int pointer, [Matrix4 transform]) {
-    super.startTrackingPointer(pointer, transform);
+    startTrackingPointer(event.pointer, event.transform);
   }
 
   @override
   void handleEvent(PointerEvent event) {
-    print('handle event');
-    currentPosition = event.localPosition;
+    currentGlobalPosition = event.position;
+    currentLocalPosition =
+        PointerEvent.transformPosition(event.transform, currentGlobalPosition);
+    var localDelta = PointerEvent.transformDeltaViaPositions(
+        untransformedEndPosition: event.position,
+        untransformedDelta: event.delta,
+        transform: event.transform);
     if (event is PointerDownEvent) {
-      ///test
-      resolve(GestureDisposition.rejected);
-      pointerList.add(event.pointer);
-      if (state == TapState.idle) {
-        Timer(Duration(milliseconds: 10), () => resolveIfNeeded());
-        state = TapState.onePointer;
-        invokeCallback('tapDown', () => onTapDownCallback(TapDownDetails()));
-      }
+      invokeCallback('on tap down',
+          () => onDown(TapDownDetails(localPosition: currentLocalPosition)));
     }
-    if (state == TapState.onePointer) {
+    if (event is PointerMoveEvent) {
       invokeCallback(
-          'tap update',
-          () => onUpdateCallback(
-              DragUpdateDetails(globalPosition: currentPosition)));
+        'on tap update',
+        () => onUpdate(
+          DragUpdateDetails(
+              localPosition: currentLocalPosition,
+              globalPosition: event.position,
+              delta: localDelta),
+        ),
+      );
     }
   }
 
   @override
-  void acceptGesture(int pointer) {
-    print('accept gesture');
-    pointerList.clear();
-  }
-
-  @override
-  void didStopTrackingLastPointer(int pointer) {
-    state = TapState.idle;
-    pointerList.clear();
-  }
-
-  resolveIfNeeded() {
-    print('resolveIfNeeded: Length: ${pointerList.length}');
-    if (pointerList.length < 2) {
-      resolve(GestureDisposition.rejected);
-      pointerList.clear();
-    } else {
-      resolve(GestureDisposition.rejected);
-    }
-  }
+  void didStopTrackingLastPointer(int pointer) {}
 
   @override
   String get debugDescription => throw UnimplementedError();
@@ -83,9 +58,12 @@ class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
 
 class CanvasGestureDetector extends StatelessWidget {
   final GestureTapDownCallback onTapDownCallback;
-  final GestureDragUpdateCallback onTapUpdateCallback;
+  final GestureDragUpdateCallback onDragUpdateCallback;
+  final GestureDragEndCallback ondragEndCallback;
   final GestureScaleStartCallback onScaleStartCallback;
   final GestureScaleUpdateCallback onScaleUpdateCallback;
+  final GestureScaleEndCallback onScaleEndCallback;
+  final GestureTapUpCallback onTapUpCallback;
 
   final Widget child;
 
@@ -93,21 +71,31 @@ class CanvasGestureDetector extends StatelessWidget {
       {this.child,
       this.onScaleStartCallback,
       this.onScaleUpdateCallback,
+      this.onScaleEndCallback,
       this.onTapDownCallback,
-      this.onTapUpdateCallback});
+      this.onDragUpdateCallback,
+      this.ondragEndCallback,
+      this.onTapUpCallback});
 
   @override
   Widget build(BuildContext context) {
     final Map<Type, GestureRecognizerFactory> gestures =
         <Type, GestureRecognizerFactory>{};
 
+    gestures[TapGestureRecognizer] =
+        GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+            () => TapGestureRecognizer(), (TapGestureRecognizer instance) {
+      instance..onTapUp = onTapUpCallback;
+    });
+
     gestures[CanvasGestureRecognizer] =
         GestureRecognizerFactoryWithHandlers<CanvasGestureRecognizer>(
             () => CanvasGestureRecognizer(),
             (CanvasGestureRecognizer instance) {
       instance
-        ..onTapDownCallback = onTapDownCallback
-        ..onUpdateCallback = onTapUpdateCallback;
+        ..onDown = onTapDownCallback
+        ..onUpdate = onDragUpdateCallback
+        ..onEnd = ondragEndCallback;
     });
 
     gestures[ScaleGestureRecognizer] =
@@ -115,8 +103,10 @@ class CanvasGestureDetector extends StatelessWidget {
             () => ScaleGestureRecognizer(), (ScaleGestureRecognizer instance) {
       instance
         ..onStart = onScaleStartCallback
-        ..onUpdate = onScaleUpdateCallback;
+        ..onUpdate = onScaleUpdateCallback
+        ..onEnd = onScaleEndCallback;
     });
+
     return RawGestureDetector(
       gestures: gestures,
       child: child,
