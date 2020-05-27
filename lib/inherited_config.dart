@@ -452,24 +452,15 @@ class ConfigWidgetState extends State<ConfigWidget> {
 
   double tempSize = 0;
   handleTapUpdate(DragUpdateDetails details) {
-    print('handle tap update');
     setState(() {
       if (isSelectedMode) {
-        print('is selected mode');
         var ctrlIndex = currentSelectable.currentControlPoint;
-        print('ctrlIndex is $ctrlIndex');
         switch (ctrlIndex) {
           case 0:
-            print('ctrl index is 0');
-            tempSize = currentSelectable.rect.width;
-            var ratio =
-                (currentSelectable.rect.right - details.localPosition.dx) /
-                    tempSize;
-            var trans = (tempSize - tempSize * ratio) / 2;
-            // currentSelectable.offset =
-            //     currentSelectable.offset + Offset(trans, 0.0);
-            currentSelectable.offset = Offset(details.delta.dx, 0.0);
-            currentSelectable.scaleRadioX = ratio;
+            if (currentSelectable is SelectableShape) {
+              (currentSelectable as SelectableShape).startPointOffset =
+                  Offset(details.delta.dx, 0.0);
+            }
             break;
           case 1:
             break;
@@ -548,6 +539,7 @@ class ConfigWidgetState extends State<ConfigWidget> {
   }
 
   handleScaleEnd(ScaleEndDetails details) {
+    print('handle scale end');
     if (isSelectedMode) {
       currentSelectable.lastScaleX = currentSelectable.tmpScaleX;
       currentSelectable.lastScaleY = currentSelectable.tmpScaleY;

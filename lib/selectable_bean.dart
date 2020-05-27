@@ -341,12 +341,28 @@ class SelectableShape extends Selectable {
 
   Offset totalOffset;
 
+  ///用户开始绘制时的点
+  Offset startPointOffset;
+
+  ///用户结束绘制时的点（绘制时在Draw中更新）
+  Offset endPointOffset;
+
+  Offset topLeftPoint;
+  Offset bottomRightPoint;
+
+  Offset totalTPOffset;
+  Offset totalBROffset;
+
   bool fill;
   Paint fillPaint;
 
   SelectableShape(this.startPoint, this.shapeType, Paint paint)
       : totalOffset = Offset.zero,
-        endPoint = startPoint {
+        endPoint = startPoint,
+        startPointOffset = Offset.zero,
+        endPointOffset = Offset.zero,
+        totalTPOffset = Offset.zero,
+        totalBROffset = Offset.zero {
     fill = false;
     mPaint = paint;
     fillPaint = Paint()
@@ -355,11 +371,17 @@ class SelectableShape extends Selectable {
   }
 
   @override
-  void draw(Canvas canvas) {
-    totalOffset = offset + totalOffset;
+  void drawSelected(Canvas canvas) {
+    super.drawSelected(canvas);
+  }
 
-    rect = Rect.fromPoints(
-            startPoint + totalOffset * 2, endPoint + totalOffset * 2)
+  @override
+  void draw(Canvas canvas) {
+    // totalOffset = offset + totalOffset;
+    totalSpOffset = totalSpOffset + startPointOffset;
+    totalEpOffset = totalEpOffset + endPointOffset;
+
+    rect = Rect.fromPoints(startPoint + totalSpOffset, endPoint + totalEpOffset)
         .inflate(10);
     selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
     canvas.save();
@@ -426,7 +448,6 @@ class SelectablePath extends Selectable {
     canvas.save();
     canvas.translate(path.getBounds().center.dx, path.getBounds().center.dy);
     canvas.rotate(rotRadians);
-
     canvas.scale(scaleRadioX, scaleRadioY);
     canvas.translate(-path.getBounds().center.dx, -path.getBounds().center.dy);
     canvas.drawPath(path, mPaint);
