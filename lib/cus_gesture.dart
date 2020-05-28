@@ -47,6 +47,9 @@ class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
         ),
       );
     }
+    if (event is PointerUpEvent) {
+      invokeCallback('on tap end', () => onEnd(DragEndDetails()));
+    }
   }
 
   @override

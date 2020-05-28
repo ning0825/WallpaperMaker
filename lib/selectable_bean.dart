@@ -38,6 +38,9 @@ abstract class Selectable {
   Rect blControlRect;
   Rect brControlRect;
 
+  Offset leftCtrlStart;
+  Offset leftCtrlEnd;
+
   /// Return which controller user has touched.
   /// 0: left
   /// 1: top
@@ -94,6 +97,16 @@ abstract class Selectable {
     return false;
   }
 
+  Paint _selectedPaint = Paint()
+    ..color = Colors.black
+    ..strokeWidth = 2
+    ..style = PaintingStyle.stroke;
+
+  Paint _ctrlPaint = Paint()
+    ..color = Colors.black
+    ..strokeWidth = 5
+    ..style = PaintingStyle.stroke;
+
   bool hitTest(Offset offset) => selectedPath.contains(offset);
 
   void draw(Canvas canvas);
@@ -105,69 +118,10 @@ abstract class Selectable {
         height: rect.height * scaleRadioY);
 
     if (isSelected) {
-      canvas.drawPath(
-          selectedPath,
-          Paint()
-            ..color = Colors.grey
-            ..strokeWidth = 2
-            ..style = PaintingStyle.stroke);
-      canvas.drawOval(
-          leftControlRect,
-          Paint()
-            ..color = Colors.grey
-            ..strokeWidth = 4
-            ..style = PaintingStyle.stroke);
-      canvas.drawOval(
-          topControlRect,
-          Paint()
-            ..color = Colors.grey
-            ..strokeWidth = 4
-            ..style = PaintingStyle.stroke);
-      canvas.drawOval(
-          rightControlRect,
-          Paint()
-            ..color = Colors.grey
-            ..strokeWidth = 4
-            ..style = PaintingStyle.stroke);
-      canvas.drawOval(
-          bottomControlRect,
-          Paint()
-            ..color = Colors.grey
-            ..strokeWidth = 4
-            ..style = PaintingStyle.stroke);
-
-      canvas.drawOval(
-          tlControlRect,
-          Paint()
-            ..color = Colors.grey
-            ..strokeWidth = 4
-            ..style = PaintingStyle.stroke);
-      canvas.drawOval(
-          trControlRect,
-          Paint()
-            ..color = Colors.grey
-            ..strokeWidth = 4
-            ..style = PaintingStyle.stroke);
-      canvas.drawOval(
-          blControlRect,
-          Paint()
-            ..color = Colors.grey
-            ..strokeWidth = 4
-            ..style = PaintingStyle.stroke);
-      canvas.drawOval(
-          brControlRect,
-          Paint()
-            ..color = Colors.grey
-            ..strokeWidth = 4
-            ..style = PaintingStyle.stroke);
-
-      canvas.drawCircle(
-          testPoint,
-          10,
-          Paint()
-            ..color = Colors.red
-            ..strokeWidth = 4
-            ..style = PaintingStyle.stroke);
+      canvas.drawPath(selectedPath, _selectedPaint);
+      canvas.drawRect(
+          Rect.fromCenter(center: leftCtrlStart, width: 10, height: 10),
+          _ctrlPaint);
     }
   }
 
@@ -207,8 +161,14 @@ abstract class Selectable {
 
 //CtlrLeft
     var leftCenterPoint = Offset((newTLx + newBLx) / 2, (newTLy + newBLy) / 2);
-    leftControlRect =
-        Rect.fromCenter(center: leftCenterPoint, width: 20, height: 20);
+    var dis0 = (leftCenterPoint - Offset(newBLx, newBLy)).distance;
+    var leftCtrlStartX =
+        leftCenterPoint.dx - (leftCenterPoint.dx - newBLx) * 5 / dis0;
+    var dis01 = (leftCenterPoint - Offset(newTLx, newTLy)).distance;
+    var leftCtrlStartY =
+        leftCenterPoint.dy + (leftCenterPoint.dy - newTLy) * 5 / dis01;
+
+    leftCtrlStart = Offset(leftCtrlStartX, leftCtrlStartY);
 
 //CtlrTop
     var topCenterPoint = Offset((newTLx + newTRx) / 2, (newTLy + newTRy) / 2);
@@ -235,21 +195,6 @@ abstract class Selectable {
     brControlRect =
         Rect.fromCenter(center: Offset(newBRx, newBRy), width: 20, height: 20);
 
-    // var ctlrTopStartX = topCenterPoint.dx -
-    //     (topCenterPoint.dx - newTLx) * controllerLength / (rect.width / 2);
-    // var ctlrTopStartY = topCenterPoint.dy -
-    //     (topCenterPoint.dy - newTLy) * controllerLength / (rect.width / 2);
-
-    // var ctlrTopEndX = topCenterPoint.dx +
-    //     (topCenterPoint.dx - newTLx) * controllerLength / (rect.width / 2);
-    // var ctlrTopEndY = topCenterPoint.dy +
-    //     (topCenterPoint.dy - newTLy) * controllerLength / (rect.width / 2);
-
-    // ctrlTopStartPoint = Offset(ctlrTopStartX, ctlrTopStartY);
-    // ctrlTopEndPoint = Offset(ctlrTopEndX, ctlrTopEndY);
-    // topControlRect =
-    //     Rect.fromCenter(center: topCenterPoint, width: 20, height: 20);
-
     return Path()
       ..moveTo(newTLx, newTLy)
       ..lineTo(newTRx, newTRy)
@@ -266,11 +211,25 @@ class SelectableText extends Selectable {
 
   TextSpan ts;
 
+  //控制移动
   Offset totalOffset;
 
+  //字体
   String fontFamily;
 
+  //字重
   int textWeight;
+
+  //最大宽度
+  double _maxWidth = 100;
+
+  set maxWidth(double value) {
+    if (value > 10) {
+      _maxWidth = value;
+    }
+  }
+
+  double get maxWidth => _maxWidth;
 
   SelectableText({this.text, this.totalOffset});
 
@@ -289,7 +248,7 @@ class SelectableText extends Selectable {
       text: ts,
       textDirection: TextDirection.ltr,
     );
-    tp.layout(maxWidth: 30);
+    tp.layout(maxWidth: maxWidth);
     rect = Rect.fromCenter(
         center: totalOffset, width: tp.width, height: tp.height);
     selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
@@ -332,37 +291,30 @@ class SelectableImage extends Selectable {
 }
 
 class SelectableShape extends Selectable {
-  // Rect rect;
-
   int shapeType;
 
   Offset startPoint;
   Offset endPoint;
 
-  Offset totalOffset;
-
-  ///用户开始绘制时的点
-  Offset startPointOffset;
-
-  ///用户结束绘制时的点（绘制时在Draw中更新）
-  Offset endPointOffset;
-
+//绘制时的startPoint和endPoint在draw中转换成tlpoint和brpoint
   Offset topLeftPoint;
   Offset bottomRightPoint;
 
-  Offset totalTPOffset;
+  Offset tlOffset;
+  Offset brOffset;
+
+  Offset totalTLOffset;
   Offset totalBROffset;
 
   bool fill;
   Paint fillPaint;
 
   SelectableShape(this.startPoint, this.shapeType, Paint paint)
-      : totalOffset = Offset.zero,
-        endPoint = startPoint,
-        startPointOffset = Offset.zero,
-        endPointOffset = Offset.zero,
-        totalTPOffset = Offset.zero,
-        totalBROffset = Offset.zero {
+      : endPoint = startPoint,
+        totalTLOffset = Offset.zero,
+        totalBROffset = Offset.zero,
+        tlOffset = Offset.zero,
+        brOffset = Offset.zero {
     fill = false;
     mPaint = paint;
     fillPaint = Paint()
@@ -377,11 +329,31 @@ class SelectableShape extends Selectable {
 
   @override
   void draw(Canvas canvas) {
-    // totalOffset = offset + totalOffset;
-    totalSpOffset = totalSpOffset + startPointOffset;
-    totalEpOffset = totalEpOffset + endPointOffset;
+    var tlX, tlY, brX, brY;
+    if (startPoint.dx > endPoint.dx) {
+      tlX = endPoint.dx;
+      brX = startPoint.dx;
+    } else {
+      tlX = startPoint.dx;
+      brX = endPoint.dx;
+    }
 
-    rect = Rect.fromPoints(startPoint + totalSpOffset, endPoint + totalEpOffset)
+    if (startPoint.dy > endPoint.dy) {
+      tlY = endPoint.dy;
+      brY = startPoint.dy;
+    } else {
+      tlY = startPoint.dy;
+      brY = endPoint.dy;
+    }
+
+    topLeftPoint = Offset(tlX, tlY);
+    bottomRightPoint = Offset(brX, brY);
+
+    totalTLOffset = totalTLOffset + tlOffset;
+    totalBROffset = totalBROffset + brOffset;
+
+    rect = Rect.fromPoints(
+            topLeftPoint + totalTLOffset, bottomRightPoint + totalBROffset)
         .inflate(10);
     selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
     canvas.save();
@@ -392,8 +364,8 @@ class SelectableShape extends Selectable {
 
     switch (shapeType) {
       case 0:
-        canvas.drawLine(
-            startPoint + totalOffset * 2, endPoint + totalOffset * 2, mPaint);
+        canvas.drawLine(topLeftPoint + totalTLOffset,
+            bottomRightPoint + totalBROffset, mPaint);
         break;
       case 1:
         canvas.drawRect(rect.deflate(10), mPaint);

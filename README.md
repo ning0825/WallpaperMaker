@@ -16,7 +16,5 @@ For help getting started with Flutter, view our
 samples, guidance on mobile development, and a full API reference. 
 
 ## Todo
--[ ] 翻译注释为英文
--[ ] 图库
-
-
+- [ ] 翻译注释为英文
+- [ ] 图库

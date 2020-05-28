@@ -44,7 +44,7 @@ class _CanvasPanelState extends State<CanvasPanel> {
         ),
         onTapDownCallback: (details) => data.handleTapDown(details),
         onDragUpdateCallback: (details) => data.handleTapUpdate(details),
-        ondragEndCallback: (details) => print('on tap end'),
+        ondragEndCallback: (details) => data.handleTapEnd(details),
         onScaleStartCallback: (details) => print('on scale start callback'),
         onScaleUpdateCallback: (details) => print('on scale update callback'),
         onScaleEndCallback: (details) => print('on scale end callback'),

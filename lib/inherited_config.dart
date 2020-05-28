@@ -450,7 +450,6 @@ class ConfigWidgetState extends State<ConfigWidget> {
     }
   }
 
-  double tempSize = 0;
   handleTapUpdate(DragUpdateDetails details) {
     setState(() {
       if (isSelectedMode) {
@@ -458,36 +457,72 @@ class ConfigWidgetState extends State<ConfigWidget> {
         switch (ctrlIndex) {
           case 0:
             if (currentSelectable is SelectableShape) {
-              (currentSelectable as SelectableShape).startPointOffset =
+              (currentSelectable as SelectableShape).tlOffset =
                   Offset(details.delta.dx, 0.0);
             }
             break;
           case 1:
+            if (currentSelectable is SelectableShape) {
+              (currentSelectable as SelectableShape).tlOffset =
+                  Offset(0.0, details.delta.dy);
+            }
             break;
           case 2:
+            if (currentSelectable is SelectableShape) {
+              (currentSelectable as SelectableShape).brOffset =
+                  Offset(details.delta.dx, 0.0);
+            }
+            if (currentSelectable is SelectableText) {
+              (currentSelectable as SelectableText).maxWidth =
+                  (details.localPosition.dx -
+                          currentSelectable.rect.center.dx) *
+                      2;
+            }
             break;
           case 3:
+            if (currentSelectable is SelectableShape) {
+              (currentSelectable as SelectableShape).brOffset =
+                  Offset(0.0, details.delta.dy);
+            }
             break;
           case 4:
+            if (currentSelectable is SelectableShape) {
+              (currentSelectable as SelectableShape).tlOffset =
+                  Offset(details.delta.dx, details.delta.dy);
+            }
             break;
           case 5:
+            if (currentSelectable is SelectableShape) {
+              (currentSelectable as SelectableShape).tlOffset =
+                  Offset(0.0, details.delta.dy);
+              (currentSelectable as SelectableShape).brOffset =
+                  Offset(details.delta.dx, 0.0);
+            }
             break;
           case 6:
+            if (currentSelectable is SelectableShape) {
+              (currentSelectable as SelectableShape).tlOffset =
+                  Offset(details.delta.dx, 0.0);
+              (currentSelectable as SelectableShape).brOffset =
+                  Offset(0.0, details.delta.dy);
+            }
             break;
           case 7:
+            if (currentSelectable is SelectableShape) {
+              (currentSelectable as SelectableShape).brOffset =
+                  Offset(details.delta.dx, details.delta.dy);
+            }
             break;
           default:
         }
       } else {
         switch (config.currentMode) {
           case 0:
-            print('case 0');
             (selectables[selectables.length - 1] as SelectablePath)
                 .path
                 .lineTo(details.localPosition.dx, details.localPosition.dy);
             break;
           case 1:
-            print('case 1');
             (selectables[selectables.length - 1] as SelectableShape).endPoint =
                 Offset(details.localPosition.dx, details.localPosition.dy);
             break;
@@ -497,7 +532,15 @@ class ConfigWidgetState extends State<ConfigWidget> {
     });
   }
 
-  handleTapEnd() {}
+  handleTapEnd(DragEndDetails dragEndDetails) {
+    print('set current controll point to -1');
+    if (isSelectedMode) {
+      currentSelectable.currentControlPoint = -1;
+      if (currentSelectable is SelectableShape) {
+        (currentSelectable as SelectableShape).tlOffset = Offset.zero;
+      }
+    }
+  }
 
   handleScaleStart(ScaleStartDetails details) {
     // if (isSelectedMode) {
