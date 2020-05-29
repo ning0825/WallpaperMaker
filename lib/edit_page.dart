@@ -881,6 +881,7 @@ class _TypoFontWidgetState extends State<TypoFontWidget> {
           itemCount: fontList.length,
           itemBuilder: (_, index) {
             return ListTile(
+              selected: index == 0 ? true : false,
               title: Text(fontList[index]),
               onTap: () {
                 data.setTextFont(fontList[index]);
@@ -970,11 +971,10 @@ class _ImageToolState extends State<ImageTool> {
   _addImage() async {
     File _fileImage = await ImagePicker.pickImage(source: ImageSource.gallery);
     ui.Image img = await decodeImageFromList(await _fileImage.readAsBytes());
-    setState(() {
-      var size = rpbKey.currentContext.size;
-      widget.data.selectables
-          .add(SelectableImage(img, Offset(size.width / 2, size.height / 2)));
-    });
+    //Add an image that will be drawn on the center of canvas.
+    var size = rpbKey.currentContext.size;
+    widget.data.addSelectable(
+        SelectableImage(img, Offset(size.width / 2, size.height / 2)));
   }
 }
 

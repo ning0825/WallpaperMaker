@@ -533,11 +533,11 @@ class ConfigWidgetState extends State<ConfigWidget> {
   }
 
   handleTapEnd(DragEndDetails dragEndDetails) {
-    print('set current controll point to -1');
     if (isSelectedMode) {
       currentSelectable.currentControlPoint = -1;
       if (currentSelectable is SelectableShape) {
         (currentSelectable as SelectableShape).tlOffset = Offset.zero;
+        (currentSelectable as SelectableShape).brOffset = Offset.zero;
       }
     }
   }

@@ -40,6 +40,12 @@ abstract class Selectable {
 
   Offset leftCtrlStart;
   Offset leftCtrlEnd;
+  Offset topCtrlStart;
+  Offset topCtrlEnd;
+  Offset rightCtrlStart;
+  Offset rightCtrlEnd;
+  Offset bottomCtrlStart;
+  Offset bottomCtrlEnd;
 
   /// Return which controller user has touched.
   /// 0: left
@@ -119,19 +125,27 @@ abstract class Selectable {
 
     if (isSelected) {
       canvas.drawPath(selectedPath, _selectedPaint);
-      canvas.drawRect(
-          Rect.fromCenter(center: leftCtrlStart, width: 10, height: 10),
-          _ctrlPaint);
+      if (this is SelectableShape) {
+        canvas.drawLine(leftCtrlStart, leftCtrlEnd, _ctrlPaint);
+        canvas.drawLine(topCtrlStart, topCtrlEnd, _ctrlPaint);
+        canvas.drawLine(rightCtrlStart, rightCtrlEnd, _ctrlPaint);
+        canvas.drawLine(bottomCtrlStart, bottomCtrlEnd, _ctrlPaint);
+      }
+      if (this is SelectableText) {
+        canvas.drawLine(rightCtrlStart, rightCtrlEnd, _ctrlPaint);
+      }
     }
   }
 
 //Construct selected rect path.
   Path toPath(Rect rect, double rotAngle, double scaleX, [double scaleY]) {
     scaleY ??= scaleX;
+    //
     rect = Rect.fromCenter(
         center: rect.center,
         width: rect.width * scaleX,
-        height: rect.height * scaleY);
+        height: rect.height * scaleY)
+      ..inflate(10);
 
     ///TODO: Code optimization
     var a = atan((rect.center.dy - rect.topLeft.dy) /
@@ -162,30 +176,55 @@ abstract class Selectable {
 //CtlrLeft
     var leftCenterPoint = Offset((newTLx + newBLx) / 2, (newTLy + newBLy) / 2);
     var dis0 = (leftCenterPoint - Offset(newBLx, newBLy)).distance;
-    var leftCtrlStartX =
-        leftCenterPoint.dx - (leftCenterPoint.dx - newBLx) * 5 / dis0;
-    var dis01 = (leftCenterPoint - Offset(newTLx, newTLy)).distance;
-    var leftCtrlStartY =
-        leftCenterPoint.dy + (leftCenterPoint.dy - newTLy) * 5 / dis01;
+    var leftCtrlStartX = leftCenterPoint.dx -
+        (leftCenterPoint.dx - newBLx) * controllerLength / dis0;
+    var leftCtrlStartY = leftCenterPoint.dy +
+        (leftCenterPoint.dy - newTLy) * controllerLength / dis0;
 
     leftCtrlStart = Offset(leftCtrlStartX, leftCtrlStartY);
+    leftCtrlEnd = leftCenterPoint * 2 - leftCtrlStart;
+    leftControlRect =
+        Rect.fromCenter(center: leftCenterPoint, width: 20, height: 20);
 
 //CtlrTop
     var topCenterPoint = Offset((newTLx + newTRx) / 2, (newTLy + newTRy) / 2);
+    var dis1 = (topCenterPoint - Offset(newTLx, newTLy)).distance;
+    var topCtrlStartX = topCenterPoint.dx -
+        (topCenterPoint.dx - newTLx) * controllerLength / dis1;
+    var topCtrlStartY = topCenterPoint.dy -
+        (topCenterPoint.dy - newTLy) * controllerLength / dis1;
+
+    topCtrlStart = Offset(topCtrlStartX, topCtrlStartY);
+    topCtrlEnd = topCenterPoint * 2 - topCtrlStart;
     topControlRect =
         Rect.fromCenter(center: topCenterPoint, width: 20, height: 20);
 
 //CtlrRight
     var rightCenterPoint = Offset((newTRx + newBRx) / 2, (newTRy + newBRy) / 2);
+    var rightCtrlStartX = rightCenterPoint.dx +
+        (newTRx - rightCenterPoint.dx) * controllerLength / dis0;
+    var rightCtrlStartY = rightCenterPoint.dy -
+        (rightCenterPoint.dy - newTRy) * controllerLength / dis0;
+
+    rightCtrlStart = Offset(rightCtrlStartX, rightCtrlStartY);
+    rightCtrlEnd = rightCenterPoint * 2 - rightCtrlStart;
     rightControlRect =
         Rect.fromCenter(center: rightCenterPoint, width: 20, height: 20);
 
 //CtlrBottom
     var bottomCenterPoint =
         Offset((newBLx + newBRx) / 2, (newBLy + newBRy) / 2);
+    var bottomCtrlStartX = bottomCenterPoint.dx -
+        (bottomCenterPoint.dx - newBLx) * controllerLength / dis1;
+    var bottomCtrlStartY = bottomCenterPoint.dy -
+        (bottomCenterPoint.dy - newBLy) * controllerLength / dis1;
+
+    bottomCtrlStart = Offset(bottomCtrlStartX, bottomCtrlStartY);
+    bottomCtrlEnd = bottomCenterPoint * 2 - bottomCtrlStart;
     bottomControlRect =
         Rect.fromCenter(center: bottomCenterPoint, width: 20, height: 20);
 
+//用以判断触摸是否击中控制点
     tlControlRect =
         Rect.fromCenter(center: Offset(newTLx, newTLy), width: 20, height: 20);
     trControlRect =
@@ -276,8 +315,8 @@ class SelectableImage extends Selectable {
     totalOffset = offset * 2 + totalOffset;
     rect = Rect.fromCenter(
         center: totalOffset,
-        width: img.width.toDouble(),
-        height: img.height.toDouble());
+        width: img.width.toDouble() / 5,
+        height: img.height.toDouble() / 5);
     selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
     canvas.save();
     canvas.translate(rect.center.dx, rect.center.dy);
@@ -387,7 +426,6 @@ class SelectableShape extends Selectable {
 }
 
 class SelectablePath extends Selectable {
-  // Paint mPaint;
   Path path;
 
   SelectablePath(this.path, Paint paint) {
