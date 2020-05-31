@@ -17,7 +17,9 @@ abstract class Selectable {
   bool isRot = false;
   bool isTrans = false;
 
-  Offset offset = Offset(0, 0);
+  Offset offset = Offset.zero;
+  Offset lastOffset = Offset.zero;
+
   double rotRadians = 0.0;
   double scaleRadioX = 1.0;
   double scaleRadioY = 1.0;
@@ -61,6 +63,9 @@ abstract class Selectable {
 
   ///down 事件命中某个控制点
   bool isCtrling;
+
+  ///down 时间命中selectable，但没命中控制点
+  bool isMoving;
 
   ///todo
   Rect rightBottomControlRect;
@@ -113,15 +118,16 @@ abstract class Selectable {
     ..strokeWidth = 5
     ..style = PaintingStyle.stroke;
 
-  bool hitTest(Offset offset) => selectedPath.contains(offset);
+  bool hitTest(Offset offset) =>
+      selectedPath != null ? selectedPath.contains(offset) : false;
 
   void draw(Canvas canvas);
 
   void drawSelected(Canvas canvas) {
-    rect = Rect.fromCenter(
-        center: rect.center,
-        width: rect.width * scaleRadioX,
-        height: rect.height * scaleRadioY);
+    // rect = Rect.fromCenter(
+    //     center: rect.center,
+    //     width: rect.width * scaleRadioX,
+    //     height: rect.height * scaleRadioY);
 
     if (isSelected) {
       canvas.drawPath(selectedPath, _selectedPaint);
@@ -144,8 +150,8 @@ abstract class Selectable {
     rect = Rect.fromCenter(
         center: rect.center,
         width: rect.width * scaleX,
-        height: rect.height * scaleY)
-      ..inflate(10);
+        height: rect.height * scaleY);
+    rect = rect.inflate(10);
 
     ///TODO: Code optimization
     var a = atan((rect.center.dy - rect.topLeft.dy) /
@@ -262,6 +268,8 @@ class SelectableText extends Selectable {
   //最大宽度
   double _maxWidth = 100;
 
+  double fontSize = 0;
+
   set maxWidth(double value) {
     if (value > 10) {
       _maxWidth = value;
@@ -278,7 +286,7 @@ class SelectableText extends Selectable {
       text: text,
       style: TextStyle(
           color: textColor,
-          fontSize: 50,
+          fontSize: 30 + 5 * fontSize,
           fontFamily: fontFamily,
           fontWeight: FontWeight.values[textWeight]),
     );
@@ -306,15 +314,14 @@ class SelectableText extends Selectable {
 class SelectableImage extends Selectable {
   Image img;
 
-  Offset totalOffset;
+  Offset initPosition;
 
-  SelectableImage(this.img, this.totalOffset);
+  SelectableImage(this.img, this.initPosition);
 
   @override
   void draw(Canvas canvas) {
-    totalOffset = offset * 2 + totalOffset;
     rect = Rect.fromCenter(
-        center: totalOffset,
+        center: initPosition + offset,
         width: img.width.toDouble() / 5,
         height: img.height.toDouble() / 5);
     selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
@@ -341,17 +348,14 @@ class SelectableShape extends Selectable {
 
   Offset tlOffset;
   Offset brOffset;
-
-  Offset totalTLOffset;
-  Offset totalBROffset;
+  Offset lastTLOffset;
+  Offset lastBROffset;
 
   bool fill;
   Paint fillPaint;
 
   SelectableShape(this.startPoint, this.shapeType, Paint paint)
       : endPoint = startPoint,
-        totalTLOffset = Offset.zero,
-        totalBROffset = Offset.zero,
         tlOffset = Offset.zero,
         brOffset = Offset.zero {
     fill = false;
@@ -388,11 +392,7 @@ class SelectableShape extends Selectable {
     topLeftPoint = Offset(tlX, tlY);
     bottomRightPoint = Offset(brX, brY);
 
-    totalTLOffset = totalTLOffset + tlOffset;
-    totalBROffset = totalBROffset + brOffset;
-
-    rect = Rect.fromPoints(
-            topLeftPoint + totalTLOffset, bottomRightPoint + totalBROffset)
+    rect = Rect.fromPoints(topLeftPoint + tlOffset, bottomRightPoint + brOffset)
         .inflate(10);
     selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
     canvas.save();
@@ -403,8 +403,20 @@ class SelectableShape extends Selectable {
 
     switch (shapeType) {
       case 0:
-        canvas.drawLine(topLeftPoint + totalTLOffset,
-            bottomRightPoint + totalBROffset, mPaint);
+        if (startPoint.dx < endPoint.dx && startPoint.dy < endPoint.dy) {
+          canvas.drawLine(startPoint + tlOffset, endPoint + brOffset, mPaint);
+        }
+        if (startPoint.dx < endPoint.dx && startPoint.dy > endPoint.dy) {
+          canvas.drawLine(startPoint + Offset(tlOffset.dx, brOffset.dy),
+              endPoint + Offset(brOffset.dx, tlOffset.dy), mPaint);
+        }
+        if (startPoint.dx > endPoint.dx && startPoint.dy > endPoint.dy) {
+          canvas.drawLine(startPoint + brOffset, endPoint + tlOffset, mPaint);
+        }
+        if (startPoint.dx > endPoint.dx && startPoint.dy < endPoint.dy) {
+          canvas.drawLine(startPoint + Offset(brOffset.dx, tlOffset.dy),
+              endPoint + Offset(tlOffset.dx, brOffset.dy), mPaint);
+        }
         break;
       case 1:
         canvas.drawRect(rect.deflate(10), mPaint);
@@ -452,17 +464,20 @@ class SelectablePath extends Selectable {
     // canvas.drawPath(path, mPaint);
 
     //TODO: why need double offset to match the fingner moving.
-    path = path.transform(
-        Matrix4.translationValues(offset.dx * 2, offset.dy * 2, 0).storage);
+    // path = path.transform(
+    //     Matrix4.translationValues(offset.dx * 2, offset.dy * 2, 0).storage);
 
     canvas.save();
-    canvas.translate(path.getBounds().center.dx, path.getBounds().center.dy);
+    canvas.translate(path.getBounds().center.dx + offset.dx,
+        path.getBounds().center.dy + offset.dy);
     canvas.rotate(rotRadians);
     canvas.scale(scaleRadioX, scaleRadioY);
     canvas.translate(-path.getBounds().center.dx, -path.getBounds().center.dy);
     canvas.drawPath(path, mPaint);
     canvas.restore();
+    //TODO 为啥 rect = path.getBounds()..translate(...); rect的值就不变？
     rect = path.getBounds();
+    rect = rect.translate(offset.dx, offset.dy);
     selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
   }
 }

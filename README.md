@@ -18,3 +18,6 @@ samples, guidance on mobile development, and a full API reference.
 ## Todo
 - [ ] 翻译注释为英文
 - [ ] 图库
+
+delete.svg: viewBox="-47 0 512 512" width="512" xmlns
+

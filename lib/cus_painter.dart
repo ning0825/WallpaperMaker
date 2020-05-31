@@ -45,16 +45,12 @@ class _CanvasPanelState extends State<CanvasPanel> {
         onTapDownCallback: (details) => data.handleTapDown(details),
         onDragUpdateCallback: (details) => data.handleTapUpdate(details),
         ondragEndCallback: (details) => data.handleTapEnd(details),
-        onScaleStartCallback: (details) => print('on scale start callback'),
-        onScaleUpdateCallback: (details) => print('on scale update callback'),
-        onScaleEndCallback: (details) => print('on scale end callback'),
+        onScaleStartCallback: (details) => data.handleScaleStart(details),
+        onScaleUpdateCallback: (details) => data.handleScaleUpdate(details),
+        onScaleEndCallback: (details) => data.handleScaleEnd(details),
         onTapUpCallback: (details) => data.handleTapUp(details),
       ),
     );
-  }
-
-  printsomething(DragUpdateDetails details) {
-    print('some thing: ${details.globalPosition}');
   }
 }
 
@@ -73,7 +69,7 @@ class MyCanvas extends CustomPainter {
     );
 
     //draw background
-    canvas.drawColor(data.config.bgColor, BlendMode.srcIn);
+    canvas.drawColor(data.config.bgColor, BlendMode.src);
 
     //draw selectables
     for (var item in data.selectables) {

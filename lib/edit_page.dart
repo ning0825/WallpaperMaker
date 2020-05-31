@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:vector_math/vector_math.dart' hide Colors;
 import 'package:flutter/material.dart' hide SelectableText;
 import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'inherited_config.dart';
 import 'selectable_bean.dart';
 import 'cus_painter.dart';
+import 'utils.dart';
 
 //Used to get size and save image.
 GlobalKey rpbKey = GlobalKey();
@@ -141,7 +143,7 @@ class _EditHomeState extends State<EditHome> {
                     if (data.isSelectedMode) {
                       data.setUnselected();
                     }
-                    currentToolWidget = currentTools = ImageTool(data: data);
+                    currentToolWidget = currentTools = ImageTool();
                   });
                 },
               ),
@@ -171,7 +173,15 @@ class _EditHomeState extends State<EditHome> {
       case 2:
         return TypoToolWidget();
       case 3:
-        return ImageTool(data: data);
+        return ImageTool();
+      case 4:
+        return BuildColorWidget(toolNum: backgroundColorNum);
+      case 5:
+        return AlignTool();
+        break;
+      case 6:
+        return RotationTool();
+        break;
       default:
     }
   }
@@ -188,8 +198,7 @@ class _EditHomeState extends State<EditHome> {
           InkWell(
             onTap: () {
               setState(() {
-                currentToolWidget =
-                    BuildColorWidget(toolNum: backgroundColorNum);
+                data.setCurrentMainTool(4);
               });
             },
             child: Container(
@@ -206,7 +215,7 @@ class _EditHomeState extends State<EditHome> {
           InkWell(
             onTap: () {
               setState(() {
-                currentToolWidget = AlignTool();
+                data.setCurrentMainTool(5);
               });
             },
             child: Container(
@@ -221,7 +230,7 @@ class _EditHomeState extends State<EditHome> {
           ),
           GapWidget(),
           InkWell(
-            onTap: () => print('tap'),
+            onTap: () => data.setCurrentMainTool(6),
             child: Container(
               width: 50,
               height: 40,
@@ -247,7 +256,7 @@ class _EditHomeState extends State<EditHome> {
           ),
           GapWidget(),
           InkWell(
-            onTap: () => print('tap'),
+            onTap: () => saveImage(rpbKey),
             child: Container(
               width: 50,
               height: 40,
@@ -364,7 +373,8 @@ class _BuildColorWidgetState extends State<BuildColorWidget> {
     Colors.orange,
     Colors.yellow,
     Colors.green,
-    Colors.blue
+    Colors.blue,
+    Colors.white
   ];
 
   ConfigWidgetState data;
@@ -456,6 +466,8 @@ class _BuildColorWidgetState extends State<BuildColorWidget> {
           return 40;
         }
         break;
+      case backgroundColorNum:
+        return data.getBackroundColor().value == colors[index].value ? 60 : 40;
       default:
         break;
     }
@@ -478,11 +490,12 @@ class _BuildMainTool extends StatelessWidget {
         child: InkWell(
           child: Padding(
             padding: const EdgeInsets.all(12.0),
-            // child: SvgPicture.asset(
-            //   'assets/icons/' + iconAsset + '.svg',
-            //   color: Colors.white,
-            // ),
-            child: Text(iconAsset),
+            child: SvgPicture.asset(
+              'assets/icons/' + iconAsset + '.svg',
+              width: 30,
+              height: 30,
+              color: Colors.white,
+            ),
           ),
           onTap: callback,
         ),
@@ -939,16 +952,16 @@ class _TypoTextWidgetState extends State<TypoTextWidget> {
 }
 
 class ImageTool extends StatefulWidget {
-  final ConfigWidgetState data;
-
-  ImageTool({@required this.data});
   @override
   _ImageToolState createState() => _ImageToolState();
 }
 
 class _ImageToolState extends State<ImageTool> {
+  ConfigWidgetState data;
+
   @override
   Widget build(BuildContext context) {
+    data = ConfigWidget.of(context);
     return Container(
         child: Row(
       children: [
@@ -970,10 +983,11 @@ class _ImageToolState extends State<ImageTool> {
 
   _addImage() async {
     File _fileImage = await ImagePicker.pickImage(source: ImageSource.gallery);
+    if (_fileImage == null) return;
     ui.Image img = await decodeImageFromList(await _fileImage.readAsBytes());
     //Add an image that will be drawn on the center of canvas.
     var size = rpbKey.currentContext.size;
-    widget.data.addSelectable(
+    data.addSelectable(
         SelectableImage(img, Offset(size.width / 2, size.height / 2)));
   }
 }
@@ -990,59 +1004,63 @@ class _AlignToolState extends State<AlignTool> {
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
     return Container(
-      child: Row(
-        children: [
-          RawMaterialButton(
-            constraints: BoxConstraints(maxWidth: 30),
-            onPressed: () {
-              setState(() {
-                data.stageSize = stageKey.currentContext.size;
-                data.setLeftAlign();
-              });
-            },
-            child: Text('left'),
-          ),
-          RaisedButton(
-            onPressed: () {
-              setState(() {
-                data.setTopAlign();
-              });
-            },
-            child: Text('top'),
-          ),
-          RaisedButton(
-            onPressed: () {
-              setState(() {
-                data.setRightAlign();
-              });
-            },
-            child: Text('right'),
-          ),
-          RaisedButton(
-            onPressed: () {
-              setState(() {
-                data.setBottomAlign();
-              });
-            },
-            child: Text('bottom'),
-          ),
-          RaisedButton(
-            onPressed: () {
-              setState(() {
-                data.setCenterHorizonAlign();
-              });
-            },
-            child: Text('centerH'),
-          ),
-          RaisedButton(
-            onPressed: () {
-              setState(() {
-                data.setCenterVerticalAlign();
-              });
-            },
-            child: Text('centerV'),
-          ),
-        ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: BouncingScrollPhysics(),
+        child: Row(
+          children: [
+            RawMaterialButton(
+              constraints: BoxConstraints(maxWidth: 30),
+              onPressed: () {
+                setState(() {
+                  data.stageSize = stageKey.currentContext.size;
+                  data.setLeftAlign();
+                });
+              },
+              child: Text('left'),
+            ),
+            RaisedButton(
+              onPressed: () {
+                setState(() {
+                  data.setTopAlign();
+                });
+              },
+              child: Text('top'),
+            ),
+            RaisedButton(
+              onPressed: () {
+                setState(() {
+                  data.setRightAlign();
+                });
+              },
+              child: Text('right'),
+            ),
+            RaisedButton(
+              onPressed: () {
+                setState(() {
+                  data.setBottomAlign();
+                });
+              },
+              child: Text('bottom'),
+            ),
+            RaisedButton(
+              onPressed: () {
+                setState(() {
+                  data.setCenterHorizonAlign();
+                });
+              },
+              child: Text('centerH'),
+            ),
+            RaisedButton(
+              onPressed: () {
+                setState(() {
+                  data.setCenterVerticalAlign();
+                });
+              },
+              child: Text('centerV'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1058,6 +1076,19 @@ class _RotationToolState extends State<RotationTool> {
   @override
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
-    return Container();
+    return Container(
+      child: Row(
+        children: [
+          RaisedButton(
+            child: Text('reset'),
+            onPressed: () => data.resetRotation(),
+          ),
+          RaisedButton(
+            child: Text('rotate 90'),
+            onPressed: () => data.rotate(radians(90)),
+          ),
+        ],
+      ),
+    );
   }
 }
