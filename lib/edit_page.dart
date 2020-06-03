@@ -25,11 +25,7 @@ const backgroundColorNum = 4;
 class EditPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: ConfigWidget(
-        child: EditHome(),
-      ),
-    );
+    return EditHome();
   }
 }
 
@@ -256,7 +252,8 @@ class _EditHomeState extends State<EditHome> {
           ),
           GapWidget(),
           InkWell(
-            onTap: () => saveImage(rpbKey),
+            onTap: () => saveImage(
+                rpbKey, context, data.size2Save.width / data.size.width),
             child: Container(
               width: 50,
               height: 40,
@@ -895,7 +892,10 @@ class _TypoFontWidgetState extends State<TypoFontWidget> {
           itemBuilder: (_, index) {
             return ListTile(
               selected: index == 0 ? true : false,
-              title: Text(fontList[index]),
+              title: Text(
+                fontList[index],
+                style: TextStyle(fontFamily: fontList[index]),
+              ),
               onTap: () {
                 data.setTextFont(fontList[index]);
               },
@@ -1009,40 +1009,40 @@ class _AlignToolState extends State<AlignTool> {
         physics: BouncingScrollPhysics(),
         child: Row(
           children: [
-            RawMaterialButton(
-              constraints: BoxConstraints(maxWidth: 30),
-              onPressed: () {
-                setState(() {
-                  data.stageSize = stageKey.currentContext.size;
-                  data.setLeftAlign();
-                });
-              },
-              child: Text('left'),
-            ),
-            RaisedButton(
-              onPressed: () {
-                setState(() {
-                  data.setTopAlign();
-                });
-              },
-              child: Text('top'),
-            ),
-            RaisedButton(
-              onPressed: () {
-                setState(() {
-                  data.setRightAlign();
-                });
-              },
-              child: Text('right'),
-            ),
-            RaisedButton(
-              onPressed: () {
-                setState(() {
-                  data.setBottomAlign();
-                });
-              },
-              child: Text('bottom'),
-            ),
+            // RawMaterialButton(
+            //   constraints: BoxConstraints(maxWidth: 30),
+            //   onPressed: () {
+            //     setState(() {
+            //       data.stageSize = stageKey.currentContext.size;
+            //       data.setLeftAlign();
+            //     });
+            //   },
+            //   child: Text('left'),
+            // ),
+            // RaisedButton(
+            //   onPressed: () {
+            //     setState(() {
+            //       data.setTopAlign();
+            //     });
+            //   },
+            //   child: Text('top'),
+            // ),
+            // RaisedButton(
+            //   onPressed: () {
+            //     setState(() {
+            //       data.setRightAlign();
+            //     });
+            //   },
+            //   child: Text('right'),
+            // ),
+            // RaisedButton(
+            //   onPressed: () {
+            //     setState(() {
+            //       data.setBottomAlign();
+            //     });
+            //   },
+            //   child: Text('bottom'),
+            // ),
             RaisedButton(
               onPressed: () {
                 setState(() {

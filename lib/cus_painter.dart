@@ -22,8 +22,10 @@ class _CanvasPanelState extends State<CanvasPanel> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       setState(() {
+        //TODO WARNING 上个界面不先收起键盘再跳转的话，这里获取到的高度是除了键盘的
+        //在R1上，期望628，获取到的是297
         widgetHeight = context.size.height;
-        data.setSize(height: widgetHeight, ratio: 2);
+        data.setSize(height: widgetHeight, ratio: data.size2Save.aspectRatio);
       });
     });
   }

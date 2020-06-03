@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart' hide SelectableText;
 import 'package:flutter/rendering.dart';
 import 'package:wallpaper_maker/configuration.dart';
-import 'package:wallpaper_maker/utils.dart';
 
 import 'selectable_bean.dart';
 
@@ -27,6 +26,9 @@ class ConfigWidgetState extends State<ConfigWidget> {
   Selectable currentSelectable;
 
   BuildContext mContext;
+
+  //分辨率
+  Size size2Save;
 
   //size of canvas.
   Size size;
@@ -121,7 +123,7 @@ class ConfigWidgetState extends State<ConfigWidget> {
   //---------------------------------------------------------------------------------
   setSize({double height, double ratio}) {
     setState(() {
-      size = Size(height / ratio, height);
+      size = Size(height * ratio, height);
     });
   }
 
@@ -166,15 +168,18 @@ class ConfigWidgetState extends State<ConfigWidget> {
   }
 
   _setAlign(Offset transOffset) {
-    if (currentSelectable.runtimeType.toString() == 'SelectablePath') {
-      (currentSelectable as SelectablePath).path =
-          (currentSelectable as SelectablePath).path.shift(transOffset);
-    }
-    if (currentSelectable.runtimeType.toString() == 'SelectableShape') {
-      (currentSelectable as SelectableShape).startPoint =
+    // if (currentSelectable is SelectablePath) {
+    //   (currentSelectable as SelectablePath).path =
+    //       (currentSelectable as SelectablePath).path.shift(transOffset);
+    // }
+    if (currentSelectable is SelectableShape) {
+      var cs = currentSelectable as SelectableShape;
+      cs.startPoint =
           (currentSelectable as SelectableShape).startPoint + transOffset;
-      (currentSelectable as SelectableShape).endPoint =
+      cs.endPoint =
           (currentSelectable as SelectableShape).endPoint + transOffset;
+    } else {
+      currentSelectable.offset = currentSelectable.offset + transOffset;
     }
   }
 
@@ -215,9 +220,9 @@ class ConfigWidgetState extends State<ConfigWidget> {
   //---------------------------------------------------------------------------------
   //save image
   //---------------------------------------------------------------------------------
-  save(GlobalKey key) {
-    saveImage(key);
-  }
+  // save(GlobalKey key) {
+  //   saveImage(key);
+  // }
 
   //---------------------------------------------------------------------------------
   //Background
@@ -454,66 +459,47 @@ class ConfigWidgetState extends State<ConfigWidget> {
       if (isSelectedMode) {
         if (currentSelectable.isCtrling) {
           var ctrlIndex = currentSelectable.currentControlPoint;
-          switch (ctrlIndex) {
-            case 0:
-              if (currentSelectable is SelectableShape) {
-                (currentSelectable as SelectableShape).tlOffset =
-                    Offset(details.delta.dx, 0.0);
-              }
-              break;
-            case 1:
-              if (currentSelectable is SelectableShape) {
-                (currentSelectable as SelectableShape).tlOffset =
-                    Offset(0.0, details.delta.dy);
-              }
-              break;
-            case 2:
-              if (currentSelectable is SelectableShape) {
-                (currentSelectable as SelectableShape).brOffset =
-                    Offset(details.delta.dx, 0.0);
-              }
-              if (currentSelectable is SelectableText) {
-                (currentSelectable as SelectableText).maxWidth =
-                    (details.localPosition.dx -
-                            currentSelectable.rect.center.dx) *
-                        2;
-              }
-              break;
-            case 3:
-              if (currentSelectable is SelectableShape) {
-                (currentSelectable as SelectableShape).brOffset =
-                    Offset(0.0, details.delta.dy);
-              }
-              break;
-            case 4:
-              if (currentSelectable is SelectableShape) {
-                (currentSelectable as SelectableShape).tlOffset =
-                    Offset(details.delta.dx, details.delta.dy);
-              }
-              break;
-            case 5:
-              if (currentSelectable is SelectableShape) {
-                (currentSelectable as SelectableShape).tlOffset =
-                    Offset(0.0, details.delta.dy);
-                (currentSelectable as SelectableShape).brOffset =
-                    Offset(details.delta.dx, 0.0);
-              }
-              break;
-            case 6:
-              if (currentSelectable is SelectableShape) {
-                (currentSelectable as SelectableShape).tlOffset =
-                    Offset(details.delta.dx, 0.0);
-                (currentSelectable as SelectableShape).brOffset =
-                    Offset(0.0, details.delta.dy);
-              }
-              break;
-            case 7:
-              if (currentSelectable is SelectableShape) {
-                (currentSelectable as SelectableShape).brOffset =
-                    Offset(details.delta.dx, details.delta.dy);
-              }
-              break;
-            default:
+
+          if (currentSelectable is SelectableShape) {
+            var currentShape = currentSelectable as SelectableShape;
+            switch (ctrlIndex) {
+              case 0:
+                if (currentSelectable is SelectableShape) {
+                  currentShape.tlOffset = currentShape.lastTLOffset +
+                      Offset(details.localPosition.dx - lastPoint.dx, 0.0);
+                  tmpTLOffset = currentShape.tlOffset;
+                }
+                break;
+              case 1:
+                if (currentSelectable is SelectableShape) {
+                  currentShape.tlOffset = currentShape.lastTLOffset +
+                      Offset(0.0, details.localPosition.dy - lastPoint.dy);
+                  tmpTLOffset = currentShape.tlOffset;
+                }
+                break;
+              case 2:
+                if (currentSelectable is SelectableShape) {
+                  currentShape.brOffset = currentShape.lastBROffset +
+                      Offset(details.localPosition.dx - lastPoint.dx, 0.0);
+                  tmpBROffset = currentShape.brOffset;
+                }
+                break;
+              case 3:
+                if (currentSelectable is SelectableShape) {
+                  currentShape.brOffset = currentShape.lastBROffset +
+                      Offset(0.0, details.localPosition.dy - lastPoint.dy);
+                  tmpBROffset = currentShape.brOffset;
+                }
+                break;
+              default:
+                break;
+            }
+          }
+
+          if (currentSelectable is SelectableText) {
+            (currentSelectable as SelectableText).maxWidth =
+                (details.localPosition.dx - currentSelectable.rect.center.dx) *
+                    2;
           }
         }
         if (currentSelectable.isMoving) {
@@ -527,7 +513,6 @@ class ConfigWidgetState extends State<ConfigWidget> {
             tmpTLOffset = sshape.tlOffset;
             tmpBROffset = sshape.brOffset;
           } else {
-            // currentSelectable.offset = details.delta;
             currentSelectable.offset = currentSelectable.lastOffset +
                 details.localPosition -
                 lastPoint;
@@ -551,20 +536,17 @@ class ConfigWidgetState extends State<ConfigWidget> {
     });
   }
 
-  handleTapEnd(DragEndDetails dragEndDetails) {
+  handleTapEnd(DragEndDetails details) {
     if (isSelectedMode) {
       currentSelectable.currentControlPoint = -1;
       if (currentSelectable is SelectableShape) {
-        // (currentSelectable as SelectableShape).tlOffset = Offset.zero;
-        // (currentSelectable as SelectableShape).brOffset = Offset.zero;
         (currentSelectable as SelectableShape).lastTLOffset = tmpTLOffset;
         (currentSelectable as SelectableShape).lastBROffset = tmpBROffset;
-      }
-      if (currentSelectable is SelectablePath ||
-          currentSelectable is SelectableText) {
-        // currentSelectable.offset = Offset.zero;
+      } else {
         currentSelectable.lastOffset = tmpOffset;
       }
+      currentSelectable.isMoving = false;
+      currentSelectable.isCtrling = false;
     }
   }
 
@@ -649,7 +631,7 @@ class ConfigWidgetState extends State<ConfigWidget> {
   void initState() {
     super.initState();
     config = Configuration()
-      ..bgColor = Colors.red
+      ..bgColor = Colors.red[100]
       ..currentMode = 0
       ..penColor = Colors.red
       ..penWidth = 5

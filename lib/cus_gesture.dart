@@ -1,26 +1,22 @@
-import 'dart:async';
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-
-enum TapState {
-  idle,
-  onePointer,
-}
 
 class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
   GestureTapDownCallback onDown;
   GestureDragUpdateCallback onUpdate;
   GestureDragEndCallback onEnd;
 
-  TapState state = TapState.idle;
-
   Offset currentLocalPosition;
   Offset currentGlobalPosition;
 
+  bool isTracking = false;
+
   @override
   void addAllowedPointer(PointerDownEvent event) {
-    startTrackingPointer(event.pointer, event.transform);
+    if (!isTracking) {
+      startTrackingPointer(event.pointer, event.transform);
+      isTracking = true;
+    }
   }
 
   @override
@@ -49,6 +45,7 @@ class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
     }
     if (event is PointerUpEvent) {
       invokeCallback('on tap end', () => onEnd(DragEndDetails()));
+      isTracking = false;
     }
   }
 

@@ -1,17 +1,21 @@
-import 'package:flutter/material.dart';
-import 'package:wallpaper_maker/inherited_config.dart';
+import 'dart:io';
 
-class GalleryPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: InheritedConfig(
-        data: ConfigWidgetState(),
-        child: GalleryHome(),
-      ),
-    );
-  }
-}
+import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+
+import 'utils.dart';
+
+// class GalleryPage extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       home: InheritedConfig(
+//         data: ConfigWidgetState(),
+//         child: GalleryHome(),
+//       ),
+//     );
+//   }
+// }
 
 class GalleryHome extends StatefulWidget {
   @override
@@ -19,35 +23,57 @@ class GalleryHome extends StatefulWidget {
 }
 
 class _GalleryHomeState extends State<GalleryHome> {
+  List<File> imgPaths = [];
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  Future<List<File>> _getImages() async {
+    Directory directory = await getExternalStorageDirectory();
+    await for (var item in directory.list()) {
+      if (item.path.endsWith('png')) {
+        imgPaths.add(File(item.path));
+      }
+    }
+    return imgPaths;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('gallery'),
-      ),
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 300,
-            title: Text('demo'),
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text('demo2'),
-              centerTitle: true,
-            ),
-          ),
-          SliverFixedExtentList(
-            itemExtent: 50.0,
-            delegate: SliverChildBuilderDelegate(
-              (BuildContext context, int index) {
-                return Container(
-                  alignment: Alignment.center,
-                  color: Colors.lightBlue[100 * (index % 9)],
-                  child: Text('List Item $index'),
-                );
-              },
-            ),
-          )
-        ],
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('gallery'),
+        ),
+        body: FutureBuilder(
+          future: _getImages(),
+          builder: (_, snap) {
+            return snap.hasData
+                ? GridView.builder(
+                    itemCount: (snap.data as List).length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 4, childAspectRatio: 0.5),
+                    itemBuilder: (_, index) {
+                      return InkWell(
+                        // onTap: () => Navigator.of(context).push(
+                        //   MaterialPageRoute(
+                        //     builder: (context) => DetailPage(imgPaths[index]),
+                        //   ),
+                        // ),
+                        onTap: () {
+                          setAswallPaper(imgPaths[index].path);
+                          print(imgPaths[index].path);
+                        },
+                        child: Container(
+                          child: Image.file(imgPaths[index]),
+                        ),
+                      );
+                    })
+                : Text('loading');
+          },
+        ),
       ),
     );
   }
