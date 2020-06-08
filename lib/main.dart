@@ -3,11 +3,12 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:wallpaper_maker/page_create.dart';
 
 import 'edit_page.dart';
 import 'inherited_config.dart';
 
-void main() => runApp(ResolutionApp());
+void main() => runApp(CreateRoute());
 
 class ResolutionApp extends StatelessWidget {
   @override
