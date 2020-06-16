@@ -4,17 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:wallpaper_maker/inherit/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_edit.dart';
 
-class CreateRoute extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ConfigWidget(
-      child: MaterialApp(
-        home: CreateHome(),
-      ),
-    );
-  }
-}
-
 class CreateHome extends StatefulWidget {
   @override
   _CreateHomeState createState() => _CreateHomeState();

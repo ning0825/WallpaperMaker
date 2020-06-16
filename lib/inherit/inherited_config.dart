@@ -8,7 +8,7 @@ import 'constants.dart';
 class ConfigWidget extends StatefulWidget {
   final Widget child;
 
-  ConfigWidget({this.child});
+  ConfigWidget({@required this.child});
 
   @override
   ConfigWidgetState createState() => ConfigWidgetState();

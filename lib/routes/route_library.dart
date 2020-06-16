@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:wallpaper_maker/utils/utils.dart';
+import 'package:wallpaper_maker/routes/route_create.dart';
+import 'package:wallpaper_maker/routes/route_detail.dart';
 
 class LibraryPage extends StatefulWidget {
   @override
@@ -29,38 +30,92 @@ class _GalleryHomeState extends State<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('gallery'),
+    return Scaffold(
+      body: SafeArea(
+        child: CustomScrollView(
+          physics: BouncingScrollPhysics(),
+          slivers: <Widget>[
+            SliverAppBar(
+              pinned: true,
+              stretch: true,
+              backgroundColor: Colors.white,
+              expandedHeight: 180,
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: EdgeInsets.only(
+                  left: 20,
+                  bottom: 20,
+                ),
+                title: TitltWidget(),
+                collapseMode: CollapseMode.pin,
+              ),
+            ),
+            _buildImages(),
+          ],
         ),
-        body: FutureBuilder(
-          future: _getImages(),
-          builder: (_, snap) {
-            return snap.hasData
-                ? GridView.builder(
-                    itemCount: (snap.data as List).length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4, childAspectRatio: 0.5),
-                    itemBuilder: (_, index) {
-                      return InkWell(
-                        // onTap: () => Navigator.of(context).push(
-                        //   MaterialPageRoute(
-                        //     builder: (context) => DetailPage(imgPaths[index]),
-                        //   ),
-                        // ),
-                        onTap: () {
-                          setAswallPaper(imgPaths[index].path);
-                          print(imgPaths[index].path);
-                        },
-                        child: Container(
-                          child: Image.file(imgPaths[index]),
+      ),
+      floatingActionButton: InkWell(
+        onTap: () => Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => CreateHome())),
+        child: Container(
+          width: 50,
+          height: 50,
+          color: Colors.black,
+          child: Icon(
+            Icons.add,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImages() {
+    return FutureBuilder(
+      future: _getImages(),
+      builder: (_, snap) {
+        return snap.hasData
+            ? SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4),
+                delegate: SliverChildBuilderDelegate(
+                  (_, index) {
+                    return InkWell(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => DetailPage(imgPaths[1]),
                         ),
-                      );
-                    })
-                : Text('loading');
-          },
-        ),
+                      ),
+                      // onTap: () {
+                      //   setAswallPaper(imgPaths[index].path);
+                      //   print(imgPaths[index].path);
+                      // },
+                      child: Container(
+                        child: Image.file(imgPaths[1]),
+                      ),
+                    );
+                  },
+                  childCount: imgPaths.length * 20,
+                ),
+              )
+            : SliverList(
+                delegate: SliverChildListDelegate([Text('loading')]),
+              );
+      },
+    );
+  }
+}
+
+class TitltWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final settings =
+        context.dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
+    print('settings' + settings.currentExtent.toString());
+    return Text(
+      'Library',
+      style: TextStyle(
+        color: Colors.black,
+        fontSize: 34,
       ),
     );
   }
