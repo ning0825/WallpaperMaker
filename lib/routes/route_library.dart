@@ -2,27 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wallpaper_maker/utils/utils.dart';
 
-import 'utils.dart';
-
-// class GalleryPage extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       home: InheritedConfig(
-//         data: ConfigWidgetState(),
-//         child: GalleryHome(),
-//       ),
-//     );
-//   }
-// }
-
-class GalleryHome extends StatefulWidget {
+class LibraryPage extends StatefulWidget {
   @override
   _GalleryHomeState createState() => _GalleryHomeState();
 }
 
-class _GalleryHomeState extends State<GalleryHome> {
+class _GalleryHomeState extends State<LibraryPage> {
   List<File> imgPaths = [];
 
   @override

@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart' hide SelectableText;
-import 'package:wallpaper_maker/cus_gesture.dart';
-import 'package:wallpaper_maker/inherited_config.dart';
+import 'package:wallpaper_maker/cus_widgets/cus_gesture.dart';
+import 'package:wallpaper_maker/inherit/inherited_config.dart';
 import 'package:flutter/painting.dart';
 
 class CanvasPanel extends StatefulWidget {
@@ -21,6 +21,7 @@ class _CanvasPanelState extends State<CanvasPanel> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      print('addPersistentFrameCallback');
       setState(() {
         //TODO WARNING 上个界面不先收起键盘再跳转的话，这里获取到的高度是除了键盘的
         //在R1上，期望628，获取到的是297

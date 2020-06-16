@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:wallpaper_maker/gallery_page.dart';
+import 'package:wallpaper_maker/routes/route_library.dart';
 
 Future<Null> saveImage(
     GlobalKey key, BuildContext context, double pixelRatio) async {
@@ -21,6 +21,7 @@ Future<Null> saveImage(
   String storagePath = tempDir.path;
   String time = DateTime.now().toString();
   File file = new File(storagePath + '/screenshot$time.png');
+  print('file page: ' + file.path);
 
   if (!file.existsSync()) {
     file.createSync();
@@ -29,13 +30,12 @@ Future<Null> saveImage(
   await showToast(context: context, msg: 'success');
   Navigator.of(context).push(
     MaterialPageRoute(
-      builder: (_) => GalleryHome(),
+      builder: (_) => LibraryPage(),
     ),
   );
 }
 
-Future<void> showToast(
-    {@required BuildContext context, @required String msg}) async {
+Future<void> showToast({BuildContext context, String msg}) async {
   OverlayEntry overlayEntry = OverlayEntry(
       builder: (context) {
         return new Positioned(

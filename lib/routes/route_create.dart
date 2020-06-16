@@ -1,27 +1,31 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-
-import 'page_edit.dart';
+import 'package:wallpaper_maker/inherit/inherited_config.dart';
+import 'package:wallpaper_maker/routes/route_edit.dart';
 
 class CreateRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: CreatePage(),
+    return ConfigWidget(
+      child: MaterialApp(
+        home: CreateHome(),
+      ),
     );
   }
 }
 
-class CreatePage extends StatefulWidget {
+class CreateHome extends StatefulWidget {
   @override
-  _CreatePageState createState() => _CreatePageState();
+  _CreateHomeState createState() => _CreateHomeState();
 }
 
-class _CreatePageState extends State<CreatePage> {
+class _CreateHomeState extends State<CreateHome>
+    with SingleTickerProviderStateMixin {
   GlobalKey ttDetectedKey = GlobalKey();
   GlobalKey ttCustomKey = GlobalKey();
   GlobalKey formKey = GlobalKey();
+  ConfigWidgetState data;
 
   double top = 0.0;
   double left = 0.0;
@@ -33,21 +37,27 @@ class _CreatePageState extends State<CreatePage> {
   ///1: custom
   int selected = 0;
 
+  AnimationController controller;
+
   @override
   void initState() {
     super.initState();
     width = window.physicalSize.width;
     height = window.physicalSize.height;
-    WidgetsBinding.instance.addPersistentFrameCallback((timeStamp) {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       setState(() {
         top = ttDetectedKey.currentContext.size.height / 2;
         left = ttDetectedKey.currentContext.size.width / 2;
       });
     });
+
+    controller =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 700));
   }
 
   @override
   Widget build(BuildContext context) {
+    data = ConfigWidget.of(context);
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
@@ -57,14 +67,26 @@ class _CreatePageState extends State<CreatePage> {
               child: Column(
                 children: [
                   Spacer(),
-                  _buildDetected(),
-                  _buildCustom(),
+                  _buildSlideTransition(),
                   _buildStart(),
                 ],
               ),
             )
           ],
         ),
+      ),
+    );
+  }
+
+  _buildSlideTransition() {
+    return SlideTransition(
+      position:
+          Tween(begin: Offset.zero, end: Offset(0.0, -2.0)).animate(controller),
+      child: Column(
+        children: [
+          _buildDetected(),
+          _buildCustom(),
+        ],
       ),
     );
   }
@@ -86,7 +108,7 @@ class _CreatePageState extends State<CreatePage> {
                 setState(() {
                   selected = 0;
                 });
-                //点击auto时隐藏软键盘
+                //点击 detected 时隐藏软键盘
                 FocusScope.of(context).requestFocus(FocusNode());
               },
               child: Container(
@@ -206,43 +228,53 @@ class _CreatePageState extends State<CreatePage> {
     );
   }
 
+  bool init = true;
+
   _buildStart() {
     return InkWell(
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (context) => EditRouteHome(),
-      )),
-      child: Hero(
-        tag: 'herotag',
-        child: Container(
-          margin: EdgeInsets.only(left: left, bottom: 10, right: 20),
-          padding: EdgeInsets.all(20),
-          color: Colors.black,
-          child: Row(
-            children: [
-              Text(
-                'start',
-                style: TextStyle(color: Colors.white, fontSize: 30),
-              ),
-              Spacer(),
-              Icon(
-                Icons.arrow_forward,
-                color: Colors.white,
-                size: 30,
-              )
-            ],
-          ),
+      onTap: () {
+        setState(() {
+          init = false;
+          controller.forward(from: 0.0);
+        });
+      },
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 400),
+        curve: Curves.ease,
+        margin: EdgeInsets.only(
+            left: init ? 60 : 0, bottom: init ? 10 : 0, right: init ? 20 : 0),
+        padding: EdgeInsets.all(20),
+        color: Colors.black,
+        height: init ? 70 : 120,
+        onEnd: () {
+          (formKey.currentState as FormState).save();
+          data.size2Save = Size(width, height);
+          FocusScope.of(context).requestFocus(FocusNode());
+
+          Navigator.of(context).pop();
+          Navigator.of(context).push(CusPageRoute(child: EditRouteHome()));
+        },
+        child: Row(
+          children: [
+            Text(
+              'start',
+              style: TextStyle(color: Colors.white, fontSize: 30),
+            ),
+            Spacer(),
+            Icon(
+              Icons.arrow_forward,
+              color: Colors.white,
+              size: 30,
+            )
+          ],
         ),
       ),
     );
   }
 }
 
-// class CusPageRoute extends PageRouteBuilder {
-//   Widget child;
+class CusPageRoute extends PageRouteBuilder {
+  Widget child;
 
-//   CusPageRoute({this.child})
-//       : super(
-//             pageBuilder: (_, a1, a2) => child,
-//             transitionDuration: Duration(seconds: 1),
-//             transitionsBuilder: (_, a1, a2, w) => );
-// }
+  CusPageRoute({this.child}) : super(pageBuilder: (_, a1, a2) => child);
+}

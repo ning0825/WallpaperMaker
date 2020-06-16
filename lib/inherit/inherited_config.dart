@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart' hide SelectableText;
 import 'package:flutter/rendering.dart';
-import 'package:wallpaper_maker/configuration.dart';
 
-import 'selectable_bean.dart';
+import 'package:wallpaper_maker/beans/selectable_bean.dart';
+import 'configuration.dart';
+import 'constants.dart';
 
 class ConfigWidget extends StatefulWidget {
   final Widget child;
 
-  ConfigWidget({@required this.child});
+  ConfigWidget({this.child});
 
   @override
   ConfigWidgetState createState() => ConfigWidgetState();
@@ -35,7 +36,8 @@ class ConfigWidgetState extends State<ConfigWidget> {
   //size of stage area.
   Size stageSize;
 
-  int currentMainTool = 0;
+  MainTool currentMainTool = MainTool.background;
+  LeafTool currentLeafTool = LeafTool.pen_color;
 
   bool isScaling = false;
 
@@ -51,9 +53,18 @@ class ConfigWidgetState extends State<ConfigWidget> {
   ///4: BackgroundColor
   ///5: AlignTool
   ///6: RotationTool
-  setCurrentMainTool(int index) {
+  setCurrentMainTool(MainTool mainTool) {
     setState(() {
-      currentMainTool = index;
+      currentMainTool = mainTool;
+
+      if (mainTool == MainTool.pen) config.currentMode = 0;
+      if (mainTool == MainTool.shape) config.currentMode = 1;
+    });
+  }
+
+  setCurrentLeafTool(LeafTool leafTool) {
+    setState(() {
+      currentLeafTool = leafTool;
     });
   }
 
@@ -75,16 +86,16 @@ class ConfigWidgetState extends State<ConfigWidget> {
 
       switch (currentSelectable.runtimeType.toString()) {
         case 'SelectablePath':
-          currentMainTool = 0;
+          currentMainTool = MainTool.pen;
           break;
         case 'SelectableShape':
-          currentMainTool = 1;
+          currentMainTool = MainTool.shape;
           break;
         case 'SelectableText':
-          currentMainTool = 2;
+          currentMainTool = MainTool.text;
           break;
         case 'SelectableImage':
-          currentMainTool = 3;
+          currentMainTool = MainTool.image;
           break;
         default:
       }
@@ -111,7 +122,7 @@ class ConfigWidgetState extends State<ConfigWidget> {
 
   setUnselected() {
     setState(() {
-      currentSelectable.isSelected = false;
+      currentSelectable?.isSelected = false;
       currentSelectable = null;
       isSelectedMode = false;
       selectedIndex = -1;
@@ -631,7 +642,7 @@ class ConfigWidgetState extends State<ConfigWidget> {
   void initState() {
     super.initState();
     config = Configuration()
-      ..bgColor = Colors.red[100]
+      ..bgColor = Colors.white
       ..currentMode = 0
       ..penColor = Colors.red
       ..penWidth = 5
