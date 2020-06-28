@@ -15,6 +15,7 @@ import 'package:wallpaper_maker/utils/utils.dart';
 
 GlobalKey rpbKey = GlobalKey();
 Size size;
+BuildContext mContext;
 
 class EditRoute extends StatefulWidget {
   @override
@@ -61,6 +62,7 @@ class _EditRouteState extends State<EditRoute>
 
   @override
   Widget build(BuildContext context) {
+    mContext = context;
     data = ConfigWidget.of(context);
     return Scaffold(
       body: Container(
@@ -80,12 +82,6 @@ class _EditRouteState extends State<EditRoute>
         ]),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    print('dispose');
-    super.dispose();
   }
 
   _buildAnimatedLeafTools() {
@@ -234,28 +230,6 @@ class _BottomToolbarState extends State<BottomToolbar> {
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.pen_color);
               widget.controller();
-
-              //test new leaftool
-              // showDialog(
-              //     context: context,
-
-              //     builder: (_) {
-              //       return Dialog(
-              //         child: Container(child: Text('test')),
-              //       );
-              //     });
-              // showGeneralDialog(
-              //     context: context,
-              //     barrierDismissible: true,
-              //     barrierLabel: 'title',
-              //     transitionDuration: Duration(milliseconds: 100),
-              //     pageBuilder: (_, a1, a2) {
-              //       return Dialog(
-              //         child: Container(
-              //           child: Text('test'),
-              //         ),
-              //       );
-              //     });
             },
           ),
           RaisedButton(
@@ -362,12 +336,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
         result = [
           RaisedButton(
             child: Text('save'),
-            onPressed: () {
-              // List<Map> list = [
-              //   {
-              //     ':{'backgroundColor': data.getBackroundColor().value}
-              //   }
-              // ];
+            onPressed: () async {
               List<Map<String, dynamic>> list = [
                 {
                   'background': {'background': data.getBackroundColor().value}
@@ -379,9 +348,10 @@ class _BottomToolbarState extends State<BottomToolbar> {
 
               String jsonString = jsonEncode(list);
               String name = DateTime.now().millisecondsSinceEpoch.toString();
-              saveImage(rpbKey, context, data.size2Save.width / data.size.width,
-                  name);
-              saveJson(name, jsonString);
+              await saveImage(rpbKey, mContext,
+                  data.size2Save.width / data.size.width, name);
+              await saveJson(name, jsonString);
+              data.clear();
             },
           ),
         ];

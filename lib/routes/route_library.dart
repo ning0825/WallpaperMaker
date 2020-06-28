@@ -201,76 +201,100 @@ class _LibraryRouteState extends State<LibraryRoute> {
     return FutureBuilder(
       future: _getImages(),
       builder: (_, snap) {
-        return snap.hasData
-            ? SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3, childAspectRatio: 0.6),
-                delegate: SliverChildBuilderDelegate(
-                  (_, index) {
-                    return InkWell(
-                      onTap: () {
-                        if (selectMode) {
-                          setState(() {
-                            imgFiles[index].isSelected =
-                                !imgFiles[index].isSelected;
-                            imgFiles[index].isSelected
-                                ? selectedImgs.add(imgFiles[index].imgFile)
-                                : selectedImgs.remove(imgFiles[index].imgFile);
-                            imgFiles[index].isSelected
-                                ? selectedJson.add(File(appFilePath +
-                                    imgFiles[index]
-                                        .imgFile
-                                        .path
-                                        .split('/')
-                                        .last
-                                        .split('.')
-                                        .first +
-                                    '.json'))
-                                : selectedJson.removeWhere(
-                                    (element) {
-                                      return element.path
-                                              .split('/')
-                                              .last
-                                              .split('.')
-                                              .first ==
-                                          imgFiles[index]
-                                              .imgFile
-                                              .path
-                                              .split('/')
-                                              .last
-                                              .split('.')
-                                              .first;
-                                    },
-                                  );
-                            print(selectedImgs.toList());
-                          });
-                        } else {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  DetailRoute(image: imgFiles[index].imgFile),
-                            ),
-                          );
-                        }
-                      },
-                      child: Container(
-                        margin: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: imgFiles[index].isSelected
-                                ? Border.all(color: Colors.black, width: 2)
-                                : null),
-                        padding: EdgeInsets.all(8.0),
-                        child: Image.file(imgFiles[index].imgFile),
-                      ),
-                    );
-                  },
-                  childCount: imgFiles.length,
-                ),
-              )
-            : SliverList(
-                delegate: SliverChildListDelegate([Text('loading')]),
-              );
+        // return snap.hasData
+        //     ?
+        //     : SliverList(
+        //         delegate: SliverChildListDelegate([Text('loading')]),
+        //       );
+        if (snap.hasData) {
+          if (imgFiles.length > 0) {
+            return SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3, childAspectRatio: 0.6),
+              delegate: SliverChildBuilderDelegate(
+                (_, index) {
+                  return InkWell(
+                    onTap: () {
+                      if (selectMode) {
+                        setState(() {
+                          imgFiles[index].isSelected =
+                              !imgFiles[index].isSelected;
+                          imgFiles[index].isSelected
+                              ? selectedImgs.add(imgFiles[index].imgFile)
+                              : selectedImgs.remove(imgFiles[index].imgFile);
+                          imgFiles[index].isSelected
+                              ? selectedJson.add(File(appFilePath +
+                                  imgFiles[index]
+                                      .imgFile
+                                      .path
+                                      .split('/')
+                                      .last
+                                      .split('.')
+                                      .first +
+                                  '.json'))
+                              : selectedJson.removeWhere(
+                                  (element) {
+                                    return element.path
+                                            .split('/')
+                                            .last
+                                            .split('.')
+                                            .first ==
+                                        imgFiles[index]
+                                            .imgFile
+                                            .path
+                                            .split('/')
+                                            .last
+                                            .split('.')
+                                            .first;
+                                  },
+                                );
+                          print(selectedImgs.toList());
+                        });
+                      } else {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                DetailRoute(image: imgFiles[index].imgFile),
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      margin: EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: imgFiles[index].isSelected
+                              ? Border.all(color: Colors.black, width: 2)
+                              : null),
+                      padding: EdgeInsets.all(8.0),
+                      child: Image.file(imgFiles[index].imgFile),
+                    ),
+                  );
+                },
+                childCount: imgFiles.length,
+              ),
+            );
+          } else {
+            // return Center(
+            //   child: Text('no library'),
+            // );
+            return SliverFillRemaining(
+              child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Container(
+                    padding: EdgeInsets.only(top: 100),
+                    width: 200,
+                    child: Text(
+                      'No wallpaper in your library, click + button below to create one.',
+                    ),
+                  )),
+            );
+          }
+        } else {
+          return SliverList(
+            delegate: SliverChildListDelegate([Text('loading')]),
+          );
+        }
       },
     );
   }
