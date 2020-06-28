@@ -1,7 +1,8 @@
 import 'dart:math';
-import 'dart:ui';
+import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart' hide Image;
+import 'package:flutter/material.dart';
+import 'package:wallpaper_maker/utils/utils.dart';
 
 abstract class Selectable {
   Rect rect;
@@ -13,19 +14,29 @@ abstract class Selectable {
   double tmpAngle = 0.0;
 
   bool isSelected = false;
-  bool isRot = false;
-  bool isTrans = false;
+  // bool isRot = false;
+  // bool isTrans = false;
 
   Offset offset = Offset.zero;
-  Offset lastOffset = Offset.zero;
+  // Offset lastOffset = Offset.zero;
 
   double rotRadians = 0.0;
   double scaleRadioX = 1.0;
   double scaleRadioY = 1.0;
 
-  double lastScaleX = 1.0;
-  double lastScaleY = 1.0;
-  double lastAngle = 0.0;
+  Map<String, dynamic> toJson() {
+    return {
+      'offsetX': offset.dx,
+      'offsetY': offset.dy,
+      'scaleRadioX': scaleRadioX,
+      'scaleRadioY': scaleRadioY,
+      'rotRadians': rotRadians,
+    };
+  }
+
+  // double lastScaleX = 1.0;
+  // double lastScaleY = 1.0;
+  // double lastAngle = 0.0;
 
 //------------------Draw Controller------------------
   var controllerLength = 10;
@@ -134,8 +145,8 @@ abstract class Selectable {
         canvas.drawLine(rightCtrlStart, rightCtrlEnd, _ctrlPaint);
         canvas.drawLine(bottomCtrlStart, bottomCtrlEnd, _ctrlPaint);
 
-        canvas.drawRect(rightControlRect, _ctrlPaint);
-        canvas.drawRect(leftControlRect, _ctrlPaint);
+        // canvas.drawRect(rightControlRect, _ctrlPaint);
+        // canvas.drawRect(leftControlRect, _ctrlPaint);
       }
       if (this is SelectableText) {
         canvas.drawLine(rightCtrlStart, rightCtrlEnd, _ctrlPaint);
@@ -146,38 +157,34 @@ abstract class Selectable {
 //Construct selected rect path.
   Path toPath(Rect rect, double rotAngle, double scaleX, [double scaleY]) {
     scaleY ??= scaleX;
-    //
+
     rect = Rect.fromCenter(
         center: rect.center,
         width: rect.width * scaleX,
         height: rect.height * scaleY);
     rect = rect.inflate(10);
 
-    ///TODO: Code optimization
     var a = atan((rect.center.dy - rect.topLeft.dy) /
         (rect.center.dx - rect.topLeft.dx)); //原始弧度
     var c = a + rotAngle; //旋转后弧度
     var r = (rect.center - rect.topLeft).distance; //半径长
     var newTLx = rect.center.dx - cos(c) * r;
     var newTLy = rect.center.dy - sin(c) * r;
+    var osNewTL = Offset(newTLx, newTLy);
 
-    var a1 = atan((rect.center.dy - rect.topRight.dy) /
-        -(rect.center.dx - rect.topRight.dx));
-    var c1 = a1 - rotAngle;
-    var newTRx = rect.center.dx + cos(c1) * r;
-    var newTRy = rect.center.dy - sin(c1) * r;
+    var osNewTR = osNewTL + Offset.fromDirection(rotAngle, rect.width);
+    var newTRx = osNewTR.dx;
+    var newTRy = osNewTR.dy;
 
-    var a2 = atan((rect.center.dy - rect.bottomRight.dy) /
-        (rect.center.dx - rect.bottomRight.dx));
-    var c2 = a2 + rotAngle;
-    var newBRx = rect.center.dx + cos(c2) * r;
-    var newBRy = rect.center.dy + sin(c2) * r;
+    var osNewBR =
+        osNewTR + Offset.fromDirection(pi / 2 + rotAngle, rect.height);
+    var newBRx = osNewBR.dx;
+    var newBRy = osNewBR.dy;
 
-    var a3 = atan(-(rect.center.dy - rect.bottomLeft.dy) /
-        (rect.center.dx - rect.bottomLeft.dx));
-    var c3 = a3 - rotAngle;
-    var newBLx = rect.center.dx - cos(c3) * r;
-    var newBLy = rect.center.dy + sin(c3) * r;
+    var osNewBL =
+        osNewTL + Offset.fromDirection(pi / 2 + rotAngle, rect.height);
+    var newBLx = osNewBL.dx;
+    var newBLy = osNewBL.dy;
 
 //CtlrLeft
     var leftCenterPoint = Offset((newTLx + newBLx) / 2, (newTLy + newBLy) / 2);
@@ -254,11 +261,10 @@ class SelectableText extends Selectable {
 
   Color textColor;
 
-  TextSpan ts;
+  TextSpan _ts;
 
   //控制移动
-  Offset totalOffset;
-  // Offset initOffset;
+  // Offset totalOffset;
 
   //字体
   String fontFamily;
@@ -279,11 +285,40 @@ class SelectableText extends Selectable {
 
   double get maxWidth => _maxWidth;
 
-  SelectableText({this.text, this.totalOffset});
+  SelectableText({this.text, Offset mOffset}) {
+    offset = mOffset;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'text': text,
+      'textColor': textColor.value,
+      // 'totalOffsetX': totalOffset.dx,
+      // 'totalOffsetY': totalOffset.dy,
+      'fontFamily': fontFamily,
+      'textWeight': textWeight,
+      'maxWidth': maxWidth,
+      'fontSize': fontSize
+    }..addAll(super.toJson());
+  }
+
+  factory SelectableText.fromJson(Map<String, dynamic> map) {
+    return SelectableText()
+      ..text = map['text']
+      ..textColor = Color(map['textColor'])
+      ..fontFamily = map['fontFamily']
+      ..textWeight = map['textWeight']
+      ..maxWidth = map['maxWidth']
+      ..fontSize = map['fontSize']
+      ..offset = Offset(map['offsetX'], map['offsetY'])
+      ..scaleRadioX = map['scaleRadioX']
+      ..scaleRadioY = map['scaleRadioY']
+      ..rotRadians = map['rotRadians'];
+  }
 
   @override
   void draw(Canvas canvas) {
-    ts = TextSpan(
+    _ts = TextSpan(
       text: text,
       style: TextStyle(
           color: textColor,
@@ -293,12 +328,11 @@ class SelectableText extends Selectable {
     );
     // totalOffset = offset + totalOffset;
     TextPainter tp = TextPainter(
-      text: ts,
+      text: _ts,
       textDirection: TextDirection.ltr,
     );
     tp.layout(maxWidth: maxWidth);
-    rect = Rect.fromCenter(
-        center: totalOffset + offset, width: tp.width, height: tp.height);
+    rect = Rect.fromCenter(center: offset, width: tp.width, height: tp.height);
     selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
 
     canvas.save();
@@ -306,25 +340,53 @@ class SelectableText extends Selectable {
     canvas.rotate(rotRadians);
     canvas.scale(scaleRadioX, scaleRadioY);
     canvas.translate(-rect.center.dx, -rect.center.dy);
-    tp.paint(canvas,
-        totalOffset + offset - Offset(tp.size.width / 2, tp.size.height / 2));
+    tp.paint(canvas, offset - Offset(tp.size.width / 2, tp.size.height / 2));
     canvas.restore();
   }
 }
 
 class SelectableImage extends Selectable {
-  Image img;
+  ui.Image img;
+  // Offset initPosition;
+  Rect clipRect;
+  double width;
 
-  Offset initPosition;
+  //The name to find image in dir.
+  String name;
 
-  SelectableImage(this.img, this.initPosition);
+  SelectableImage({this.img, Offset mOffset, this.width})
+      : clipRect = Rect.fromLTRB(
+            0.0, 0.0, img.width.toDouble(), img.height.toDouble()) {
+    mPaint = Paint();
+    offset = mOffset;
+  }
+
+  Map<String, dynamic> toJson() {
+    String name = DateTime.now().millisecondsSinceEpoch.toString();
+    saveImgObject(img, name);
+    return {
+      'imgName': name,
+      'clipRectL': clipRect.left,
+      'clipRectT': clipRect.top,
+      'clipRectR': clipRect.right,
+      'clipRectB': clipRect.bottom,
+      'width': width,
+    }..addAll(super.toJson());
+  }
+
+  factory SelectableImage.fromJson(Map<String, dynamic> map) {
+    return SelectableImage(
+        mOffset: Offset(map['offsetX'], map['offsetY']), width: map['width'])
+      ..clipRect = Rect.fromLTRB(map['clipRectL'], map['clipRectT'],
+          map['clipRectR'], map['clipRectB']);
+  }
 
   @override
   void draw(Canvas canvas) {
     rect = Rect.fromCenter(
-        center: initPosition + offset,
-        width: img.width.toDouble() / 5,
-        height: img.height.toDouble() / 5);
+        center: offset,
+        width: width - 40,
+        height: (width - 40) * clipRect.height / clipRect.width);
     selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
     canvas.save();
     canvas.translate(rect.center.dx, rect.center.dy);
@@ -332,7 +394,8 @@ class SelectableImage extends Selectable {
     canvas.scale(scaleRadioX, scaleRadioY);
     canvas.translate(-rect.center.dx, -rect.center.dy);
     //TODO: Too small rect will cause pixel compression.
-    paintImage(canvas: canvas, rect: rect, image: img);
+    // paintImage(canvas: canvas, rect: rect, image: img);
+    canvas.drawImageRect(img, clipRect, rect, mPaint);
     canvas.restore();
   }
 }
@@ -357,7 +420,7 @@ class SelectableShape extends Selectable {
 
   var tlX, tlY, brX, brY;
 
-  SelectableShape(this.startPoint, this.shapeType, Paint paint) {
+  SelectableShape({this.startPoint, this.shapeType, Paint paint}) {
     endPoint = startPoint;
     tlOffset = Offset.zero;
     brOffset = Offset.zero;
@@ -371,9 +434,36 @@ class SelectableShape extends Selectable {
       ..color = mPaint.color;
   }
 
-  @override
-  void drawSelected(Canvas canvas) {
-    super.drawSelected(canvas);
+  Map<String, dynamic> toJson() {
+    return {
+      'shapeType': shapeType,
+      'startPointX': startPoint.dx,
+      'startPointY': startPoint.dy,
+      'endPointX': endPoint.dx,
+      'endPointY': endPoint.dy,
+      'tlOffsetX': tlOffset.dx,
+      'tlOffsetY': tlOffset.dy,
+      'brOffsetX': brOffset.dx,
+      'brOffsetY': brOffset.dy,
+      'shapeWidth': mPaint.strokeWidth,
+      'fill': fill,
+      'fillColor': fillPaint.color.value,
+      'color': mPaint.color.value,
+      'strokeWidth': mPaint.strokeWidth
+    }..addAll(super.toJson());
+  }
+
+  factory SelectableShape.fromJson(Map<String, dynamic> map) {
+    var fillPaint = Paint()..color = Color(map['fillColor']);
+    return SelectableShape(
+        startPoint: Offset(map['startPointX'], map['startPointY']),
+        shapeType: map['shapeType'],
+        paint: Paint())
+      ..endPoint = Offset(map['endPointX'], map['endPointY'])
+      ..tlOffset = Offset(map['tlOffsetX'], map['tlOffsetY'])
+      ..brOffset = Offset(map['brOffsetX'], map['brOffsetY'])
+      ..fill = map['fill']
+      ..fillPaint = fillPaint;
   }
 
   @override
@@ -396,12 +486,6 @@ class SelectableShape extends Selectable {
 
     topLeftPoint = Offset(tlX, tlY);
     bottomRightPoint = Offset(brX, brY);
-
-    // print('lastTLoffset: ' + lastTLOffset.toString());
-    // print('lastBRoffset: ' + lastBROffset.toString());
-    // print('tloffset: ' + tlOffset.toString());
-    // print('broffset: ' + brOffset.toString());
-    // print('=' * 40);
 
     rect =
         Rect.fromPoints(topLeftPoint + tlOffset, bottomRightPoint + brOffset);
@@ -451,8 +535,56 @@ class SelectableShape extends Selectable {
 class SelectablePath extends Selectable {
   Path path;
 
-  SelectablePath(this.path, Paint paint) {
+  List<MyPoint> points;
+
+  SelectablePath(Paint paint) {
     mPaint = paint;
+    path = Path();
+    points = [];
+  }
+
+  moveTo(double dx, double dy) {
+    path.moveTo(dx, dy);
+    points.add(MyPoint(dx, dy));
+  }
+
+  lineTo(double dx, double dy) {
+    path.lineTo(dx, dy);
+    points.add(MyPoint(dx, dy));
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'color': mPaint.color.value,
+      'strokeWidth': mPaint.strokeWidth,
+      'points': points,
+      'offsetX': offset.dx,
+      'offsetY': offset.dy
+    }..addAll(super.toJson());
+  }
+
+  factory SelectablePath.fromJson(Map<String, dynamic> map) {
+    Path path = Path();
+    List<MyPoint> myPoints = [];
+    List<Map> points = (map['points'] as List).cast();
+    for (var i = 0; i < points.length; i++) {
+      if (i == 0) {
+        path.moveTo(
+            MyPoint.fromJson(points[i]).x, MyPoint.fromJson(points[i]).y);
+        myPoints.add(MyPoint.fromJson(points[i]));
+      } else {
+        path.lineTo(
+            MyPoint.fromJson(points[i]).x, MyPoint.fromJson(points[i]).y);
+        myPoints.add(MyPoint.fromJson(points[i]));
+      }
+    }
+    return SelectablePath(Paint())
+      ..path = path
+      ..points = myPoints
+      ..offset = Offset(map['offsetX'], map['offsetY'])
+      ..scaleRadioX = map['scaleRadioX']
+      ..scaleRadioY = map['scaleRadioY']
+      ..rotRadians = map['rotRadians'];
   }
 
   @override
@@ -490,3 +622,24 @@ class SelectablePath extends Selectable {
     selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
   }
 }
+
+class MyPoint {
+  MyPoint(this.x, this.y);
+
+  double x;
+  double y;
+
+  Map<String, dynamic> toJson() {
+    return {'x': x, 'y': y};
+  }
+
+  factory MyPoint.fromJson(Map<String, dynamic> map) {
+    return MyPoint(map['x'], map['y']);
+  }
+}
+
+// class SerializableBean {
+//   String name;
+//   dynamic value;
+
+// }

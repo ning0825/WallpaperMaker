@@ -9,8 +9,8 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wallpaper_maker/routes/route_library.dart';
 
-Future<Null> saveImage(
-    GlobalKey key, BuildContext context, double pixelRatio) async {
+Future<void> saveImage(
+    GlobalKey key, BuildContext context, double pixelRatio, String name) async {
   RenderRepaintBoundary boundary = key.currentContext.findRenderObject();
   ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
 
@@ -19,8 +19,7 @@ Future<Null> saveImage(
   Uint8List sourceBytes = sourceByteData.buffer.asUint8List();
   Directory tempDir = await getExternalStorageDirectory();
   String storagePath = tempDir.path;
-  String time = DateTime.now().toString();
-  File file = new File(storagePath + '/screenshot$time.png');
+  File file = new File(storagePath + '/$name.png');
   print('file page: ' + file.path);
 
   if (!file.existsSync()) {
@@ -28,11 +27,33 @@ Future<Null> saveImage(
   }
   file.writeAsBytesSync(sourceBytes);
   await showToast(context: context, msg: 'success');
+  Navigator.of(context).pop();
   Navigator.of(context).push(
     MaterialPageRoute(
-      builder: (_) => LibraryPage(),
+      builder: (_) => LibraryRoute(),
     ),
   );
+}
+
+//保存用户添加到画板的图片，供二次编辑
+Future<void> saveImgObject(ui.Image img, String name) async {
+  ByteData byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+  Uint8List sourceBytes = byteData.buffer.asUint8List();
+  String path = await getExternalStorageDirectory()
+      .then((value) => value.path + '/jsons');
+  File file = File(path + '/' + name + '.png');
+  file.writeAsBytes(sourceBytes);
+}
+
+//根据名称获取保存的图片
+Future<ui.Image> getImgObject(String name) async {
+  String path = await getExternalStorageDirectory()
+      .then((value) => value.path + '/jsons');
+  File file = File(path + '/' + name + '.png');
+  Uint8List bytes = await file.readAsBytes();
+  return ui
+      .instantiateImageCodec(bytes)
+      .then((value) => value.getNextFrame().then((value) => value.image));
 }
 
 Future<void> showToast({BuildContext context, String msg}) async {
@@ -60,10 +81,52 @@ Future<void> showToast({BuildContext context, String msg}) async {
       .then((value) => overlayEntry.remove());
 }
 
-///set wallpaper directly for now.
+///set wallpaper directly.
 ///
 ///TODO User can choose lockscreen wallpaper or wallpaper.
-void setAswallPaper(String path) async {
+Future<void> setAswallPaper(BuildContext context, String path) async {
   const platform = MethodChannel('example.wallpaper_maker/wallpaper');
   await platform.invokeMethod('setAsWallpaper', {'path': path});
+  showToast(context: context, msg: 'set success');
 }
+
+//Save the image to internal storage
+//This method copy the image from /storage/emulated/0/Android/data/com.example.wallpaper_maker/files/example.png
+//to /storage/emulated/0/WallpaperMaker/example.png
+Future<void> saveImage2Local(String path) async {
+  File file = File(path);
+
+  String appDirPath = '/storage/emulated/0/WallpaperMaker/';
+  Directory dir = Directory(appDirPath);
+  if (!await dir.exists()) {
+    await dir.create();
+  }
+  File newFile = await file.copy(appDirPath + path.split('/').last);
+  print(newFile.path);
+
+  refreshMedia(newFile.path);
+}
+
+//Refresh media library of system to make image show in the gallery.
+void refreshMedia(String path) {
+  const platform = MethodChannel('example.wallpaper_maker/wallpaper');
+  platform.invokeMethod('refreshMedia', {'path': path});
+}
+
+Future<void> saveJson(String objName, String data) async {
+  //Create folder
+  Directory fileDir = await getExternalStorageDirectory()
+      .then((value) => Directory(value.path + '/jsons'));
+  if (!await fileDir.exists()) {
+    await fileDir.create();
+  }
+
+  //Create file
+  File jsonfile = File(fileDir.path + '/' + '$objName.json');
+
+  await jsonfile.writeAsString(data);
+}
+
+Future<void> delJson(String objName) async {}
+
+String getJsonByName() {}

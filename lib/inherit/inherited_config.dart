@@ -29,7 +29,7 @@ class ConfigWidgetState extends State<ConfigWidget> {
   BuildContext mContext;
 
   //分辨率
-  Size size2Save;
+  Size size2Save = Size(1080, 1920);
 
   //size of canvas.
   Size size;
@@ -37,14 +37,9 @@ class ConfigWidgetState extends State<ConfigWidget> {
   Size stageSize;
 
   MainTool currentMainTool = MainTool.background;
-  LeafTool currentLeafTool = LeafTool.pen_color;
+  LeafTool currentLeafTool;
 
   bool isScaling = false;
-
-  // void rebuildAll(Element el) {
-  //   el.markNeedsBuild();
-  //   el.visitChildren(rebuildAll);
-  // }
 
   ///0: Pen
   ///1: Shape
@@ -370,7 +365,7 @@ class ConfigWidgetState extends State<ConfigWidget> {
   //Text
   //---------------------------------------------------------------------------------
   SelectableText assembleSelectableText(String text, Offset offset) {
-    return SelectableText(text: text, totalOffset: offset)
+    return SelectableText(text: text, mOffset: offset)
       ..textColor = config.textColor
       ..textWeight = 3;
   }
@@ -429,6 +424,13 @@ class ConfigWidgetState extends State<ConfigWidget> {
         : config.typoWeight.round();
   }
 
+  //Image
+  setImageClip(Rect clipRect) {
+    setState(() {
+      (currentSelectable as SelectableImage).clipRect = clipRect;
+    });
+  }
+
   var lastPoint = Offset.zero;
   var tmpOffset = Offset.zero;
   var tmpTLOffset = Offset.zero;
@@ -442,22 +444,25 @@ class ConfigWidgetState extends State<ConfigWidget> {
           currentSelectable.hitTest(details.localPosition) &&
               !currentSelectable.isCtrling;
 
+      if (currentSelectable.isMoving) {
+        tmpOffset = currentSelectable.offset;
+      }
+
       lastPoint = details.localPosition;
     } else {
       switch (config.currentMode) {
         case 0:
           selectables.add(
-            SelectablePath(
-                Path()
-                  ..moveTo(details.localPosition.dx, details.localPosition.dy),
-                getCurrentPen()),
+            SelectablePath(getCurrentPen())
+              ..moveTo(details.localPosition.dx, details.localPosition.dy),
           );
           break;
         case 1:
           selectables.add(SelectableShape(
-              Offset(details.localPosition.dx, details.localPosition.dy),
-              config.shapeType,
-              getCurrentShape()));
+              startPoint:
+                  Offset(details.localPosition.dx, details.localPosition.dy),
+              shapeType: config.shapeType,
+              paint: getCurrentShape()));
           break;
 
         default:
@@ -524,17 +529,18 @@ class ConfigWidgetState extends State<ConfigWidget> {
             tmpTLOffset = sshape.tlOffset;
             tmpBROffset = sshape.brOffset;
           } else {
-            currentSelectable.offset = currentSelectable.lastOffset +
-                details.localPosition -
-                lastPoint;
-            tmpOffset = currentSelectable.offset;
+            // currentSelectable.offset = currentSelectable.lastOffset +
+            //     details.localPosition -
+            //     lastPoint;
+            // tmpOffset = currentSelectable.offset;
+            currentSelectable.offset =
+                tmpOffset + details.localPosition - lastPoint;
           }
         }
       } else {
         switch (config.currentMode) {
           case 0:
             (selectables[selectables.length - 1] as SelectablePath)
-                .path
                 .lineTo(details.localPosition.dx, details.localPosition.dy);
             break;
           case 1:
@@ -554,12 +560,16 @@ class ConfigWidgetState extends State<ConfigWidget> {
         (currentSelectable as SelectableShape).lastTLOffset = tmpTLOffset;
         (currentSelectable as SelectableShape).lastBROffset = tmpBROffset;
       } else {
-        currentSelectable.lastOffset = tmpOffset;
+        // currentSelectable.lastOffset = tmpOffset;
       }
       currentSelectable.isMoving = false;
       currentSelectable.isCtrling = false;
     }
   }
+
+  var tmpScaleX;
+  var tmpScaleY;
+  var tmpRadius;
 
   handleScaleStart(ScaleStartDetails details) {
     // if (isSelectedMode) {
@@ -568,38 +578,57 @@ class ConfigWidgetState extends State<ConfigWidget> {
     //   }
     //   lastPoint = details.localFocalPoint;
     // }
+    if (isSelectedMode) {
+      tmpScaleX = currentSelectable.scaleRadioX;
+      tmpScaleY = currentSelectable.scaleRadioY;
+      tmpRadius = currentSelectable.rotRadians;
+    }
   }
 
   handleScaleUpdate(ScaleUpdateDetails details) {
     setState(() {
       if (isSelectedMode && details.scale != 1.0) {
+        // //Scale
+        // currentSelectable.scaleRadioX =
+        //     currentSelectable.lastScaleX * details.scale;
+        // currentSelectable.scaleRadioY =
+        //     currentSelectable.lastScaleY * details.scale;
+        // currentSelectable.tmpScaleX =
+        //     currentSelectable.lastScaleX * details.scale;
+        // currentSelectable.tmpScaleY =
+        //     currentSelectable.lastScaleY * details.scale;
+
+        // //Rotation
+        // currentSelectable.isRot = true;
+
+        // currentSelectable.rotRadians =
+        //     details.rotation + currentSelectable.lastAngle;
+        // currentSelectable.tmpAngle =
+        //     details.rotation + currentSelectable.lastAngle;
+
         //Scale
-        currentSelectable.scaleRadioX =
-            currentSelectable.lastScaleX * details.scale;
-        currentSelectable.scaleRadioY =
-            currentSelectable.lastScaleY * details.scale;
-        currentSelectable.tmpScaleX =
-            currentSelectable.lastScaleX * details.scale;
-        currentSelectable.tmpScaleY =
-            currentSelectable.lastScaleY * details.scale;
+        currentSelectable.scaleRadioX = tmpScaleX * details.scale;
+        currentSelectable.scaleRadioY = tmpScaleY * details.scale;
+        // currentSelectable.tmpScaleX =
+        //     currentSelectable.lastScaleX * details.scale;
+        // currentSelectable.tmpScaleY =
+        //     currentSelectable.lastScaleY * details.scale;
 
         //Rotation
-        currentSelectable.isRot = true;
+        // currentSelectable.isRot = true;
 
-        currentSelectable.rotRadians =
-            details.rotation + currentSelectable.lastAngle;
-        currentSelectable.tmpAngle =
-            details.rotation + currentSelectable.lastAngle;
+        currentSelectable.rotRadians = details.rotation + tmpRadius;
+        currentSelectable.tmpAngle = details.rotation + tmpRadius;
       }
     });
   }
 
   handleScaleEnd(ScaleEndDetails details) {
     if (isSelectedMode) {
-      currentSelectable.lastScaleX = currentSelectable.tmpScaleX;
-      currentSelectable.lastScaleY = currentSelectable.tmpScaleY;
+      // currentSelectable.lastScaleX = currentSelectable.tmpScaleX;
+      // currentSelectable.lastScaleY = currentSelectable.tmpScaleY;
 
-      currentSelectable.lastAngle = currentSelectable.tmpAngle;
+      // currentSelectable.lastAngle = currentSelectable.tmpAngle;
 
       // currentSelectable.offset = Offset.zero;
 

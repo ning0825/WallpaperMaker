@@ -26,10 +26,13 @@ dependencies:
   path_provider: ^1.6.7
   flutter_svg: ^0.17.4
   image_picker: ^0.6.6+1
+  json_annotation: ^3.0.1
+  build_runner: ^1.10.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  json_serializable: ^3.3.0
 
 
 # For information on the generic Dart part of this file, see the
@@ -62,6 +65,9 @@ flutter:
     - assets/icons/close.png
     - assets/icons/rotate.png
     - assets/icons/zoom.png
+    - assets/icons/img.jpg
+    - assets/icons/img2.jpg
+    - assets/icons/img3.jpg
 
   fonts:
     - family: Polingo

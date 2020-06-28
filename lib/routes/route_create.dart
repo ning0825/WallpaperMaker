@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:wallpaper_maker/inherit/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_edit.dart';
 
-class CreateHome extends StatefulWidget {
+class CreateRoute extends StatefulWidget {
   @override
-  _CreateHomeState createState() => _CreateHomeState();
+  _CreateRouteState createState() => _CreateRouteState();
 }
 
-class _CreateHomeState extends State<CreateHome>
+class _CreateRouteState extends State<CreateRoute>
     with SingleTickerProviderStateMixin {
   GlobalKey ttDetectedKey = GlobalKey();
   GlobalKey ttCustomKey = GlobalKey();
@@ -241,7 +241,7 @@ class _CreateHomeState extends State<CreateHome>
           FocusScope.of(context).requestFocus(FocusNode());
 
           Navigator.of(context).pop();
-          Navigator.of(context).push(CusPageRoute(child: EditRouteHome()));
+          Navigator.of(context).push(CusPageRoute(child: EditRoute()));
         },
         child: Row(
           children: [

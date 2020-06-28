@@ -21,10 +21,7 @@ class _CanvasPanelState extends State<CanvasPanel> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      print('addPersistentFrameCallback');
       setState(() {
-        //TODO WARNING 上个界面不先收起键盘再跳转的话，这里获取到的高度是除了键盘的
-        //在R1上，期望628，获取到的是297
         widgetHeight = context.size.height;
         data.setSize(height: widgetHeight, ratio: data.size2Save.aspectRatio);
       });
@@ -75,8 +72,11 @@ class MyCanvas extends CustomPainter {
     canvas.drawColor(data.config.bgColor, BlendMode.src);
 
     //draw selectables
+    //TODO: draw select rect over other items, but iterate twice can cause performance issue.
     for (var item in data.selectables) {
       item.draw(canvas);
+    }
+    for (var item in data.selectables) {
       item.drawSelected(canvas);
     }
   }
