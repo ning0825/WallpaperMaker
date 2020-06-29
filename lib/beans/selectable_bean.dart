@@ -361,6 +361,10 @@ class SelectableImage extends Selectable {
     offset = mOffset;
   }
 
+  SelectableImage.empty() {
+    mPaint = Paint();
+  }
+
   Map<String, dynamic> toJson() {
     String name = DateTime.now().millisecondsSinceEpoch.toString();
     saveImgObject(img, name);
@@ -375,10 +379,11 @@ class SelectableImage extends Selectable {
   }
 
   factory SelectableImage.fromJson(Map<String, dynamic> map) {
-    return SelectableImage(
-        mOffset: Offset(map['offsetX'], map['offsetY']), width: map['width'])
+    return SelectableImage.empty()
       ..clipRect = Rect.fromLTRB(map['clipRectL'], map['clipRectT'],
-          map['clipRectR'], map['clipRectB']);
+          map['clipRectR'], map['clipRectB'])
+      ..offset = Offset(map['offsetX'], map['offsetY'])
+      ..width = map['width'];
   }
 
   @override

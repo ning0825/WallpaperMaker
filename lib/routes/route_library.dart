@@ -1,21 +1,52 @@
 import 'dart:io';
 import 'dart:convert';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide SelectableText;
 import 'package:path_provider/path_provider.dart';
 import 'package:wallpaper_maker/beans/selectable_bean.dart';
 import 'package:wallpaper_maker/routes/route_create.dart';
 import 'package:wallpaper_maker/routes/route_detail.dart';
-import 'package:wallpaper_maker/utils/utils.dart';
 
 class SeletectableImgFile {
-  SeletectableImgFile({this.imgFile, this.isSelected = false});
+  SeletectableImgFile({this.imgPath, this.isSelected = false}) {
+    jsonPath = getJsonPath(imgPath);
+  }
 
   bool isSelected;
-  File imgFile;
 
-  Future<void> delete() {
-    return imgFile.delete();
+  String imgPath;
+  String jsonPath;
+
+  Future delete() async {
+    String content = await File(jsonPath).readAsString();
+    if (content.contains('imgName')) {
+      List<Map<String, dynamic>> list = (jsonDecode(content) as List).cast();
+      list.forEach((element) {
+        element.forEach((key, value) {
+          if (key.contains('SelectableImage')) {
+            var imgName = value['imgName'];
+            String imgPath = getImgPath(imgName);
+            File(imgPath).delete();
+          }
+        });
+      });
+    }
+    await File(imgPath).delete();
+    await File(jsonPath).delete();
+  }
+
+  String getJsonPath(String imgPath) {
+    var list = imgPath.split('/');
+    String name = list.last.split('.').first;
+    list.removeLast();
+    return list.join('/') + '/jsons/' + name + '.json';
+  }
+
+  String getImgPath(String imgName) {
+    var list = imgPath.split('/');
+    list.removeLast();
+    return list.join('/') + '/jsons/' + imgName + '.png';
   }
 }
 
@@ -26,13 +57,11 @@ class LibraryRoute extends StatefulWidget {
 
 class _LibraryRouteState extends State<LibraryRoute> {
   List<SeletectableImgFile> imgFiles = [];
+  List<SeletectableImgFile> cacheImgFiles = [];
   String appFilePath;
 
   bool selectMode = false;
   bool selectAll = false;
-
-  List<File> selectedImgs = [];
-  List<File> selectedJson = [];
 
   @override
   void initState() {
@@ -44,19 +73,20 @@ class _LibraryRouteState extends State<LibraryRoute> {
   _getAppFilePath() async {
     appFilePath =
         await getExternalStorageDirectory().then((value) => value.path);
-    print(appFilePath);
   }
 
   Future<List<SeletectableImgFile>> _getImages() async {
-    if (imgFiles.length == 0) {
+    if (cacheImgFiles.length == 0) {
+      imgFiles.clear();
       Directory directory = await getExternalStorageDirectory();
       await for (var item in directory.list()) {
         if (item.path.endsWith('png')) {
-          imgFiles.add(SeletectableImgFile(imgFile: File(item.path)));
+          imgFiles.add(SeletectableImgFile(imgPath: item.path));
         }
       }
+      cacheImgFiles.addAll(imgFiles);
     }
-    return imgFiles;
+    return cacheImgFiles;
   }
 
   @override
@@ -89,31 +119,10 @@ class _LibraryRouteState extends State<LibraryRoute> {
                       onPressed: () {
                         if (selectMode) {
                           setState(() {
-                            selectAll = true;
-                            imgFiles.forEach((element) {
-                              element.isSelected = selectAll;
-                              element.isSelected
-                                  ? selectedImgs.add(element.imgFile)
-                                  : selectedImgs.remove(element.imgFile);
-                              element.isSelected
-                                  ? selectedJson.add(File(appFilePath +
-                                      '/jsons/' +
-                                      element.imgFile.path
-                                          .split('/')
-                                          .last
-                                          .split('.')
-                                          .last +
-                                      '.json'))
-                                  : selectedJson.remove(File(appFilePath +
-                                      '/jsons/' +
-                                      element.imgFile.path
-                                          .split('/')
-                                          .last
-                                          .split('.')
-                                          .last +
-                                      '.json'));
-                            });
                             selectAll = !selectAll;
+                            cacheImgFiles.forEach((element) {
+                              element.isSelected = selectAll;
+                            });
                           });
                         }
                       },
@@ -129,12 +138,11 @@ class _LibraryRouteState extends State<LibraryRoute> {
                   offstage: !selectMode,
                   child: Center(
                     child: IconButton(
-                      onPressed: () {
-                        selectedImgs.forEach((element) {
-                          element.delete();
-                        });
-                        imgFiles.clear();
-                        selectedImgs.clear();
+                      onPressed: () async {
+                        for (var item in cacheImgFiles) {
+                          if (item.isSelected) await item.delete();
+                        }
+                        cacheImgFiles.clear();
                         selectAll = false;
                         selectMode = false;
                         setState(() {});
@@ -160,21 +168,6 @@ class _LibraryRouteState extends State<LibraryRoute> {
                     ),
                   ),
                 ),
-                // PopupMenuButton(
-                //   child: Icon(
-                //     Icons.ac_unit,
-                //     color: Colors.red,
-                //   ),
-                //   itemBuilder: (_) {
-                //     return [
-                //       PopupMenuItem(
-                //         enabled: true,
-                //         height: 60,
-                //         child: Text('settings'),
-                //       ),
-                //     ];
-                //   },
-                // ),
               ],
             ),
             _buildImages(),
@@ -201,13 +194,8 @@ class _LibraryRouteState extends State<LibraryRoute> {
     return FutureBuilder(
       future: _getImages(),
       builder: (_, snap) {
-        // return snap.hasData
-        //     ?
-        //     : SliverList(
-        //         delegate: SliverChildListDelegate([Text('loading')]),
-        //       );
         if (snap.hasData) {
-          if (imgFiles.length > 0) {
+          if (cacheImgFiles.length > 0) {
             return SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3, childAspectRatio: 0.6),
@@ -217,44 +205,14 @@ class _LibraryRouteState extends State<LibraryRoute> {
                     onTap: () {
                       if (selectMode) {
                         setState(() {
-                          imgFiles[index].isSelected =
-                              !imgFiles[index].isSelected;
-                          imgFiles[index].isSelected
-                              ? selectedImgs.add(imgFiles[index].imgFile)
-                              : selectedImgs.remove(imgFiles[index].imgFile);
-                          imgFiles[index].isSelected
-                              ? selectedJson.add(File(appFilePath +
-                                  imgFiles[index]
-                                      .imgFile
-                                      .path
-                                      .split('/')
-                                      .last
-                                      .split('.')
-                                      .first +
-                                  '.json'))
-                              : selectedJson.removeWhere(
-                                  (element) {
-                                    return element.path
-                                            .split('/')
-                                            .last
-                                            .split('.')
-                                            .first ==
-                                        imgFiles[index]
-                                            .imgFile
-                                            .path
-                                            .split('/')
-                                            .last
-                                            .split('.')
-                                            .first;
-                                  },
-                                );
-                          print(selectedImgs.toList());
+                          cacheImgFiles[index].isSelected =
+                              !cacheImgFiles[index].isSelected;
                         });
                       } else {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) =>
-                                DetailRoute(image: imgFiles[index].imgFile),
+                            builder: (context) => DetailRoute(
+                                image: File(cacheImgFiles[index].imgPath)),
                           ),
                         );
                       }
@@ -263,21 +221,18 @@ class _LibraryRouteState extends State<LibraryRoute> {
                       margin: EdgeInsets.all(4),
                       decoration: BoxDecoration(
                           color: Colors.white,
-                          border: imgFiles[index].isSelected
+                          border: cacheImgFiles[index].isSelected
                               ? Border.all(color: Colors.black, width: 2)
                               : null),
                       padding: EdgeInsets.all(8.0),
-                      child: Image.file(imgFiles[index].imgFile),
+                      child: Image.file(File(cacheImgFiles[index].imgPath)),
                     ),
                   );
                 },
-                childCount: imgFiles.length,
+                childCount: cacheImgFiles.length,
               ),
             );
           } else {
-            // return Center(
-            //   child: Text('no library'),
-            // );
             return SliverFillRemaining(
               child: Align(
                   alignment: Alignment.topCenter,
@@ -300,13 +255,7 @@ class _LibraryRouteState extends State<LibraryRoute> {
   }
 }
 
-class TitleWidget extends StatefulWidget {
-  @override
-  _TitleWidgetState createState() => _TitleWidgetState();
-}
-
-class _TitleWidgetState extends State<TitleWidget> {
-  double scale = 1.0;
+class TitleWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings =
@@ -315,7 +264,7 @@ class _TitleWidgetState extends State<TitleWidget> {
     //1.0 expanded
     final t = (settings.currentExtent - settings.minExtent) /
         (settings.maxExtent - settings.minExtent);
-    scale = Tween(begin: 1.0, end: 1.5).transform(t);
+    var scale = Tween(begin: 1.0, end: 1.5).transform(t);
     return Text(
       'Library',
       textScaleFactor: scale,

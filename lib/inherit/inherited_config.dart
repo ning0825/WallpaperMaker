@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart' hide SelectableText;
 import 'package:flutter/rendering.dart';
 
@@ -40,6 +42,9 @@ class ConfigWidgetState extends State<ConfigWidget> {
   LeafTool currentLeafTool;
 
   bool isScaling = false;
+
+  String currentEditImgPath;
+  bool newCanva;
 
   ///0: Pen
   ///1: Shape
@@ -109,9 +114,9 @@ class ConfigWidgetState extends State<ConfigWidget> {
     });
   }
 
-  removeSelectable(int index) {
+  removeCurrentSelected() {
     setState(() {
-      selectables.removeAt(index);
+      selectables.removeAt(selectedIndex);
     });
   }
 
@@ -121,6 +126,12 @@ class ConfigWidgetState extends State<ConfigWidget> {
       currentSelectable = null;
       isSelectedMode = false;
       selectedIndex = -1;
+    });
+  }
+
+  reset() {
+    setState(() {
+      _init();
     });
   }
 
@@ -217,7 +228,7 @@ class ConfigWidgetState extends State<ConfigWidget> {
   //---------------------------------------------------------------------------------
   //clean
   //---------------------------------------------------------------------------------
-  clear() {
+  clean() {
     setState(() {
       selectables.clear();
     });
@@ -379,7 +390,7 @@ class ConfigWidgetState extends State<ConfigWidget> {
   }
 
   String getText() {
-    return isSelectedMode ? (currentSelectable as SelectableText).text : 'text';
+    return isSelectedMode ? (currentSelectable as SelectableText).text : '';
   }
 
   setTextFont(String font) {
@@ -588,52 +599,23 @@ class ConfigWidgetState extends State<ConfigWidget> {
   handleScaleUpdate(ScaleUpdateDetails details) {
     setState(() {
       if (isSelectedMode && details.scale != 1.0) {
-        // //Scale
-        // currentSelectable.scaleRadioX =
-        //     currentSelectable.lastScaleX * details.scale;
-        // currentSelectable.scaleRadioY =
-        //     currentSelectable.lastScaleY * details.scale;
-        // currentSelectable.tmpScaleX =
-        //     currentSelectable.lastScaleX * details.scale;
-        // currentSelectable.tmpScaleY =
-        //     currentSelectable.lastScaleY * details.scale;
-
-        // //Rotation
-        // currentSelectable.isRot = true;
-
-        // currentSelectable.rotRadians =
-        //     details.rotation + currentSelectable.lastAngle;
-        // currentSelectable.tmpAngle =
-        //     details.rotation + currentSelectable.lastAngle;
-
         //Scale
         currentSelectable.scaleRadioX = tmpScaleX * details.scale;
         currentSelectable.scaleRadioY = tmpScaleY * details.scale;
-        // currentSelectable.tmpScaleX =
-        //     currentSelectable.lastScaleX * details.scale;
-        // currentSelectable.tmpScaleY =
-        //     currentSelectable.lastScaleY * details.scale;
 
         //Rotation
-        // currentSelectable.isRot = true;
-
-        currentSelectable.rotRadians = details.rotation + tmpRadius;
-        currentSelectable.tmpAngle = details.rotation + tmpRadius;
+        if (details.rotation > pi / 18) {
+          currentSelectable.rotRadians = details.rotation - pi / 18 + tmpRadius;
+          currentSelectable.tmpAngle = details.rotation - pi / 18 + tmpRadius;
+        }
       }
     });
   }
 
   handleScaleEnd(ScaleEndDetails details) {
-    if (isSelectedMode) {
-      // currentSelectable.lastScaleX = currentSelectable.tmpScaleX;
-      // currentSelectable.lastScaleY = currentSelectable.tmpScaleY;
-
-      // currentSelectable.lastAngle = currentSelectable.tmpAngle;
-
-      // currentSelectable.offset = Offset.zero;
-
-      if (isScaling) isScaling = false;
-    }
+    // if (isSelectedMode) {
+    //   if (isScaling) isScaling = false;
+    // }
   }
 
   handleTapUp(TapUpDetails details) {
@@ -670,6 +652,11 @@ class ConfigWidgetState extends State<ConfigWidget> {
   @override
   void initState() {
     super.initState();
+
+    _init();
+  }
+
+  _init() {
     config = Configuration()
       ..bgColor = Colors.white
       ..currentMode = 0
@@ -688,6 +675,9 @@ class ConfigWidgetState extends State<ConfigWidget> {
     isSelectedMode = false;
 
     size = Size(0.0, 0.0);
+
+    newCanva = true;
+    currentEditImgPath = '';
   }
 
   @override

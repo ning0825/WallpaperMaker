@@ -15,6 +15,8 @@ enum LeafTool {
   text_font,
   text_color,
   text_weight,
+
+  align,
 }
 
 const penToolNum = 0;

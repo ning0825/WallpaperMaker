@@ -11,6 +11,7 @@ import 'package:wallpaper_maker/cus_widgets/cus_painter.dart';
 import 'package:wallpaper_maker/inherit/constants.dart';
 import 'package:wallpaper_maker/inherit/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_clip.dart';
+import 'package:wallpaper_maker/routes/route_library.dart';
 import 'package:wallpaper_maker/utils/utils.dart';
 
 GlobalKey rpbKey = GlobalKey();
@@ -44,7 +45,7 @@ class _EditRouteState extends State<EditRoute>
     leafToolAnimation = controller.drive(Tween<double>(begin: 0.0, end: 1.0)
         .chain(CurveTween(curve: Curves.easeInBack)));
     leafToolAnimation.addListener(() {
-      if (leafToolAnimation.isCompleted && leafToolAnimation.value == 0.0) {
+      if (leafToolAnimation.isDismissed && leafToolAnimation.value == 0.0) {
         setState(() {
           offStage = true;
         });
@@ -53,11 +54,15 @@ class _EditRouteState extends State<EditRoute>
   }
 
   //show leaf tool
-  startAnima() {
+  showLeafTool() {
     controller.forward();
     setState(() {
       offStage = false;
     });
+  }
+
+  hideLeafTool() {
+    controller.reverse();
   }
 
   @override
@@ -71,7 +76,8 @@ class _EditRouteState extends State<EditRoute>
             children: [
               Expanded(child: CanvasPanel(rpbKey)),
               BottomToolbar(
-                controller: startAnima,
+                showLeafTool: showLeafTool,
+                hideLeafTool: hideLeafTool,
               )
             ],
           ),
@@ -164,6 +170,40 @@ class _EditRouteState extends State<EditRoute>
         case LeafTool.text_weight:
           result = WidthWidget(toolNum: typoToolNum);
           break;
+        case LeafTool.align:
+          result = Container(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: <Widget>[
+                RaisedButton(
+                  onPressed: () => data.setTopAlign(),
+                  child: Text('top'),
+                ),
+                RaisedButton(
+                  onPressed: () => data.setBottomAlign(),
+                  child: Text('bottom'),
+                ),
+                RaisedButton(
+                  onPressed: () => data.setLeftAlign(),
+                  child: Text('left'),
+                ),
+                RaisedButton(
+                  onPressed: () => data.setRightAlign(),
+                  child: Text('right'),
+                ),
+                RaisedButton(
+                  onPressed: () => data.setCenterHorizonAlign(),
+                  child: Text('CenterHorizon'),
+                ),
+                RaisedButton(
+                  onPressed: () => data.setCenterVerticalAlign(),
+                  child: Text('CenterVertical'),
+                ),
+              ],
+            ),
+          );
+          break;
         default:
           break;
       }
@@ -176,9 +216,11 @@ class _EditRouteState extends State<EditRoute>
 }
 
 class BottomToolbar extends StatefulWidget {
-  BottomToolbar({Key key, this.controller}) : super(key: key);
+  BottomToolbar({Key key, this.showLeafTool, this.hideLeafTool})
+      : super(key: key);
 
-  final VoidCallback controller;
+  final VoidCallback showLeafTool;
+  final VoidCallback hideLeafTool;
 
   @override
   _BottomToolbarState createState() => _BottomToolbarState();
@@ -225,18 +267,32 @@ class _BottomToolbarState extends State<BottomToolbar> {
         break;
       case MainTool.pen:
         result = [
-          RaisedButton(
-            child: Text('color'),
+          // RaisedButton(
+          //   child: Text('color'),
+          //   onPressed: () {
+          //     data.setCurrentLeafTool(LeafTool.pen_color);
+          //     widget.showLeafTool();
+          //   },
+          // ),
+          // RaisedButton(
+          //   child: Text('width'),
+          //   onPressed: () {
+          //     data.setCurrentLeafTool(LeafTool.pen_width);
+          //     widget.showLeafTool();
+          //   },
+          // ),
+          IconButton(
+            icon: Image.asset('assets/icons/pen_color.png'),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.pen_color);
-              widget.controller();
+              widget.showLeafTool();
             },
           ),
-          RaisedButton(
-            child: Text('width'),
+          IconButton(
+            icon: Image.asset('assets/icons/pen_width.png'),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.pen_width);
-              widget.controller();
+              widget.showLeafTool();
             },
           ),
         ];
@@ -247,28 +303,28 @@ class _BottomToolbarState extends State<BottomToolbar> {
             child: Text('type'),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.shape_type);
-              widget.controller();
+              widget.showLeafTool();
             },
           ),
           RaisedButton(
             child: Text('color'),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.shape_color);
-              widget.controller();
+              widget.showLeafTool();
             },
           ),
           RaisedButton(
             child: Text('style'),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.shape_style);
-              widget.controller();
+              widget.showLeafTool();
             },
           ),
           RaisedButton(
             child: Text('width'),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.shape_width);
-              widget.controller();
+              widget.showLeafTool();
             },
           ),
         ];
@@ -279,28 +335,28 @@ class _BottomToolbarState extends State<BottomToolbar> {
             child: Text('text'),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.text_text);
-              widget.controller.call();
+              widget.showLeafTool();
             },
           ),
           RaisedButton(
             child: Text('font'),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.text_font);
-              widget.controller.call();
+              widget.showLeafTool();
             },
           ),
           RaisedButton(
             child: Text('weight'),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.text_weight);
-              widget.controller.call();
+              widget.showLeafTool();
             },
           ),
           RaisedButton(
             child: Text('color'),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.text_color);
-              widget.controller.call();
+              widget.showLeafTool();
             },
           ),
         ];
@@ -335,6 +391,28 @@ class _BottomToolbarState extends State<BottomToolbar> {
       case MainTool.more:
         result = [
           RaisedButton(
+            onPressed: () {
+              data.setCurrentLeafTool(LeafTool.align);
+              widget.showLeafTool();
+            },
+            child: Text('align'),
+          ),
+          //delete
+          RaisedButton(
+            onPressed: () => data.removeCurrentSelected(),
+            child: Text('delete'),
+          ),
+          //undo
+          RaisedButton(
+            onPressed: () => data.reset(),
+            child: Text('undo'),
+          ),
+          //clear
+          RaisedButton(
+            onPressed: () => data.clean(),
+            child: Text('clear'),
+          ),
+          RaisedButton(
             child: Text('save'),
             onPressed: () async {
               List<Map<String, dynamic>> list = [
@@ -346,12 +424,17 @@ class _BottomToolbarState extends State<BottomToolbar> {
                 list.add({element.runtimeType.toString(): element});
               });
 
+              if (!data.newCanva) {
+                await SeletectableImgFile(imgPath: data.currentEditImgPath)
+                    .delete();
+              }
+
               String jsonString = jsonEncode(list);
               String name = DateTime.now().millisecondsSinceEpoch.toString();
               await saveImage(rpbKey, mContext,
                   data.size2Save.width / data.size.width, name);
               await saveJson(name, jsonString);
-              data.clear();
+              data.reset();
             },
           ),
         ];
@@ -393,6 +476,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
             onTap: () {
               data.setCurrentMainTool(MainTool.background);
               data.setUnselected();
+              widget.hideLeafTool();
             },
           ),
           //pen
@@ -404,6 +488,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
             onTap: () {
               data.setCurrentMainTool(MainTool.pen);
               data.setUnselected();
+              widget.hideLeafTool();
             },
           ),
           //shape
@@ -415,6 +500,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
             onTap: () {
               data.setCurrentMainTool(MainTool.shape);
               data.setUnselected();
+              widget.hideLeafTool();
             },
           ),
           //text
@@ -426,6 +512,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
             onTap: () {
               data.setCurrentMainTool(MainTool.text);
               data.setUnselected();
+              widget.hideLeafTool();
             },
           ),
           //image
@@ -437,6 +524,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
             onTap: () {
               data.setCurrentMainTool(MainTool.image);
               data.setUnselected();
+              widget.hideLeafTool();
             },
           ),
           //more
@@ -445,7 +533,10 @@ class _BottomToolbarState extends State<BottomToolbar> {
             color: data.currentMainTool == MainTool.more
                 ? Colors.white
                 : Colors.grey,
-            onTap: () => data.setCurrentMainTool(MainTool.more),
+            onTap: () {
+              data.setCurrentMainTool(MainTool.more);
+              widget.hideLeafTool();
+            },
           ),
         ],
       ),
@@ -749,6 +840,9 @@ class _TypoTextWidgetState extends State<TypoTextWidget> {
                 ),
               );
               data.setSeleteLast();
+
+              //Hide soft keyboard
+              FocusScope.of(context).requestFocus(FocusNode());
             },
             child: Text('OK'),
           ),

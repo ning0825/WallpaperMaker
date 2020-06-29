@@ -68,6 +68,8 @@ flutter:
     - assets/icons/img.jpg
     - assets/icons/img2.jpg
     - assets/icons/img3.jpg
+    - assets/icons/pen_color.png
+    - assets/icons/pen_width.png
 
   fonts:
     - family: Polingo

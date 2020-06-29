@@ -131,6 +131,8 @@ class _DetailToolState extends State<DetailTool> {
                   widget.imageFile.split('/').last.split('.').first +
                   '.json';
               await _getSelectables(jsonName);
+              data.newCanva = false;
+              data.currentEditImgPath = widget.imageFile;
               Navigator.of(context).push(MaterialPageRoute(
                 builder: (context) => EditRoute(),
               ));
@@ -154,8 +156,7 @@ class _DetailToolState extends State<DetailTool> {
     File file = File(name);
     String string = await file.readAsString();
     List<Map> list = (jsonDecode(string) as List).cast();
-    print(list.toString());
-    data.clear();
+    data.clean();
     list.forEach((element) {
       element.forEach((key, value) async {
         switch (key) {

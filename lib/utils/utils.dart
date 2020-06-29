@@ -20,7 +20,6 @@ Future<void> saveImage(
   Directory tempDir = await getExternalStorageDirectory();
   String storagePath = tempDir.path;
   File file = new File(storagePath + '/$name.png');
-  print('file page: ' + file.path);
 
   if (!file.existsSync()) {
     file.createSync();
@@ -102,8 +101,6 @@ Future<void> saveImage2Local(String path) async {
     await dir.create();
   }
   File newFile = await file.copy(appDirPath + path.split('/').last);
-  print(newFile.path);
-
   refreshMedia(newFile.path);
 }
 
