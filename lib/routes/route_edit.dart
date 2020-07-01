@@ -102,7 +102,7 @@ class _EditRouteState extends State<EditRoute>
 
   _buildLeafTools() {
     return Container(
-      color: Colors.green,
+      color: Colors.black,
       width: MediaQuery.of(context).size.width - 16,
       margin: EdgeInsets.all(8.0),
       child: Row(
@@ -113,6 +113,7 @@ class _EditRouteState extends State<EditRoute>
           IconButton(
             icon: Icon(
               Icons.close,
+              color: Colors.white,
             ),
             onPressed: () => controller.reverse(),
           ),
@@ -404,12 +405,12 @@ class _BottomToolbarState extends State<BottomToolbar> {
           ),
           //undo
           RaisedButton(
-            onPressed: () => data.reset(),
+            onPressed: () => data.undo(),
             child: Text('undo'),
           ),
           //clear
           RaisedButton(
-            onPressed: () => data.clean(),
+            onPressed: () => data.reset(),
             child: Text('clear'),
           ),
           RaisedButton(

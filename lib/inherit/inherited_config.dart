@@ -20,7 +20,8 @@ class ConfigWidget extends StatefulWidget {
   }
 }
 
-class ConfigWidgetState extends State<ConfigWidget> {
+class ConfigWidgetState extends State<ConfigWidget>
+    with TickerProviderStateMixin {
   Configuration config;
 
   bool isSelectedMode;
@@ -28,7 +29,19 @@ class ConfigWidgetState extends State<ConfigWidget> {
   int selectedIndex;
   Selectable currentSelectable;
 
+  List<List<Selectable>> selectableStack;
+  int stackIndex;
+
   BuildContext mContext;
+
+  //Canvas scale and tranlate
+  double canvasScale;
+  double tmpCanvasScale;
+  Offset canvasOffset;
+  bool isCanvasScaling;
+
+  Offset tmpCanvasOffset;
+  Offset startPoint;
 
   //分辨率
   Size size2Save = Size(1080, 1920);
@@ -45,6 +58,10 @@ class ConfigWidgetState extends State<ConfigWidget> {
 
   String currentEditImgPath;
   bool newCanva;
+
+  // AnimationController scaleController;
+  // Tween<double> scaleTween;
+  // Animation scaleAnimation;
 
   ///0: Pen
   ///1: Shape
@@ -69,12 +86,36 @@ class ConfigWidgetState extends State<ConfigWidget> {
   }
 
   //---------------------------------------------------------------------------------
+  //SelectableStack
+  //---------------------------------------------------------------------------------
+  redo() {
+    stackIndex++;
+    selectables = selectableStack[stackIndex];
+    setState(() {});
+  }
+
+  undo() {
+    stackIndex--;
+    if (stackIndex < 0) {
+      stackIndex = 0;
+    }
+    selectables = selectableStack[stackIndex];
+    setState(() {});
+  }
+
+  pushToStack() {
+    selectableStack.add([]..addAll(selectables));
+    stackIndex = selectableStack.length - 1;
+  }
+
+  //---------------------------------------------------------------------------------
   //Selectable
   //---------------------------------------------------------------------------------
   addSelectable(Selectable selectable) {
     setState(() {
       selectables.add(selectable);
     });
+    pushToStack();
   }
 
   setSelected(int index) {
@@ -185,10 +226,6 @@ class ConfigWidgetState extends State<ConfigWidget> {
   }
 
   _setAlign(Offset transOffset) {
-    // if (currentSelectable is SelectablePath) {
-    //   (currentSelectable as SelectablePath).path =
-    //       (currentSelectable as SelectablePath).path.shift(transOffset);
-    // }
     if (currentSelectable is SelectableShape) {
       var cs = currentSelectable as SelectableShape;
       cs.startPoint =
@@ -212,16 +249,6 @@ class ConfigWidgetState extends State<ConfigWidget> {
   rotate(double radians) {
     setState(() {
       currentSelectable.rotRadians = currentSelectable.rotRadians + radians;
-    });
-  }
-
-  //---------------------------------------------------------------------------------
-  //Undo
-  //---------------------------------------------------------------------------------
-  //TODO undo action, not selectable.
-  undo() {
-    setState(() {
-      selectables.removeLast();
     });
   }
 
@@ -463,23 +490,22 @@ class ConfigWidgetState extends State<ConfigWidget> {
     } else {
       switch (config.currentMode) {
         case 0:
-          selectables.add(
-            SelectablePath(getCurrentPen())
-              ..moveTo(details.localPosition.dx, details.localPosition.dy),
-          );
+          addSelectable(SelectablePath(getCurrentPen())
+            ..moveTo(details.localPosition.dx, details.localPosition.dy));
           break;
         case 1:
-          selectables.add(SelectableShape(
+          addSelectable(SelectableShape(
               startPoint:
                   Offset(details.localPosition.dx, details.localPosition.dy),
               shapeType: config.shapeType,
               paint: getCurrentShape()));
           break;
-
         default:
       }
     }
   }
+
+  var currentShape;
 
   handleTapUpdate(DragUpdateDetails details) {
     setState(() {
@@ -488,35 +514,27 @@ class ConfigWidgetState extends State<ConfigWidget> {
           var ctrlIndex = currentSelectable.currentControlPoint;
 
           if (currentSelectable is SelectableShape) {
-            var currentShape = currentSelectable as SelectableShape;
+            currentShape = currentSelectable as SelectableShape;
             switch (ctrlIndex) {
               case 0:
-                if (currentSelectable is SelectableShape) {
-                  currentShape.tlOffset = currentShape.lastTLOffset +
-                      Offset(details.localPosition.dx - lastPoint.dx, 0.0);
-                  tmpTLOffset = currentShape.tlOffset;
-                }
+                currentShape.tlOffset = currentShape.lastTLOffset +
+                    Offset(details.localPosition.dx - lastPoint.dx, 0.0);
+                tmpTLOffset = currentShape.tlOffset;
                 break;
               case 1:
-                if (currentSelectable is SelectableShape) {
-                  currentShape.tlOffset = currentShape.lastTLOffset +
-                      Offset(0.0, details.localPosition.dy - lastPoint.dy);
-                  tmpTLOffset = currentShape.tlOffset;
-                }
+                currentShape.tlOffset = currentShape.lastTLOffset +
+                    Offset(0.0, details.localPosition.dy - lastPoint.dy);
+                tmpTLOffset = currentShape.tlOffset;
                 break;
               case 2:
-                if (currentSelectable is SelectableShape) {
-                  currentShape.brOffset = currentShape.lastBROffset +
-                      Offset(details.localPosition.dx - lastPoint.dx, 0.0);
-                  tmpBROffset = currentShape.brOffset;
-                }
+                currentShape.brOffset = currentShape.lastBROffset +
+                    Offset(details.localPosition.dx - lastPoint.dx, 0.0);
+                tmpBROffset = currentShape.brOffset;
                 break;
               case 3:
-                if (currentSelectable is SelectableShape) {
-                  currentShape.brOffset = currentShape.lastBROffset +
-                      Offset(0.0, details.localPosition.dy - lastPoint.dy);
-                  tmpBROffset = currentShape.brOffset;
-                }
+                currentShape.brOffset = currentShape.lastBROffset +
+                    Offset(0.0, details.localPosition.dy - lastPoint.dy);
+                tmpBROffset = currentShape.brOffset;
                 break;
               default:
                 break;
@@ -540,10 +558,6 @@ class ConfigWidgetState extends State<ConfigWidget> {
             tmpTLOffset = sshape.tlOffset;
             tmpBROffset = sshape.brOffset;
           } else {
-            // currentSelectable.offset = currentSelectable.lastOffset +
-            //     details.localPosition -
-            //     lastPoint;
-            // tmpOffset = currentSelectable.offset;
             currentSelectable.offset =
                 tmpOffset + details.localPosition - lastPoint;
           }
@@ -570,11 +584,12 @@ class ConfigWidgetState extends State<ConfigWidget> {
       if (currentSelectable is SelectableShape) {
         (currentSelectable as SelectableShape).lastTLOffset = tmpTLOffset;
         (currentSelectable as SelectableShape).lastBROffset = tmpBROffset;
-      } else {
-        // currentSelectable.lastOffset = tmpOffset;
       }
       currentSelectable.isMoving = false;
       currentSelectable.isCtrling = false;
+    } else if (selectables.last.rect.width < 1) {
+      selectables.removeLast();
+      setState(() {});
     }
   }
 
@@ -583,12 +598,6 @@ class ConfigWidgetState extends State<ConfigWidget> {
   var tmpRadius;
 
   handleScaleStart(ScaleStartDetails details) {
-    // if (isSelectedMode) {
-    //   if (currentSelectable.hitTestControl(details.localFocalPoint)) {
-    //     isScaling = true;
-    //   }
-    //   lastPoint = details.localFocalPoint;
-    // }
     if (isSelectedMode) {
       tmpScaleX = currentSelectable.scaleRadioX;
       tmpScaleY = currentSelectable.scaleRadioY;
@@ -609,12 +618,20 @@ class ConfigWidgetState extends State<ConfigWidget> {
           currentSelectable.tmpAngle = details.rotation - pi / 18 + tmpRadius;
         }
       }
+      // if (!isSelectedMode && details.scale != 1.0) {
+      //   canvasScale = tmpCanvasScale * details.scale;
+      // }
     });
   }
 
   handleScaleEnd(ScaleEndDetails details) {
-    // if (isSelectedMode) {
-    //   if (isScaling) isScaling = false;
+    // isCanvasScaling = false;
+    // if (canvasScale < 1.0) {
+    //   scaleTween.begin = canvasScale;
+    //   scaleController.forward(from: 0.0);
+    //   tmpCanvasScale = 1.0;
+    // } else {
+    //   tmpCanvasScale = canvasScale;
     // }
   }
 
@@ -653,6 +670,16 @@ class ConfigWidgetState extends State<ConfigWidget> {
   void initState() {
     super.initState();
 
+    // scaleController =
+    //     AnimationController(vsync: this, duration: Duration(milliseconds: 300));
+    // scaleTween = Tween(end: 1.0);
+    // scaleAnimation = scaleController
+    //     .drive(scaleTween.chain(CurveTween(curve: Curves.easeIn)));
+    // scaleAnimation.addListener(() {
+    //   canvasScale = scaleAnimation.value;
+    //   setState(() {});
+    // });
+
     _init();
   }
 
@@ -678,6 +705,15 @@ class ConfigWidgetState extends State<ConfigWidget> {
 
     newCanva = true;
     currentEditImgPath = '';
+
+    selectableStack = [];
+    stackIndex = -1;
+
+    pushToStack();
+
+    // canvasScale = 1.0;
+    // tmpCanvasScale = 1.0;
+    // isCanvasScaling = false;
   }
 
   @override

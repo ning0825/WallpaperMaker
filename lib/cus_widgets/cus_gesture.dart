@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -5,6 +7,8 @@ class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
   GestureTapDownCallback onDown;
   GestureDragUpdateCallback onUpdate;
   GestureDragEndCallback onEnd;
+  GestureScaleStartCallback onTransStart;
+  GestureScaleUpdateCallback onTransUpdate;
 
   Offset currentLocalPosition;
   Offset currentGlobalPosition;
@@ -21,17 +25,18 @@ class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
 
   @override
   void handleEvent(PointerEvent event) {
-    currentGlobalPosition = event.position;
     currentLocalPosition =
-        PointerEvent.transformPosition(event.transform, currentGlobalPosition);
+        PointerEvent.transformPosition(event.transform, event.position);
     var localDelta = PointerEvent.transformDeltaViaPositions(
         untransformedEndPosition: event.position,
         untransformedDelta: event.delta,
         transform: event.transform);
+
     if (event is PointerDownEvent) {
       invokeCallback('on tap down',
           () => onDown(TapDownDetails(localPosition: currentLocalPosition)));
     }
+
     if (event is PointerMoveEvent) {
       invokeCallback(
         'on tap update',
@@ -43,7 +48,9 @@ class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
         ),
       );
     }
+
     if (event is PointerUpEvent) {
+      print('pointerup: ' + event.pointer.toString());
       invokeCallback('on tap end', () => onEnd(DragEndDetails()));
       isTracking = false;
     }

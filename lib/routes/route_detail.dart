@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'dart:math';
 
 import 'package:flutter/material.dart' hide SelectableText;
 import 'package:path_provider/path_provider.dart';
@@ -24,15 +25,24 @@ class _DetailRouteState extends State<DetailRoute>
   Animation<Offset> slideAnimation;
 
   //Image scale animation
-  AnimationController imageAnimController;
-  Tween<double> tween;
-  Animation<double> imageAnimation;
+  AnimationController scaleAnimController;
+  Tween<double> scaleTween;
+  Animation<double> scaleAnimation;
+
+  AnimationController transAnimController;
+  Tween<Offset> transTween;
+  Animation<Offset> transAnimation;
 
   bool isButtonShow = true;
 
   double scale = 1.0;
   double tmpScale = 1.0;
-  Offset trans = Offset.zero;
+
+  Offset offset = Offset.zero;
+  Offset tmpOffset = Offset.zero;
+  Offset startPoint;
+
+  Size size;
 
   List<Selectable> selectables;
   ConfigWidgetState data;
@@ -42,62 +52,103 @@ class _DetailRouteState extends State<DetailRoute>
     super.initState();
 
     controller =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 400));
+        AnimationController(vsync: this, duration: Duration(milliseconds: 200));
     slideAnimation = Tween(begin: Offset(0.0, 0.0), end: Offset(0.0, 1.0))
         .animate(controller);
 
-    imageAnimController =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 700));
-    tween = Tween(end: 1.0);
-    imageAnimation = tween
-        .animate(imageAnimController)
+    scaleAnimController =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 200));
+    scaleTween = Tween(end: 1.0);
+    scaleAnimation = scaleTween
+        .animate(scaleAnimController)
         .drive(CurveTween(curve: Curves.easeIn));
-    imageAnimation.addListener(() {
+    scaleAnimation.addListener(() {
       setState(() {
-        scale = imageAnimation.value;
+        scale = scaleAnimation.value;
       });
     });
+
+    transAnimController =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 200));
+    transTween = Tween();
+    transAnimation = transTween.animate(transAnimController);
+    transAnimation.addListener(() {
+      setState(() {
+        offset = transAnimation.value;
+        tmpOffset = offset;
+      });
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    size = MediaQuery.of(context).size;
   }
 
   @override
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
     return Scaffold(
-      body: Container(
-        child: Stack(
-          children: <Widget>[
-            GestureDetector(
-              onTap: () {
-                isButtonShow ? controller.forward() : controller.reverse();
-                isButtonShow = !isButtonShow;
-              },
-              onScaleUpdate: (details) {
-                setState(() {
-                  scale = tmpScale * details.scale;
-                });
-              },
-              onScaleEnd: (details) {
-                if (scale < 1.0) {
-                  tween.begin = scale;
-                  imageAnimController.forward(from: scale);
-                  scale = 1.0;
-                }
-                tmpScale = scale;
-              },
-              child: Transform(
-                alignment: Alignment.center,
-                transform: Matrix4.diagonal3Values(scale, scale, 1.0),
-                child: Image.file(widget.image),
+      body: SafeArea(
+        child: Container(
+          color: Colors.green,
+          child: Stack(
+            children: <Widget>[
+              GestureDetector(
+                onTap: () {
+                  isButtonShow ? controller.forward() : controller.reverse();
+                  isButtonShow = !isButtonShow;
+                },
+                onScaleStart: (details) => startPoint = details.localFocalPoint,
+                onScaleUpdate: (details) {
+                  if (details.scale == 1.0) {
+                    offset = tmpOffset + (details.localFocalPoint - startPoint);
+                  } else {
+                    scale = tmpScale * details.scale;
+                  }
+                  setState(() {});
+                },
+                onScaleEnd: (details) {
+                  if (scale < 1.0) {
+                    scaleTween.begin = scale;
+                    scaleAnimController.forward(from: scale);
+                    scale = 1.0;
+                  }
+
+                  if (offset.distance >
+                      Offset(size.width * (scale - 1) / 2,
+                              size.height * (scale - 1) / 2)
+                          .distance) {
+                    transTween.begin = offset;
+
+                    var xpre = offset.dx < 0 ? -1 : 1;
+                    var ypre = offset.dy < 0 ? -1 : 1;
+
+                    transTween.end = Offset(xpre * size.width * (scale - 1) / 2,
+                        ypre * size.height * (scale - 1) / 2);
+
+                    transAnimController.forward(from: 0.0);
+                  }
+                  tmpScale = scale;
+                  tmpOffset = offset;
+                },
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.diagonal3Values(scale, scale, 1.0)
+                    ..translate(offset.dx / scale, offset.dy / scale),
+                  child: Image.file(widget.image),
+                ),
               ),
-            ),
-            Positioned(
-              bottom: 0.0,
-              child: SlideTransition(
-                position: slideAnimation,
-                child: DetailTool(widget.image.path),
-              ),
-            )
-          ],
+              Positioned(
+                bottom: 0.0,
+                child: SlideTransition(
+                  position: slideAnimation,
+                  child: DetailTool(widget.image.path),
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -167,8 +218,6 @@ class _DetailToolState extends State<DetailTool> {
             Paint paint = data.getCurrentPen()
               ..color = Color(value['color'])
               ..strokeWidth = value['strokeWidth'];
-            // data.selectables
-            //     .add(SelectablePath.fromJson(value)..mPaint = paint);
             data.addSelectable(SelectablePath.fromJson(value)..mPaint = paint);
             break;
           case 'SelectableShape':
