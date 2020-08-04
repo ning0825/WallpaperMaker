@@ -5,7 +5,6 @@ import 'package:wallpaper_maker/routes/route_library.dart';
 void main() => runApp(
       ConfigWidget(
         child: MaterialApp(
-          debugShowCheckedModeBanner: false,
           home: LibraryRoute(),
         ),
       ),

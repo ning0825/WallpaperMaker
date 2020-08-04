@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' hide Image hide SelectableText;
-import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:wallpaper_maker/beans/selectable_bean.dart';
 import 'package:wallpaper_maker/cus_widgets/cus_painter.dart';
@@ -231,11 +230,13 @@ class _BottomToolbarState extends State<BottomToolbar> {
   ConfigWidgetState data;
   var toolIconList = ['palette', 'pen', 'geometry', 'typo', 'image', 'save'];
 
+  double height = 120;
+
   @override
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
     return Container(
-      height: 120,
+      height: height,
       color: Colors.black,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -558,11 +559,15 @@ class ToolButton extends StatelessWidget {
       child: InkWell(
         child: Padding(
           padding: const EdgeInsets.all(12.0),
-          child: SvgPicture.asset(
-            'assets/icons/' + icon + '.svg',
-            width: 30,
-            height: 30,
-            color: color,
+          // child: Image.asset(
+          //   'assets/icons/' + icon + '.svg',
+          //   width: 30,
+          //   height: 30,
+          //   color: color,
+          // ),
+          child: Text(
+            icon,
+            style: TextStyle(color: Colors.white),
           ),
         ),
         onTap: onTap,
@@ -581,11 +586,15 @@ class SubtoolButton extends StatelessWidget {
     return InkWell(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: SvgPicture.asset(
-          'assets/icons/' + icon + '.svg',
-          width: 40,
-          height: 40,
-          color: Colors.white,
+        // child: Image.asset(
+        //   'assets/icons/' + icon + '.svg',
+        //   width: 40,
+        //   height: 40,
+        //   color: Colors.white,
+        // ),
+        child: Text(
+          icon,
+          style: TextStyle(color: Colors.white),
         ),
       ),
       onTap: onTap,
