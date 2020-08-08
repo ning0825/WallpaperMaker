@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'dart:math';
 
 import 'package:flutter/material.dart' hide SelectableText;
 import 'package:path_provider/path_provider.dart';

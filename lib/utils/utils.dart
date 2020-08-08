@@ -90,7 +90,7 @@ Future<void> setAswallPaper(BuildContext context, String path) async {
 }
 
 //Save the image to internal storage
-//This method copy the image from /storage/emulated/0/Android/data/com.example.wallpaper_maker/files/example.png
+//This function copy the image from /storage/emulated/0/Android/data/com.example.wallpaper_maker/files/example.png
 //to /storage/emulated/0/WallpaperMaker/example.png
 Future<void> saveImage2Local(String path) async {
   File file = File(path);
@@ -125,5 +125,3 @@ Future<void> saveJson(String objName, String data) async {
 }
 
 Future<void> delJson(String objName) async {}
-
-String getJsonByName() {}

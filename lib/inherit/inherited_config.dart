@@ -402,8 +402,9 @@ class ConfigWidgetState extends State<ConfigWidget>
   //---------------------------------------------------------------------------------
   //Text
   //---------------------------------------------------------------------------------
-  SelectableText assembleSelectableText(String text, Offset offset) {
-    return SelectableText(text: text, mOffset: offset)
+  SelectableText assembleSelectableText(
+      String text, Offset offset, double maxWidth) {
+    return SelectableText(text: text, mOffset: offset, maxWidth: maxWidth)
       ..textColor = config.textColor
       ..textWeight = 3;
   }

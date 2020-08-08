@@ -1,10 +1,8 @@
 import 'dart:io';
 import 'dart:convert';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide SelectableText;
 import 'package:path_provider/path_provider.dart';
-import 'package:wallpaper_maker/beans/selectable_bean.dart';
 import 'package:wallpaper_maker/routes/route_create.dart';
 import 'package:wallpaper_maker/routes/route_detail.dart';
 

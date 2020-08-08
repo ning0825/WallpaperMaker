@@ -273,7 +273,7 @@ class SelectableText extends Selectable {
   int textWeight;
 
   //最大宽度
-  double _maxWidth = 100;
+  double _maxWidth = double.infinity;
 
   double fontSize = 0;
 
@@ -285,8 +285,9 @@ class SelectableText extends Selectable {
 
   double get maxWidth => _maxWidth;
 
-  SelectableText({this.text, Offset mOffset}) {
+  SelectableText({this.text, Offset mOffset, double maxWidth}) {
     offset = mOffset;
+    this.maxWidth = maxWidth;
   }
 
   Map<String, dynamic> toJson() {

@@ -11,6 +11,7 @@ import 'package:wallpaper_maker/inherit/constants.dart';
 import 'package:wallpaper_maker/inherit/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_clip.dart';
 import 'package:wallpaper_maker/routes/route_library.dart';
+import 'package:wallpaper_maker/cus_widgets/cus_widget.dart';
 import 'package:wallpaper_maker/utils/utils.dart';
 
 GlobalKey rpbKey = GlobalKey();
@@ -68,23 +69,26 @@ class _EditRouteState extends State<EditRoute>
   Widget build(BuildContext context) {
     mContext = context;
     data = ConfigWidget.of(context);
-    return Scaffold(
-      body: Container(
-        child: Stack(children: [
-          Column(
-            children: [
-              Expanded(child: CanvasPanel(rpbKey)),
-              BottomToolbar(
-                showLeafTool: showLeafTool,
-                hideLeafTool: hideLeafTool,
-              )
-            ],
-          ),
-          Positioned(
-            child: _buildAnimatedLeafTools(),
-            bottom: 120,
-          )
-        ]),
+    return SafeArea(
+      child: Scaffold(
+        body: Container(
+          child: Stack(children: [
+            Column(
+              children: [
+                TopToolbar(),
+                Expanded(child: CanvasPanel(rpbKey)),
+                BottomToolbar(
+                  showLeafTool: showLeafTool,
+                  hideLeafTool: hideLeafTool,
+                )
+              ],
+            ),
+            Positioned(
+              child: _buildAnimatedLeafTools(),
+              bottom: 120,
+            )
+          ]),
+        ),
       ),
     );
   }
@@ -101,7 +105,7 @@ class _EditRouteState extends State<EditRoute>
 
   _buildLeafTools() {
     return Container(
-      color: Colors.black,
+      decoration: ShapeDecoration(shape: MessageBoxBorder(color: Colors.red)),
       width: MediaQuery.of(context).size.width - 16,
       margin: EdgeInsets.all(8.0),
       child: Row(
@@ -212,6 +216,80 @@ class _EditRouteState extends State<EditRoute>
     }
 
     return result;
+  }
+}
+
+class TopToolbar extends StatefulWidget {
+  @override
+  _TopToolbarState createState() => _TopToolbarState();
+}
+
+class _TopToolbarState extends State<TopToolbar> {
+  ConfigWidgetState data;
+
+  @override
+  Widget build(BuildContext context) {
+    data = ConfigWidget.of(context);
+    return Container(
+      color: Colors.black,
+      width: double.infinity,
+      alignment: Alignment.center,
+      height: 80,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            RaisedButton(
+              onPressed: () {
+                data.setCurrentLeafTool(LeafTool.align);
+                // widget.showLeafTool();
+              },
+              child: Text('align'),
+            ),
+            //delete
+            RaisedButton(
+              onPressed: () => data.removeCurrentSelected(),
+              child: Text('delete'),
+            ),
+            //undo
+            RaisedButton(
+              onPressed: () => data.undo(),
+              child: Text('undo'),
+            ),
+            //clear
+            RaisedButton(
+              onPressed: () => data.reset(),
+              child: Text('clear'),
+            ),
+            RaisedButton(
+              child: Text('save'),
+              onPressed: () async {
+                List<Map<String, dynamic>> list = [
+                  {
+                    'background': {'background': data.getBackroundColor().value}
+                  }
+                ];
+                data.selectables.forEach((element) {
+                  list.add({element.runtimeType.toString(): element});
+                });
+
+                if (!data.newCanva) {
+                  await SeletectableImgFile(imgPath: data.currentEditImgPath)
+                      .delete();
+                }
+
+                String jsonString = jsonEncode(list);
+                String name = DateTime.now().millisecondsSinceEpoch.toString();
+                await saveImage(rpbKey, mContext,
+                    data.size2Save.width / data.size.width, name);
+                await saveJson(name, jsonString);
+                data.reset();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -559,12 +637,6 @@ class ToolButton extends StatelessWidget {
       child: InkWell(
         child: Padding(
           padding: const EdgeInsets.all(12.0),
-          // child: Image.asset(
-          //   'assets/icons/' + icon + '.svg',
-          //   width: 30,
-          //   height: 30,
-          //   color: color,
-          // ),
           child: Text(
             icon,
             style: TextStyle(color: Colors.white),
@@ -586,12 +658,6 @@ class SubtoolButton extends StatelessWidget {
     return InkWell(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
-        // child: Image.asset(
-        //   'assets/icons/' + icon + '.svg',
-        //   width: 40,
-        //   height: 40,
-        //   color: Colors.white,
-        // ),
         child: Text(
           icon,
           style: TextStyle(color: Colors.white),
@@ -845,9 +911,9 @@ class _TypoTextWidgetState extends State<TypoTextWidget> {
             onPressed: () {
               data.addSelectable(
                 data.assembleSelectableText(
-                  controller.text,
-                  Offset(size.height / 2 / 2, size.height / 2),
-                ),
+                    controller.text,
+                    Offset(size.height / 2 / 2, size.height / 2),
+                    size.width - 20),
               );
               data.setSeleteLast();
 
