@@ -72,22 +72,27 @@ class _EditRouteState extends State<EditRoute>
     return SafeArea(
       child: Scaffold(
         body: Container(
-          child: Stack(children: [
-            Column(
-              children: [
-                TopToolbar(),
-                Expanded(child: CanvasPanel(rpbKey)),
-                BottomToolbar(
-                  showLeafTool: showLeafTool,
-                  hideLeafTool: hideLeafTool,
-                )
-              ],
-            ),
-            Positioned(
-              child: _buildAnimatedLeafTools(),
-              bottom: 120,
-            )
-          ]),
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  TopToolbar(showLeafTool),
+                  Expanded(child: CanvasPanel(rpbKey)),
+                  BottomToolbar(
+                    showLeafTool: showLeafTool,
+                    hideLeafTool: hideLeafTool,
+                  )
+                ],
+              ),
+              Positioned(
+                child: Container(
+                  child: _buildAnimatedLeafTools(),
+                ),
+                bottom: 130,
+                // top: 50,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -103,20 +108,27 @@ class _EditRouteState extends State<EditRoute>
     );
   }
 
+  double position = 20;
+  MessageBoxDirection direction = MessageBoxDirection.bottom;
+
   _buildLeafTools() {
     return Container(
-      decoration: ShapeDecoration(shape: MessageBoxBorder(color: Colors.red)),
+      decoration: ShapeDecoration(
+        shape: MessageBoxBorder(
+          color: Colors.yellow[300],
+          position: position,
+          direction: direction,
+        ),
+      ),
       width: MediaQuery.of(context).size.width - 16,
       margin: EdgeInsets.all(8.0),
       child: Row(
         children: [
-          Expanded(
-            child: _getLeafTool(data.currentLeafTool),
-          ),
+          Expanded(child: _getLeafTool(data.currentLeafTool)),
           IconButton(
             icon: Icon(
               Icons.close,
-              color: Colors.white,
+              color: Colors.green,
             ),
             onPressed: () => controller.reverse(),
           ),
@@ -129,6 +141,35 @@ class _EditRouteState extends State<EditRoute>
     var result;
     if (leafTool != null) {
       switch (leafTool) {
+        case LeafTool.backgroundColor:
+          result = Container(
+            width: 350,
+            height: 350,
+            child: ColorPicker((color) {
+              data.setBackgroundColor(color);
+            }),
+          );
+          break;
+        case LeafTool.align:
+          result = Container(
+            child: Row(
+              children: [
+                IconButton(
+                    icon: Icon(Icons.format_align_left), onPressed: null),
+                IconButton(
+                    icon: Icon(Icons.format_align_right), onPressed: null),
+                IconButton(
+                    icon: Icon(Icons.vertical_align_top), onPressed: null),
+                IconButton(
+                    icon: Icon(Icons.vertical_align_bottom), onPressed: null),
+                IconButton(
+                    icon: Icon(Icons.vertical_align_center), onPressed: null),
+                IconButton(
+                    icon: Icon(Icons.border_horizontal), onPressed: null),
+              ],
+            ),
+          );
+          break;
         case LeafTool.pen_color:
           result = ColorWidget(toolNum: penToolNum);
           break;
@@ -220,6 +261,10 @@ class _EditRouteState extends State<EditRoute>
 }
 
 class TopToolbar extends StatefulWidget {
+  TopToolbar(this.showLeafTool);
+
+  final VoidCallback showLeafTool;
+
   @override
   _TopToolbarState createState() => _TopToolbarState();
 }
@@ -227,42 +272,99 @@ class TopToolbar extends StatefulWidget {
 class _TopToolbarState extends State<TopToolbar> {
   ConfigWidgetState data;
 
+  GlobalKey key;
+
+  @override
+  void initState() {
+    super.initState();
+
+    key = GlobalKey();
+  }
+
   @override
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
     return Container(
       color: Colors.black,
       width: double.infinity,
-      alignment: Alignment.center,
-      height: 80,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            RaisedButton(
-              onPressed: () {
-                data.setCurrentLeafTool(LeafTool.align);
-                // widget.showLeafTool();
+      alignment: Alignment.centerRight,
+      height: 50,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Spacer(),
+          Flexible(
+            child: InkWell(
+              onTap: () {
+                data.setCurrentLeafTool(LeafTool.backgroundColor);
+                widget.showLeafTool();
+                String s = (key.currentContext.findRenderObject() as RenderBox)
+                    .paintBounds
+                    .bottom
+                    .toString();
+                print('background bottom' + s);
               },
-              child: Text('align'),
+              child: Container(
+                key: key,
+                margin: EdgeInsets.all(8),
+                width: 20,
+                height: 30,
+                color: data.getBackroundColor(),
+              ),
             ),
-            //delete
-            RaisedButton(
+          ),
+          Expanded(
+            child: IconButton(
+                icon: Image.asset(
+                  'assets/icons/align_left.png',
+                  width: 20,
+                  height: 20,
+                ),
+                onPressed: () {
+                  data.setCurrentLeafTool(LeafTool.align);
+                  widget.showLeafTool();
+                }),
+          ),
+          //delete
+          Expanded(
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/remove.png',
+                width: 20,
+                height: 20,
+              ),
               onPressed: () => data.removeCurrentSelected(),
-              child: Text('delete'),
             ),
-            //undo
-            RaisedButton(
+          ),
+          //undo
+          Expanded(
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/undo.png',
+                width: 20,
+                height: 20,
+              ),
               onPressed: () => data.undo(),
-              child: Text('undo'),
             ),
-            //clear
-            RaisedButton(
+          ),
+          //clear
+          Expanded(
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/trash.png',
+                width: 20,
+                height: 20,
+              ),
               onPressed: () => data.reset(),
-              child: Text('clear'),
             ),
-            RaisedButton(
-              child: Text('save'),
+          ),
+          Expanded(
+            child: IconButton(
+              icon: Image.asset(
+                'assets/icons/save.png',
+                width: 20,
+                height: 20,
+              ),
               onPressed: () async {
                 List<Map<String, dynamic>> list = [
                   {
@@ -286,8 +388,8 @@ class _TopToolbarState extends State<TopToolbar> {
                 data.reset();
               },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -306,9 +408,9 @@ class BottomToolbar extends StatefulWidget {
 
 class _BottomToolbarState extends State<BottomToolbar> {
   ConfigWidgetState data;
-  var toolIconList = ['palette', 'pen', 'geometry', 'typo', 'image', 'save'];
+  static const toolIconList = ['pen', 'shape', 'font', 'image'];
 
-  double height = 120;
+  double height = 130;
 
   @override
   Widget build(BuildContext context) {
@@ -331,6 +433,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: _getSubtool(mainTool),
         ),
       ),
@@ -347,20 +450,6 @@ class _BottomToolbarState extends State<BottomToolbar> {
         break;
       case MainTool.pen:
         result = [
-          // RaisedButton(
-          //   child: Text('color'),
-          //   onPressed: () {
-          //     data.setCurrentLeafTool(LeafTool.pen_color);
-          //     widget.showLeafTool();
-          //   },
-          // ),
-          // RaisedButton(
-          //   child: Text('width'),
-          //   onPressed: () {
-          //     data.setCurrentLeafTool(LeafTool.pen_width);
-          //     widget.showLeafTool();
-          //   },
-          // ),
           IconButton(
             icon: Image.asset('assets/icons/pen_color.png'),
             onPressed: () {
@@ -369,7 +458,10 @@ class _BottomToolbarState extends State<BottomToolbar> {
             },
           ),
           IconButton(
-            icon: Image.asset('assets/icons/pen_width.png'),
+            icon: Text(
+              data.getPenWidth().truncate().toString(),
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.pen_width);
               widget.showLeafTool();
@@ -379,29 +471,49 @@ class _BottomToolbarState extends State<BottomToolbar> {
         break;
       case MainTool.shape:
         result = [
-          RaisedButton(
-            child: Text('type'),
+          IconButton(
+            icon: _getShapeIcon(data.getShapeType()),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.shape_type);
               widget.showLeafTool();
             },
           ),
-          RaisedButton(
-            child: Text('color'),
+          IconButton(
+            iconSize: 50,
+            icon: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: data.getShapeColor(),
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.shape_color);
               widget.showLeafTool();
             },
           ),
-          RaisedButton(
-            child: Text('style'),
-            onPressed: () {
-              data.setCurrentLeafTool(LeafTool.shape_style);
-              widget.showLeafTool();
-            },
-          ),
-          RaisedButton(
-            child: Text('width'),
+          IconButton(
+              icon: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: data.getShapeStyle()
+                      ? data.getShapeFillColor()
+                      : Colors.transparent,
+                  border: Border.all(color: data.getShapeColor(), width: 5),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              onPressed: () {
+                data.setCurrentLeafTool(LeafTool.shape_style);
+                widget.showLeafTool();
+              }),
+          IconButton(
+            icon: Text(
+              data.getShapeWidth().toInt().toString(),
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.shape_width);
               widget.showLeafTool();
@@ -411,8 +523,13 @@ class _BottomToolbarState extends State<BottomToolbar> {
         break;
       case MainTool.text:
         result = [
-          RaisedButton(
-            child: Text('text'),
+          IconButton(
+            iconSize: 50,
+            icon: Image.asset(
+              'assets/icons/typo_input.png',
+              // width: 50,
+              // height: 30,
+            ),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.text_text);
               widget.showLeafTool();
@@ -425,15 +542,25 @@ class _BottomToolbarState extends State<BottomToolbar> {
               widget.showLeafTool();
             },
           ),
-          RaisedButton(
-            child: Text('weight'),
+          IconButton(
+            icon: Text(
+              data.getTextWeight().toString(),
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.text_weight);
               widget.showLeafTool();
             },
           ),
-          RaisedButton(
-            child: Text('color'),
+          IconButton(
+            icon: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  color: data.getTextColor(),
+                  border: Border.all(width: 1, color: Colors.white)),
+            ),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.text_color);
               widget.showLeafTool();
@@ -443,14 +570,24 @@ class _BottomToolbarState extends State<BottomToolbar> {
         break;
       case MainTool.image:
         result = [
-          RaisedButton(
-            child: Text('image'),
+          IconButton(
+            iconSize: 50,
+            icon: Image.asset(
+              'assets/icons/image_pick.png',
+              width: 30,
+              height: 30,
+            ),
             onPressed: () {
               _addImage();
             },
           ),
-          RaisedButton(
-              child: Text('crop'),
+          IconButton(
+              iconSize: 50,
+              icon: Image.asset(
+                'assets/icons/image_crop.png',
+                width: 30,
+                height: 30,
+              ),
               onPressed: () async {
                 if (clipImageBean == null) {
                   clipImageBean = ClipImageBean(
@@ -468,61 +605,78 @@ class _BottomToolbarState extends State<BottomToolbar> {
           ),
         ];
         break;
-      case MainTool.more:
-        result = [
-          RaisedButton(
-            onPressed: () {
-              data.setCurrentLeafTool(LeafTool.align);
-              widget.showLeafTool();
-            },
-            child: Text('align'),
-          ),
-          //delete
-          RaisedButton(
-            onPressed: () => data.removeCurrentSelected(),
-            child: Text('delete'),
-          ),
-          //undo
-          RaisedButton(
-            onPressed: () => data.undo(),
-            child: Text('undo'),
-          ),
-          //clear
-          RaisedButton(
-            onPressed: () => data.reset(),
-            child: Text('clear'),
-          ),
-          RaisedButton(
-            child: Text('save'),
-            onPressed: () async {
-              List<Map<String, dynamic>> list = [
-                {
-                  'background': {'background': data.getBackroundColor().value}
-                }
-              ];
-              data.selectables.forEach((element) {
-                list.add({element.runtimeType.toString(): element});
-              });
+      // case MainTool.more:
+      //   result = [
+      //     RaisedButton(
+      //       onPressed: () {
+      //         data.setCurrentLeafTool(LeafTool.align);
+      //         widget.showLeafTool();
+      //       },
+      //       child: Text('align'),
+      //     ),
+      //     //delete
+      //     RaisedButton(
+      //       onPressed: () => data.removeCurrentSelected(),
+      //       child: Text('delete'),
+      //     ),
+      //     //undo
+      //     RaisedButton(
+      //       onPressed: () => data.undo(),
+      //       child: Text('undo'),
+      //     ),
+      //     //clear
+      //     RaisedButton(
+      //       onPressed: () => data.reset(),
+      //       child: Text('clear'),
+      //     ),
+      //     RaisedButton(
+      //       child: Text('save'),
+      //       onPressed: () async {
+      //         List<Map<String, dynamic>> list = [
+      //           {
+      //             'background': {'background': data.getBackroundColor().value}
+      //           }
+      //         ];
+      //         data.selectables.forEach((element) {
+      //           list.add({element.runtimeType.toString(): element});
+      //         });
 
-              if (!data.newCanva) {
-                await SeletectableImgFile(imgPath: data.currentEditImgPath)
-                    .delete();
-              }
+      //         if (!data.newCanva) {
+      //           await SeletectableImgFile(imgPath: data.currentEditImgPath)
+      //               .delete();
+      //         }
 
-              String jsonString = jsonEncode(list);
-              String name = DateTime.now().millisecondsSinceEpoch.toString();
-              await saveImage(rpbKey, mContext,
-                  data.size2Save.width / data.size.width, name);
-              await saveJson(name, jsonString);
-              data.reset();
-            },
-          ),
-        ];
-        break;
+      //         String jsonString = jsonEncode(list);
+      //         String name = DateTime.now().millisecondsSinceEpoch.toString();
+      //         await saveImage(rpbKey, mContext,
+      //             data.size2Save.width / data.size.width, name);
+      //         await saveJson(name, jsonString);
+      //         data.reset();
+      //       },
+      //     ),
+      //   ];
+      //   break;
       default:
         break;
     }
     return result;
+  }
+
+  Widget _getShapeIcon(int shapeType) {
+    switch (shapeType) {
+      case 0:
+        return Image.asset('assets/icons/shape_line.png');
+        break;
+      case 1:
+        return Image.asset('assets/icons/shape_square.png');
+        break;
+      case 2:
+        return Image.asset('assets/icons/shape_circle.png');
+        break;
+      default:
+        break;
+    }
+    return Container();
   }
 
   _addImage() async {
@@ -548,23 +702,23 @@ class _BottomToolbarState extends State<BottomToolbar> {
       width: MediaQuery.of(context).size.width,
       child: Row(
         children: [
-          ToolButton(
-            icon: toolIconList[0],
-            color: data.currentMainTool == MainTool.background
-                ? Colors.white
-                : Colors.grey,
-            onTap: () {
-              data.setCurrentMainTool(MainTool.background);
-              data.setUnselected();
-              widget.hideLeafTool();
-            },
-          ),
+          // ToolButton(
+          //   icon: toolIconList[0],
+          //   color: data.currentMainTool == MainTool.background
+          //       ? Colors.white
+          //       : Colors.grey,
+          //   onTap: () {
+          //     data.setCurrentMainTool(MainTool.background);
+          //     data.setUnselected();
+          //     widget.hideLeafTool();
+          //   },
+          // ),
           //pen
           ToolButton(
-            icon: toolIconList[1],
+            icon: toolIconList[0],
             color: data.currentMainTool == MainTool.pen
                 ? Colors.white
-                : Colors.grey,
+                : Colors.grey[600],
             onTap: () {
               data.setCurrentMainTool(MainTool.pen);
               data.setUnselected();
@@ -573,7 +727,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
           ),
           //shape
           ToolButton(
-            icon: toolIconList[2],
+            icon: toolIconList[1],
             color: data.currentMainTool == MainTool.shape
                 ? Colors.white
                 : Colors.grey,
@@ -585,7 +739,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
           ),
           //text
           ToolButton(
-            icon: toolIconList[3],
+            icon: toolIconList[2],
             color: data.currentMainTool == MainTool.text
                 ? Colors.white
                 : Colors.grey,
@@ -597,7 +751,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
           ),
           //image
           ToolButton(
-            icon: toolIconList[4],
+            icon: toolIconList[3],
             color: data.currentMainTool == MainTool.image
                 ? Colors.white
                 : Colors.grey,
@@ -608,16 +762,16 @@ class _BottomToolbarState extends State<BottomToolbar> {
             },
           ),
           //more
-          ToolButton(
-            icon: toolIconList[5],
-            color: data.currentMainTool == MainTool.more
-                ? Colors.white
-                : Colors.grey,
-            onTap: () {
-              data.setCurrentMainTool(MainTool.more);
-              widget.hideLeafTool();
-            },
-          ),
+          // ToolButton(
+          //   icon: toolIconList[5],
+          //   color: data.currentMainTool == MainTool.more
+          //       ? Colors.white
+          //       : Colors.grey,
+          //   onTap: () {
+          //     data.setCurrentMainTool(MainTool.more);
+          //     widget.hideLeafTool();
+          //   },
+          // ),
         ],
       ),
     );
@@ -634,15 +788,15 @@ class ToolButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: InkWell(
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Text(
-            icon,
-            style: TextStyle(color: Colors.white),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: IconButton(
+          icon: Image.asset(
+            'assets/icons/' + icon + '.png',
+            color: color,
           ),
+          onPressed: onTap,
         ),
-        onTap: onTap,
       ),
     );
   }

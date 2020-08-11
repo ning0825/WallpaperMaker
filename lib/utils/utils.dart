@@ -58,21 +58,21 @@ Future<ui.Image> getImgObject(String name) async {
 Future<void> showToast({BuildContext context, String msg}) async {
   OverlayEntry overlayEntry = OverlayEntry(
       builder: (context) {
-        return new Positioned(
-            top: MediaQuery.of(context).size.height * 0.7,
-            child: new Material(
-              child: new Container(
-                width: MediaQuery.of(context).size.width,
-                alignment: Alignment.center,
-                child: new Card(
-                  child: new Padding(
-                    padding: EdgeInsets.all(8),
-                    child: new Text(msg),
-                  ),
-                  color: Colors.grey,
-                ),
-              ),
-            ));
+        return Positioned(
+          top: MediaQuery.of(context).size.height * 0.7,
+          child: Container(
+            width: MediaQuery.of(context).size.width,
+            alignment: Alignment.center,
+            child: Material(
+              child: Container(
+                  width: 100,
+                  height: 50,
+                  alignment: Alignment.center,
+                  color: Colors.green,
+                  child: Text(msg)),
+            ),
+          ),
+        );
       },
       opaque: false);
   Overlay.of(context).insert(overlayEntry);
@@ -80,7 +80,7 @@ Future<void> showToast({BuildContext context, String msg}) async {
       .then((value) => overlayEntry.remove());
 }
 
-///set wallpaper directly.
+///Set wallpaper.
 ///
 ///TODO User can choose lockscreen wallpaper or wallpaper.
 Future<void> setAswallPaper(BuildContext context, String path) async {
@@ -89,9 +89,10 @@ Future<void> setAswallPaper(BuildContext context, String path) async {
   showToast(context: context, msg: 'set success');
 }
 
-//Save the image to internal storage
-//This function copy the image from /storage/emulated/0/Android/data/com.example.wallpaper_maker/files/example.png
-//to /storage/emulated/0/WallpaperMaker/example.png
+///Save the image to internal storage
+///
+///This function copy the image from /storage/emulated/0/Android/data/com.example.wallpaper_maker/files/example.png
+///to /storage/emulated/0/WallpaperMaker/example.png
 Future<void> saveImage2Local(String path) async {
   File file = File(path);
 
@@ -104,7 +105,7 @@ Future<void> saveImage2Local(String path) async {
   refreshMedia(newFile.path);
 }
 
-//Refresh media library of system to make image show in the gallery.
+//Refresh system media library to make image visiable in the gallery.
 void refreshMedia(String path) {
   const platform = MethodChannel('example.wallpaper_maker/wallpaper');
   platform.invokeMethod('refreshMedia', {'path': path});
@@ -120,7 +121,6 @@ Future<void> saveJson(String objName, String data) async {
 
   //Create file
   File jsonfile = File(fileDir.path + '/' + '$objName.json');
-
   await jsonfile.writeAsString(data);
 }
 

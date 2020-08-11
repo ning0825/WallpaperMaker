@@ -84,3 +84,22 @@ class MyCanvas extends CustomPainter {
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => oldDelegate != this;
 }
+
+class WidthPicker extends CustomPainter {
+  WidthPicker(this.width);
+
+  double width;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawLine(
+        Offset(5, size.height / 2),
+        Offset(size.width - 5, size.height / 2),
+        Paint()
+          ..color = Colors.green
+          ..strokeWidth = width);
+  }
+
+  @override
+  bool shouldRepaint(WidthPicker oldDelegate) => oldDelegate.width != width;
+}

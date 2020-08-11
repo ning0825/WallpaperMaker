@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 enum MainTool { background, pen, shape, text, image, more }
 
 enum LeafTool {
+  backgroundColor,
+
   pen_color,
   pen_width,
 

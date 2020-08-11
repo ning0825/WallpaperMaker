@@ -50,25 +50,24 @@ flutter:
   #  - images/a_dot_burr.jpeg
   #  - images/a_dot_ham.jpeg
   assets:
-    - assets/icons/country.svg
-    - assets/icons/image.svg
-    - assets/icons/palette.svg
-    - assets/icons/typo.svg
-    - assets/icons/save.svg
-    - assets/icons/pen.svg
-    - assets/icons/close.svg
-    - assets/icons/undo.svg
-    - assets/icons/delete.svg
-    - assets/icons/geometry.svg
-    - assets/icons/screen.png
-    - assets/icons/close.png
-    - assets/icons/rotate.png
-    - assets/icons/zoom.png
-    - assets/icons/img.jpg
-    - assets/icons/img2.jpg
-    - assets/icons/img3.jpg
+    - assets/icons/align_left.png
+    - assets/icons/remove.png
+    - assets/icons/save.png
+    - assets/icons/trash.png
+    - assets/icons/undo.png
+    - assets/icons/pen.png
+    - assets/icons/shape.png
+    - assets/icons/font.png
+    - assets/icons/image.png
     - assets/icons/pen_color.png
     - assets/icons/pen_width.png
+    - assets/icons/shape_square.png
+    - assets/icons/shape_circle.png
+    - assets/icons/shape_line.png
+    - assets/icons/typo_input.png
+    - assets/icons/image_crop.png
+    - assets/icons/image_pick.png
+
 
   fonts:
     - family: Polingo

@@ -51,7 +51,7 @@ class ConfigWidgetState extends State<ConfigWidget>
   //size of stage area.
   Size stageSize;
 
-  MainTool currentMainTool = MainTool.background;
+  MainTool currentMainTool = MainTool.pen;
   LeafTool currentLeafTool;
 
   bool isScaling = false;
