@@ -1,9 +1,10 @@
 import 'dart:math';
 
-import 'package:flutter/material.dart' hide SelectableText;
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import 'package:wallpaper_maker/beans/selectable_bean.dart';
+import 'package:wallpaper_maker/cus_widgets/cus_widget.dart';
 import 'configuration.dart';
 import 'constants.dart';
 
@@ -53,11 +54,13 @@ class ConfigWidgetState extends State<ConfigWidget>
 
   MainTool currentMainTool = MainTool.pen;
   LeafTool currentLeafTool;
+  LeafTool lastLeafTool;
 
   bool isScaling = false;
 
   String currentEditImgPath;
   bool newCanva;
+  bool fromReset = false;
 
   // AnimationController scaleController;
   // Tween<double> scaleTween;
@@ -81,6 +84,7 @@ class ConfigWidgetState extends State<ConfigWidget>
 
   setCurrentLeafTool(LeafTool leafTool) {
     setState(() {
+      lastLeafTool = currentLeafTool;
       currentLeafTool = leafTool;
     });
   }
@@ -132,7 +136,7 @@ class ConfigWidgetState extends State<ConfigWidget>
         case 'SelectableShape':
           currentMainTool = MainTool.shape;
           break;
-        case 'SelectableText':
+        case 'SelectableTypo':
           currentMainTool = MainTool.text;
           break;
         case 'SelectableImage':
@@ -172,6 +176,7 @@ class ConfigWidgetState extends State<ConfigWidget>
 
   reset() {
     setState(() {
+      fromReset = true;
       _init();
     });
   }
@@ -402,9 +407,9 @@ class ConfigWidgetState extends State<ConfigWidget>
   //---------------------------------------------------------------------------------
   //Text
   //---------------------------------------------------------------------------------
-  SelectableText assembleSelectableText(
+  SelectableTypo assembleSelectableTypo(
       String text, Offset offset, double maxWidth) {
-    return SelectableText(text: text, mOffset: offset, maxWidth: maxWidth)
+    return SelectableTypo(text: text, mOffset: offset, maxWidth: maxWidth)
       ..textColor = config.textColor
       ..textWeight = 3;
   }
@@ -412,54 +417,54 @@ class ConfigWidgetState extends State<ConfigWidget>
   setText(String text) {
     setState(() {
       isSelectedMode
-          ? (currentSelectable as SelectableText).text = text
+          ? (currentSelectable as SelectableTypo).text = text
           : config.text = text;
     });
   }
 
   String getText() {
-    return isSelectedMode ? (currentSelectable as SelectableText).text : '';
+    return isSelectedMode ? (currentSelectable as SelectableTypo).text : '';
   }
 
   setTextFont(String font) {
     setState(() {
       isSelectedMode
-          ? (currentSelectable as SelectableText).fontFamily = font
+          ? (currentSelectable as SelectableTypo).fontFamily = font
           : config.font = font;
     });
   }
 
   String getTextFont() {
     return isSelectedMode
-        ? (currentSelectable as SelectableText).fontFamily
-        : 'default';
+        ? (currentSelectable as SelectableTypo).fontFamily
+        : config.font;
   }
 
   setTextColor(Color color) {
     setState(() {
       isSelectedMode
-          ? (currentSelectable as SelectableText).textColor = color
+          ? (currentSelectable as SelectableTypo).textColor = color
           : config.textColor = color;
     });
   }
 
   Color getTextColor() {
     return isSelectedMode
-        ? (currentSelectable as SelectableText).textColor
+        ? (currentSelectable as SelectableTypo).textColor
         : config.textColor;
   }
 
   setTextWeight(double weight) {
     setState(() {
       isSelectedMode
-          ? (currentSelectable as SelectableText).textWeight = weight.round()
+          ? (currentSelectable as SelectableTypo).textWeight = weight.round()
           : config.typoWeight = weight.round();
     });
   }
 
   int getTextWeight() {
     return isSelectedMode
-        ? (currentSelectable as SelectableText).textWeight
+        ? (currentSelectable as SelectableTypo).textWeight
         : config.typoWeight.round();
   }
 
@@ -542,8 +547,8 @@ class ConfigWidgetState extends State<ConfigWidget>
             }
           }
 
-          if (currentSelectable is SelectableText) {
-            (currentSelectable as SelectableText).maxWidth =
+          if (currentSelectable is SelectableTypo) {
+            (currentSelectable as SelectableTypo).maxWidth =
                 (details.localPosition.dx - currentSelectable.rect.center.dx) *
                     2;
           }
@@ -614,7 +619,7 @@ class ConfigWidgetState extends State<ConfigWidget>
         currentSelectable.scaleRadioY = tmpScaleY * details.scale;
 
         //Rotation
-        if (details.rotation > pi / 18) {
+        if (details.rotation.abs() > pi / 18) {
           currentSelectable.rotRadians = details.rotation - pi / 18 + tmpRadius;
           currentSelectable.tmpAngle = details.rotation - pi / 18 + tmpRadius;
         }
@@ -637,6 +642,11 @@ class ConfigWidgetState extends State<ConfigWidget>
   }
 
   handleTapUp(TapUpDetails details) {
+    if (!offStage) {
+      hideLeafTool();
+      return;
+    }
+
     if (selectables.last.selectedPath == null) {
       selectables.removeLast();
     }
@@ -667,19 +677,72 @@ class ConfigWidgetState extends State<ConfigWidget>
     }
   }
 
+  //---------------------------------------------------------------------------------
+  //LeafTool Animation
+  //---------------------------------------------------------------------------------
+  AnimationController controller;
+  Animation leafToolAnimation;
+  bool offStage = true;
+
+  double bottom = 0;
+  double top = 0;
+  MessageBoxDirection direction = MessageBoxDirection.bottom;
+  double position = 20;
+
+  setIndicatorPosition(GlobalKey key) {
+    var box = (key.currentContext.findRenderObject()) as RenderBox;
+    position = box.localToGlobal(Offset.zero).dx + box.size.width / 2 - 8;
+  }
+
+  // GlobalKey currentLeafToolKey = GlobalKey();
+  // GlobalKey lastLeafToolKey = GlobalKey();
+
+  setLeafToolTop() {
+    bottom = null;
+    top = 50;
+    direction = MessageBoxDirection.top;
+  }
+
+  setLeafToolBottom() {
+    bottom = 130;
+    top = null;
+    direction = MessageBoxDirection.bottom;
+  }
+
+  showLeafTool() {
+    controller.forward();
+    offStage = false;
+  }
+
+  hideLeafTool() {
+    controller.reverse();
+  }
+
+  toggleLeafTool() {
+    if (offStage) {
+      showLeafTool();
+    } else if (currentLeafTool != lastLeafTool) {
+      setState(() {});
+    } else {
+      hideLeafTool();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
 
-    // scaleController =
-    //     AnimationController(vsync: this, duration: Duration(milliseconds: 300));
-    // scaleTween = Tween(end: 1.0);
-    // scaleAnimation = scaleController
-    //     .drive(scaleTween.chain(CurveTween(curve: Curves.easeIn)));
-    // scaleAnimation.addListener(() {
-    //   canvasScale = scaleAnimation.value;
-    //   setState(() {});
-    // });
+    controller =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 400));
+    leafToolAnimation = controller.drive(Tween<double>(begin: 0.0, end: 1.0)
+        .chain(CurveTween(curve: Curves.easeInBack)));
+    controller.addListener(() {
+      if (controller.isDismissed && controller.value == 0.0) {
+        setState(() {
+          offStage = true;
+        });
+      }
+    });
 
     _init();
   }
@@ -702,9 +765,14 @@ class ConfigWidgetState extends State<ConfigWidget>
     selectables = List();
     isSelectedMode = false;
 
-    size = Size(0.0, 0.0);
-
     newCanva = true;
+
+    if (!fromReset) {
+      size = Size.zero;
+    } else {
+      fromReset = false;
+    }
+
     currentEditImgPath = '';
 
     selectableStack = [];

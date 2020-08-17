@@ -1,5 +1,5 @@
 import 'dart:ui';
-import 'package:flutter/material.dart' hide SelectableText;
+import 'package:flutter/material.dart';
 import 'package:wallpaper_maker/cus_widgets/cus_gesture.dart';
 import 'package:wallpaper_maker/inherit/inherited_config.dart';
 import 'package:flutter/painting.dart';
@@ -22,6 +22,7 @@ class _CanvasPanelState extends State<CanvasPanel> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       setState(() {
+        print('addPostFrameCallback');
         widgetHeight = context.size.height;
         data.setSize(height: widgetHeight, ratio: data.size2Save.aspectRatio);
       });
@@ -32,23 +33,20 @@ class _CanvasPanelState extends State<CanvasPanel> {
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
 
-    return Container(
-      color: Colors.amber,
-      child: CanvasGestureDetector(
-        child: RepaintBoundary(
-          key: widget.rKey,
-          child: CustomPaint(
-            size: data.size,
-            painter: MyCanvas(data: data),
-          ),
+    return CanvasGestureDetector(
+      onTapDownCallback: (details) => data.handleTapDown(details),
+      onDragUpdateCallback: (details) => data.handleTapUpdate(details),
+      ondragEndCallback: (details) => data.handleTapEnd(details),
+      onScaleStartCallback: (details) => data.handleScaleStart(details),
+      onScaleUpdateCallback: (details) => data.handleScaleUpdate(details),
+      onScaleEndCallback: (details) => data.handleScaleEnd(details),
+      onTapUpCallback: (details) => data.handleTapUp(details),
+      child: RepaintBoundary(
+        key: widget.rKey,
+        child: CustomPaint(
+          size: data.size,
+          painter: MyCanvas(data: data),
         ),
-        onTapDownCallback: (details) => data.handleTapDown(details),
-        onDragUpdateCallback: (details) => data.handleTapUpdate(details),
-        ondragEndCallback: (details) => data.handleTapEnd(details),
-        onScaleStartCallback: (details) => data.handleScaleStart(details),
-        onScaleUpdateCallback: (details) => data.handleScaleUpdate(details),
-        onScaleEndCallback: (details) => data.handleScaleEnd(details),
-        onTapUpCallback: (details) => data.handleTapUp(details),
       ),
     );
   }
@@ -86,17 +84,23 @@ class MyCanvas extends CustomPainter {
 }
 
 class WidthPicker extends CustomPainter {
-  WidthPicker(this.width);
+  WidthPicker({this.width, this.color});
 
   double width;
+  Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawLine(
-        Offset(5, size.height / 2),
-        Offset(size.width - 5, size.height / 2),
+    Path path = Path()
+      ..moveTo(0, size.height / 2)
+      ..conicTo(size.width / 4, 0, size.width / 2, size.height / 2, 1)
+      ..conicTo(
+          size.width / 4 * 3, size.height, size.width, size.height / 2, 1);
+    canvas.drawPath(
+        path,
         Paint()
-          ..color = Colors.green
+          ..color = color
+          ..style = PaintingStyle.stroke
           ..strokeWidth = width);
   }
 

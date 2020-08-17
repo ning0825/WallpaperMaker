@@ -75,41 +75,57 @@ class MessageBoxBorder extends OutlinedBorder {
   ShapeBorder scale(double t) => MessageBoxBorder(color: color);
 }
 
-var colorlist = [
-  Colors.red,
-  Colors.deepOrange,
-  Colors.orange,
-  Colors.amber,
-  Colors.yellow,
-  Colors.lime,
-  Colors.lightGreen,
-  Colors.green,
-  Colors.lightBlue,
-  Colors.blue,
-  Colors.purple,
-  Colors.deepPurple,
-];
-
 typedef OnColorPick = void Function(Color color);
 
-class ColorPicker extends StatelessWidget {
-  ColorPicker(this.onColorPick);
+class PaletteWidget extends LeafRenderObjectWidget {
+  PaletteWidget({this.onColorPick});
 
   final OnColorPick onColorPick;
+  @override
+  PaletteRenderBox createRenderObject(BuildContext context) =>
+      PaletteRenderBox(onColorPick);
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      child: GestureDetector(
-        onPanUpdate: (details) => _handlePanUpdate(context, details),
-        child: PaletteWidget(),
-      ),
-    );
+  void updateRenderObject(BuildContext context, RenderObject renderObject) {
+    (renderObject as PaletteRenderBox).onColorPick = this.onColorPick;
   }
+}
 
-  void _handlePanUpdate(BuildContext context, DragUpdateDetails details) {
-    int row = (details.localPosition.dy / (context.size.width / 10)).floor();
-    int col = (details.localPosition.dx / (context.size.width / 12)).floor();
+class PaletteRenderBox extends RenderBox {
+  PaletteRenderBox(this.onColorPick);
+
+  OnColorPick onColorPick;
+
+  double pieceWidth;
+  double pieceHeight;
+
+  double ratio = window.devicePixelRatio;
+
+  Size pieceSize;
+
+  var colorlist = [
+    Colors.red,
+    Colors.deepOrange,
+    Colors.orange,
+    Colors.amber,
+    Colors.yellow,
+    Colors.lime,
+    Colors.lightGreen,
+    Colors.green,
+    Colors.lightBlue,
+    Colors.blue,
+    Colors.purple,
+    Colors.deepPurple,
+  ];
+
+  @override
+  bool get sizedByParent => true;
+
+  @override
+  void handleEvent(PointerEvent event, BoxHitTestEntry entry) {
+    super.handleEvent(event, entry);
+    int row = (event.localPosition.dy / (size.width / 10)).floor();
+    int col = (event.localPosition.dx / (size.width / 12)).floor();
 
     //第一行是黑白
     if (row == 0) {
@@ -119,35 +135,10 @@ class ColorPicker extends StatelessWidget {
       onColorPick(colorlist[col][(10 - row) * 100]);
     }
   }
-}
-
-class PaletteWidget extends SingleChildRenderObjectWidget {
-  @override
-  PaletteRenderBox createRenderObject(BuildContext context) =>
-      PaletteRenderBox();
-
-  @override
-  void updateRenderObject(BuildContext context, RenderObject renderObject) {}
-}
-
-class PaletteRenderBox extends RenderProxyBox {
-  double pieceWidth;
-  double pieceHeight;
-
-  double ratio = window.devicePixelRatio;
-
-  Paint painter;
 
   @override
   void paint(PaintingContext context, Offset offset) {
     context.canvas.clipRect(offset & size);
-
-    //12列
-    pieceWidth = size.width / 12;
-    //10行
-    pieceHeight = size.height / 10;
-
-    Size pieceSize = Size(pieceWidth, pieceHeight);
 
     //第一行
     for (var i = 0; i < 12; i++) {
@@ -172,16 +163,16 @@ class PaletteRenderBox extends RenderProxyBox {
   }
 
   @override
-  void performLayout() {
-    super.performLayout();
-    print('constraints: ' + constraints.toString());
-    size = constraints.biggest;
-  }
-
-  @override
   void performResize() {
-    // TODO: implement performResize
-    super.performResize();
+    size = Size(constraints.biggest.width, constraints.biggest.width);
+
+    //12列
+    pieceWidth = size.width / 12;
+
+    //10行
+    pieceHeight = size.height / 10;
+
+    pieceSize = Size(pieceWidth, pieceHeight);
   }
 
   @override

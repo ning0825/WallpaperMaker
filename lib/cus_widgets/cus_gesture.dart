@@ -48,7 +48,6 @@ class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
     }
 
     if (event is PointerUpEvent) {
-      print('pointerup: ' + event.pointer.toString());
       invokeCallback('on tap end', () => onEnd(DragEndDetails()));
       isTracking = false;
     }

@@ -148,7 +148,7 @@ abstract class Selectable {
         // canvas.drawRect(rightControlRect, _ctrlPaint);
         // canvas.drawRect(leftControlRect, _ctrlPaint);
       }
-      if (this is SelectableText) {
+      if (this is SelectableTypo) {
         canvas.drawLine(rightCtrlStart, rightCtrlEnd, _ctrlPaint);
       }
     }
@@ -256,7 +256,7 @@ abstract class Selectable {
   }
 }
 
-class SelectableText extends Selectable {
+class SelectableTypo extends Selectable {
   String text;
 
   Color textColor;
@@ -273,7 +273,7 @@ class SelectableText extends Selectable {
   int textWeight;
 
   //最大宽度
-  double _maxWidth = double.infinity;
+  double _maxWidth;
 
   double fontSize = 0;
 
@@ -285,7 +285,7 @@ class SelectableText extends Selectable {
 
   double get maxWidth => _maxWidth;
 
-  SelectableText({this.text, Offset mOffset, double maxWidth}) {
+  SelectableTypo({this.text, Offset mOffset, double maxWidth}) {
     offset = mOffset;
     this.maxWidth = maxWidth;
   }
@@ -294,8 +294,6 @@ class SelectableText extends Selectable {
     return {
       'text': text,
       'textColor': textColor.value,
-      // 'totalOffsetX': totalOffset.dx,
-      // 'totalOffsetY': totalOffset.dy,
       'fontFamily': fontFamily,
       'textWeight': textWeight,
       'maxWidth': maxWidth,
@@ -303,13 +301,12 @@ class SelectableText extends Selectable {
     }..addAll(super.toJson());
   }
 
-  factory SelectableText.fromJson(Map<String, dynamic> map) {
-    return SelectableText()
+  factory SelectableTypo.fromJson(Map<String, dynamic> map) {
+    return SelectableTypo(maxWidth: map['maxWidth'])
       ..text = map['text']
       ..textColor = Color(map['textColor'])
       ..fontFamily = map['fontFamily']
       ..textWeight = map['textWeight']
-      ..maxWidth = map['maxWidth']
       ..fontSize = map['fontSize']
       ..offset = Offset(map['offsetX'], map['offsetY'])
       ..scaleRadioX = map['scaleRadioX']

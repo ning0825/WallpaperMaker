@@ -291,7 +291,7 @@ class ClipImageBean {
 
     //draw shadow out of operatorRect
     canvas.clipRect(operatorRect, clipOp: ClipOp.difference);
-    canvas.drawColor(Color.fromARGB(150, 0, 0, 0), BlendMode.color);
+    canvas.drawColor(Color.fromARGB(200, 0, 0, 0), BlendMode.dstOut);
 
     canvas.drawRect(operatorRect, operatorPaint);
   }

@@ -1,13 +1,13 @@
 import 'dart:io';
 import 'dart:convert';
 
-import 'package:flutter/material.dart' hide SelectableText;
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wallpaper_maker/routes/route_create.dart';
 import 'package:wallpaper_maker/routes/route_detail.dart';
 
 class SeletectableImgFile {
-  SeletectableImgFile({this.imgPath, this.isSelected = false}) {
+  SeletectableImgFile({this.imgPath, this.date, this.isSelected = false}) {
     jsonPath = getJsonPath(imgPath);
   }
 
@@ -15,6 +15,8 @@ class SeletectableImgFile {
 
   String imgPath;
   String jsonPath;
+
+  DateTime date;
 
   Future delete() async {
     String content = await File(jsonPath).readAsString();
@@ -79,10 +81,13 @@ class _LibraryRouteState extends State<LibraryRoute> {
       Directory directory = await getExternalStorageDirectory();
       await for (var item in directory.list()) {
         if (item.path.endsWith('png')) {
-          imgFiles.add(SeletectableImgFile(imgPath: item.path));
+          imgFiles.add(SeletectableImgFile(
+              imgPath: item.path, date: item.statSync().changed));
         }
       }
       cacheImgFiles.addAll(imgFiles);
+      cacheImgFiles
+          .sort((file1, file2) => file1.date.isAfter(file2.date) ? -1 : 1);
     }
     return cacheImgFiles;
   }
@@ -210,7 +215,9 @@ class _LibraryRouteState extends State<LibraryRoute> {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => DetailRoute(
-                                image: File(cacheImgFiles[index].imgPath)),
+                              image: File(cacheImgFiles[index].imgPath),
+                              heroTag: 'image$index',
+                            ),
                           ),
                         );
                       }
@@ -223,7 +230,10 @@ class _LibraryRouteState extends State<LibraryRoute> {
                               ? Border.all(color: Colors.black, width: 2)
                               : null),
                       padding: EdgeInsets.all(8.0),
-                      child: Image.file(File(cacheImgFiles[index].imgPath)),
+                      child: Hero(
+                          tag: 'image$index',
+                          child:
+                              Image.file(File(cacheImgFiles[index].imgPath))),
                     ),
                   );
                 },
