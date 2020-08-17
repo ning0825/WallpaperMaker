@@ -80,7 +80,7 @@ class _EditRouteState extends State<EditRoute>
     return Container(
       decoration: ShapeDecoration(
         shape: MessageBoxBorder(
-          color: Colors.yellow[300],
+          color: Colors.black87,
           position: data.position,
           direction: data.direction,
         ),
@@ -297,17 +297,16 @@ class _TopToolbarState extends State<TopToolbar> {
           Expanded(
             child: IconButton(
                 key: alignBtKey,
-                icon: Image.asset(
-                  'assets/icons/align_left.png',
-                  width: 20,
-                  height: 20,
-                ),
-                onPressed: () {
-                  data.setLeafToolTop();
-                  data.setCurrentLeafTool(LeafTool.align);
-                  data.setIndicatorPosition(alignBtKey);
-                  data.toggleLeafTool();
-                }),
+                disabledColor: Colors.grey,
+                icon: Icon(Icons.format_align_center),
+                onPressed: data.isSelectedMode
+                    ? () {
+                        data.setLeafToolTop();
+                        data.setCurrentLeafTool(LeafTool.align);
+                        data.setIndicatorPosition(alignBtKey);
+                        data.toggleLeafTool();
+                      }
+                    : null),
           ),
           //delete
           Expanded(

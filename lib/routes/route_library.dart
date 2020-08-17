@@ -61,7 +61,9 @@ class _LibraryRouteState extends State<LibraryRoute> {
   String appFilePath;
 
   bool selectMode = false;
-  bool selectAll = false;
+
+  //Should del button be enable or diable.
+  bool enableDelButton = false;
 
   @override
   void initState() {
@@ -94,6 +96,8 @@ class _LibraryRouteState extends State<LibraryRoute> {
 
   @override
   Widget build(BuildContext context) {
+    enableDelButton = _hasImageSelected();
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -114,7 +118,7 @@ class _LibraryRouteState extends State<LibraryRoute> {
                 collapseMode: CollapseMode.pin,
               ),
               actions: <Widget>[
-                //全选
+                //Select all button.
                 Offstage(
                   offstage: !selectMode,
                   child: Center(
@@ -122,42 +126,41 @@ class _LibraryRouteState extends State<LibraryRoute> {
                       onPressed: () {
                         if (selectMode) {
                           setState(() {
-                            selectAll = !selectAll;
+                            // selectAll = !selectAll;
                             cacheImgFiles.forEach((element) {
-                              element.isSelected = selectAll;
+                              element.isSelected = !element.isSelected;
                             });
                           });
                         }
                       },
                       icon: Icon(
                         Icons.select_all,
-                        color: selectAll ? Colors.blue : Colors.black87,
                       ),
                     ),
                   ),
                 ),
-                //删除
+                //Delete button.
                 Offstage(
                   offstage: !selectMode,
                   child: Center(
                     child: IconButton(
-                      onPressed: () async {
-                        for (var item in cacheImgFiles) {
-                          if (item.isSelected) await item.delete();
-                        }
-                        cacheImgFiles.clear();
-                        selectAll = false;
-                        selectMode = false;
-                        setState(() {});
-                      },
+                      onPressed: enableDelButton
+                          ? () async {
+                              for (var item in cacheImgFiles) {
+                                if (item.isSelected) await item.delete();
+                              }
+                              cacheImgFiles.clear();
+                              setState(() {});
+                            }
+                          : null,
                       icon: Icon(
                         Icons.delete_outline,
-                        color: Colors.black87,
+                        color: enableDelButton ? Colors.red : Colors.grey,
                       ),
                     ),
                   ),
                 ),
-                //编辑
+                //Edit button
                 Center(
                   child: IconButton(
                     onPressed: () {
@@ -166,8 +169,8 @@ class _LibraryRouteState extends State<LibraryRoute> {
                       });
                     },
                     icon: Icon(
-                      Icons.edit,
-                      color: selectMode ? Colors.red : Colors.black87,
+                      selectMode ? Icons.done : Icons.edit,
+                      color: Colors.black,
                     ),
                   ),
                 ),
@@ -191,6 +194,15 @@ class _LibraryRouteState extends State<LibraryRoute> {
         ),
       ),
     );
+  }
+
+  bool _hasImageSelected() {
+    for (var item in cacheImgFiles) {
+      if (item.isSelected) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Widget _buildImages() {
@@ -226,8 +238,10 @@ class _LibraryRouteState extends State<LibraryRoute> {
                       margin: EdgeInsets.all(4),
                       decoration: BoxDecoration(
                           color: Colors.white,
-                          border: cacheImgFiles[index].isSelected
-                              ? Border.all(color: Colors.black, width: 2)
+                          border: selectMode
+                              ? cacheImgFiles[index].isSelected
+                                  ? Border.all(color: Colors.black, width: 2)
+                                  : null
                               : null),
                       padding: EdgeInsets.all(8.0),
                       child: Hero(

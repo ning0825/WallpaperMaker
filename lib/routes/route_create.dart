@@ -41,7 +41,7 @@ class _CreateRouteState extends State<CreateRoute>
     });
 
     controller =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 700));
+        AnimationController(vsync: this, duration: Duration(milliseconds: 400));
   }
 
   @override
@@ -234,12 +234,12 @@ class _CreateRouteState extends State<CreateRoute>
             left: init ? 60 : 0, bottom: init ? 10 : 0, right: init ? 20 : 0),
         padding: EdgeInsets.all(20),
         color: Colors.black,
-        height: init ? 70 : 120,
+        height: init ? 70 : 130,
         onEnd: () {
           (formKey.currentState as FormState).save();
           data.size2Save = Size(width, height);
+          //Hide keyboard.
           FocusScope.of(context).requestFocus(FocusNode());
-
           Navigator.of(context).pop();
           Navigator.of(context).push(CusPageRoute(child: EditRoute()));
         },

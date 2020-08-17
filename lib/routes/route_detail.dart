@@ -177,9 +177,9 @@ class _DetailRouteState extends State<DetailRoute>
                     top: 0.0,
                     child: SlideTransition(
                       position: backSlideAnimation,
-                      child: RaisedButton(
+                      child: IconButton(
+                        icon: Icon(Icons.arrow_back),
                         onPressed: () => Navigator.pop(context),
-                        child: Text('back'),
                       ),
                     ),
                   )
