@@ -130,7 +130,7 @@ class _LibraryRouteState extends State<LibraryRoute> {
                         }
                       },
                       icon: Icon(
-                        Icons.all_inclusive,
+                        Icons.select_all,
                         color: selectAll ? Colors.blue : Colors.black87,
                       ),
                     ),
