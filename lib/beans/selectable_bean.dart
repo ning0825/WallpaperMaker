@@ -7,6 +7,7 @@ import 'package:wallpaper_maker/utils/utils.dart';
 abstract class Selectable {
   Rect rect;
   Path selectedPath;
+  Path dottedSelectedPath;
 
   Paint mPaint;
   double tmpScaleX = 1.0;
@@ -138,7 +139,7 @@ abstract class Selectable {
     //     height: rect.height * scaleRadioY);
 
     if (isSelected) {
-      canvas.drawPath(selectedPath, _selectedPaint);
+      canvas.drawPath(toDottedLinePath(selectedPath), _selectedPaint);
       if (this is SelectableShape) {
         canvas.drawLine(leftCtrlStart, leftCtrlEnd, _ctrlPaint);
         canvas.drawLine(topCtrlStart, topCtrlEnd, _ctrlPaint);
@@ -253,6 +254,19 @@ abstract class Selectable {
       ..lineTo(newBRx, newBRy)
       ..lineTo(newBLx, newBLy)
       ..close();
+  }
+
+  Path toDottedLinePath(Path path) {
+    Path destPath = Path();
+    double totalLength = 0.0;
+    ui.PathMetric metric = path.computeMetrics().first;
+    double i = 0;
+    while (totalLength < metric.length) {
+      destPath.addPath(metric.extractPath(i, i + 5), Offset.zero);
+      i += 10;
+      totalLength += 10;
+    }
+    return destPath;
   }
 }
 

@@ -2,7 +2,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:wallpaper_maker/inherit/inherited_config.dart';
+import 'package:wallpaper_maker/routes/route_detail.dart';
 import 'package:wallpaper_maker/routes/route_edit.dart';
+import 'package:wallpaper_maker/utils/constants.dart';
 
 class CreateRoute extends StatefulWidget {
   @override
@@ -27,6 +29,9 @@ class _CreateRouteState extends State<CreateRoute>
   int selected = 0;
 
   AnimationController controller;
+
+  static const inputDeco = const InputDecoration(
+      focusedBorder: UnderlineInputBorder(borderSide: BorderSide()));
 
   @override
   void initState() {
@@ -54,6 +59,7 @@ class _CreateRouteState extends State<CreateRoute>
             Container(
               height: MediaQuery.of(context).size.height,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Spacer(),
                   _buildSlideTransition(),
@@ -167,11 +173,7 @@ class _CreateRouteState extends State<CreateRoute>
                           autofocus: false,
                           style: TextStyle(fontSize: 32),
                           cursorColor: Colors.black,
-                          decoration: InputDecoration(
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(),
-                            ),
-                          ),
+                          decoration: inputDeco,
                         ),
                       ),
                       SizedBox(width: 26),
@@ -193,11 +195,7 @@ class _CreateRouteState extends State<CreateRoute>
                           autofocus: false,
                           style: TextStyle(fontSize: 32),
                           cursorColor: Colors.black,
-                          decoration: InputDecoration(
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(),
-                            ),
-                          ),
+                          decoration: inputDeco,
                         ),
                       ),
                     ],
@@ -227,35 +225,85 @@ class _CreateRouteState extends State<CreateRoute>
           controller.forward(from: 0.0);
         });
       },
-      child: AnimatedContainer(
-        duration: Duration(milliseconds: 400),
-        curve: Curves.ease,
-        margin: EdgeInsets.only(
-            left: init ? 60 : 0, bottom: init ? 10 : 0, right: init ? 20 : 0),
-        padding: EdgeInsets.all(20),
-        color: Colors.black,
-        height: init ? 70 : 130,
-        onEnd: () {
-          (formKey.currentState as FormState).save();
-          data.size2Save = Size(width, height);
-          //Hide keyboard.
-          FocusScope.of(context).requestFocus(FocusNode());
-          Navigator.of(context).pop();
-          Navigator.of(context).push(CusPageRoute(child: EditRoute()));
-        },
-        child: Row(
-          children: [
-            Text(
-              'start',
-              style: TextStyle(color: Colors.white, fontSize: 30),
+      // child: AnimatedContainer(
+      //   duration: Duration(milliseconds: 400),
+      //   curve: Curves.ease,
+      //   margin: EdgeInsets.only(
+      //       left: init ? 60 : 0, bottom: init ? 10 : 0, right: init ? 20 : 0),
+      //   padding: EdgeInsets.all(20),
+      //   color: Colors.black,
+      //   height: init ? 70 : 130,
+      //   onEnd: () {
+      //     (formKey.currentState as FormState).save();
+      //     data.size2Save = Size(width, height);
+      //     //Hide keyboard.
+      //     FocusScope.of(context).requestFocus(FocusNode());
+      //     Navigator.of(context).pop();
+      //     Navigator.of(context).push(CusPageRoute(child: EditRoute()));
+      //   },
+      //   child: Row(
+      //     children: [
+      //       Text(
+      //         'start',
+      //         style: TextStyle(color: Colors.white, fontSize: 30),
+      //       ),
+      //       Spacer(),
+      //       Icon(
+      //         Icons.arrow_forward,
+      //         color: Colors.white,
+      //         size: 30,
+      //       )
+      //     ],
+      //   ),
+      // ),
+      child: Container(
+        margin: EdgeInsets.only(bottom: 20, right: 20),
+        child: Hero(
+          tag: tag_libToCreate,
+          child: Material(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: InkWell(
+                onTap: () {
+                  (formKey.currentState as FormState).save();
+                  data.size2Save = Size(width, height);
+                  //Hide keyboard.
+                  FocusScope.of(context).requestFocus(FocusNode());
+                  // Navigator.of(context).pop();
+                  Navigator.of(context)
+                      .push(PageRouteBuilder(pageBuilder: (_, a1, a2) {
+                    return AnimatedBuilder(
+                      animation: a1,
+                      builder: (_, child) => Opacity(
+                        opacity: a1.value,
+                        child: EditRoute(),
+                      ),
+                    );
+                  }));
+                },
+                child: Container(
+                  width: 330,
+                  padding: EdgeInsets.all(20),
+                  color: Colors.black,
+                  height: 70,
+                  child: Row(
+                    children: [
+                      Text(
+                        'start',
+                        style: TextStyle(color: Colors.white, fontSize: 30),
+                      ),
+                      Spacer(),
+                      Icon(
+                        Icons.arrow_forward,
+                        color: Colors.white,
+                        size: 30,
+                      )
+                    ],
+                  ),
+                ),
+              ),
             ),
-            Spacer(),
-            Icon(
-              Icons.arrow_forward,
-              color: Colors.white,
-              size: 30,
-            )
-          ],
+          ),
         ),
       ),
     );
@@ -265,5 +313,16 @@ class _CreateRouteState extends State<CreateRoute>
 class CusPageRoute extends PageRouteBuilder {
   Widget child;
 
-  CusPageRoute({this.child}) : super(pageBuilder: (_, a1, a2) => child);
+  CusPageRoute({this.child});
+
+  @override
+  get pageBuilder => (_, a1, a2) {
+        return AnimatedBuilder(
+          animation: a1,
+          builder: (_, child) => Opacity(
+            opacity: a1.value,
+            child: child,
+          ),
+        );
+      };
 }

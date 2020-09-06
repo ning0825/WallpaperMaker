@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wallpaper_maker/routes/route_create.dart';
 import 'package:wallpaper_maker/routes/route_detail.dart';
+import 'package:wallpaper_maker/utils/constants.dart';
 
 class SeletectableImgFile {
   SeletectableImgFile({this.imgPath, this.date, this.isSelected = false}) {
@@ -126,7 +127,6 @@ class _LibraryRouteState extends State<LibraryRoute> {
                       onPressed: () {
                         if (selectMode) {
                           setState(() {
-                            // selectAll = !selectAll;
                             cacheImgFiles.forEach((element) {
                               element.isSelected = !element.isSelected;
                             });
@@ -135,6 +135,7 @@ class _LibraryRouteState extends State<LibraryRoute> {
                       },
                       icon: Icon(
                         Icons.select_all,
+                        color: Colors.black,
                       ),
                     ),
                   ),
@@ -183,13 +184,16 @@ class _LibraryRouteState extends State<LibraryRoute> {
       floatingActionButton: InkWell(
         onTap: () => Navigator.of(context)
             .push(MaterialPageRoute(builder: (_) => CreateRoute())),
-        child: Container(
-          width: 50,
-          height: 50,
-          color: Colors.black,
-          child: Icon(
-            Icons.add,
-            color: Colors.white,
+        child: Hero(
+          tag: tag_libToCreate,
+          child: Container(
+            width: 50,
+            height: 50,
+            color: Colors.black,
+            child: Icon(
+              Icons.add,
+              color: Colors.white,
+            ),
           ),
         ),
       ),

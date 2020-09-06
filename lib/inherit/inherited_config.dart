@@ -23,7 +23,7 @@ class ConfigWidget extends StatefulWidget {
 
 class ConfigWidgetState extends State<ConfigWidget>
     with TickerProviderStateMixin {
-  Configuration config;
+  Configuration _config;
 
   bool isSelectedMode;
   List<Selectable> selectables;
@@ -62,23 +62,12 @@ class ConfigWidgetState extends State<ConfigWidget>
   bool newCanva;
   bool fromReset = false;
 
-  // AnimationController scaleController;
-  // Tween<double> scaleTween;
-  // Animation scaleAnimation;
-
-  ///0: Pen
-  ///1: Shape
-  ///2: Text
-  ///3: Image
-  ///4: BackgroundColor
-  ///5: AlignTool
-  ///6: RotationTool
   setCurrentMainTool(MainTool mainTool) {
     setState(() {
       currentMainTool = mainTool;
 
-      if (mainTool == MainTool.pen) config.currentMode = 0;
-      if (mainTool == MainTool.shape) config.currentMode = 1;
+      if (mainTool == MainTool.pen) _config.currentMode = 0;
+      if (mainTool == MainTool.shape) _config.currentMode = 1;
     });
   }
 
@@ -161,8 +150,11 @@ class ConfigWidgetState extends State<ConfigWidget>
 
   removeCurrentSelected() {
     setState(() {
+      selectables[selectedIndex].isSelected = false;
       selectables.removeAt(selectedIndex);
+      isSelectedMode = false;
     });
+    pushToStack();
   }
 
   setUnselected() {
@@ -263,6 +255,7 @@ class ConfigWidgetState extends State<ConfigWidget>
   clean() {
     setState(() {
       selectables.clear();
+      pushToStack();
     });
   }
 
@@ -278,12 +271,12 @@ class ConfigWidgetState extends State<ConfigWidget>
   //---------------------------------------------------------------------------------
   setBackgroundColor(Color color) {
     setState(() {
-      config.bgColor = color;
+      _config.bgColor = color;
     });
   }
 
   Color getBackroundColor() {
-    return config.bgColor;
+    return _config.bgColor ?? Colors.white;
   }
 
   //---------------------------------------------------------------------------------
@@ -291,38 +284,39 @@ class ConfigWidgetState extends State<ConfigWidget>
   //---------------------------------------------------------------------------------
   Paint getCurrentPen() {
     return Paint()
-      ..color = config.penColor
-      ..strokeWidth = config.penWidth
+      ..color = _config.penColor
+      ..strokeWidth = _config.penWidth
       ..isAntiAlias = true
-      ..style = PaintingStyle.stroke;
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
   }
 
   setPenColor(Color color) {
     setState(() {
       isSelectedMode
           ? (currentSelectable as SelectablePath).mPaint.color = color
-          : config.penColor = color;
+          : _config.penColor = color;
     });
   }
 
   Color getPenColor() {
     return isSelectedMode
         ? (currentSelectable as SelectablePath).mPaint.color
-        : config.penColor;
+        : _config.penColor;
   }
 
   setPenWidth(double width) {
     setState(() {
       isSelectedMode
           ? (currentSelectable as SelectablePath).mPaint.strokeWidth = width
-          : config.penWidth = width;
+          : _config.penWidth = width;
     });
   }
 
   double getPenWidth() {
     return isSelectedMode
         ? (currentSelectable as SelectablePath).mPaint.strokeWidth
-        : config.penWidth;
+        : _config.penWidth;
   }
 
   //---------------------------------------------------------------------------------
@@ -330,35 +324,35 @@ class ConfigWidgetState extends State<ConfigWidget>
   //---------------------------------------------------------------------------------
   Paint getCurrentShape() {
     return Paint()
-      ..color = config.shapeColor
+      ..color = _config.shapeColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = config.shapeWidth;
+      ..strokeWidth = _config.shapeWidth;
   }
 
   setShapeType(int type) {
     setState(() {
-      config.shapeType = type;
+      _config.shapeType = type;
     });
   }
 
   int getShapeType() {
     return isSelectedMode
         ? (currentSelectable as SelectableShape).shapeType
-        : config.shapeType;
+        : _config.shapeType;
   }
 
   setShapeColor(Color color) {
     setState(() {
       isSelectedMode
           ? (currentSelectable as SelectableShape).mPaint.color = color
-          : config.shapeColor = color;
+          : _config.shapeColor = color;
     });
   }
 
   Color getShapeColor() {
     return isSelectedMode
         ? (currentSelectable as SelectableShape).mPaint.color
-        : config.shapeColor;
+        : _config.shapeColor;
   }
 
   setShapeStyle(PaintingStyle style) {
@@ -366,14 +360,14 @@ class ConfigWidgetState extends State<ConfigWidget>
       isSelectedMode
           ? (currentSelectable as SelectableShape).fill =
               style == PaintingStyle.fill
-          : config.shapeStyle = style;
+          : _config.shapeStyle = style;
     });
   }
 
   bool getShapeStyle() {
     return isSelectedMode
         ? (currentSelectable as SelectableShape).fill
-        : config.shapeStyle == PaintingStyle.fill;
+        : _config.shapeStyle == PaintingStyle.fill;
   }
 
   setShapeFillColor(Color color) {
@@ -394,14 +388,14 @@ class ConfigWidgetState extends State<ConfigWidget>
     setState(() {
       isSelectedMode
           ? (currentSelectable as SelectableShape).mPaint.strokeWidth = width
-          : config.shapeWidth = width;
+          : _config.shapeWidth = width;
     });
   }
 
   double getShapeWidth() {
     return isSelectedMode
         ? (currentSelectable as SelectableShape).mPaint.strokeWidth
-        : config.shapeWidth;
+        : _config.shapeWidth;
   }
 
   //---------------------------------------------------------------------------------
@@ -410,7 +404,7 @@ class ConfigWidgetState extends State<ConfigWidget>
   SelectableTypo assembleSelectableTypo(
       String text, Offset offset, double maxWidth) {
     return SelectableTypo(text: text, mOffset: offset, maxWidth: maxWidth)
-      ..textColor = config.textColor
+      ..textColor = _config.textColor
       ..textWeight = 3;
   }
 
@@ -418,7 +412,7 @@ class ConfigWidgetState extends State<ConfigWidget>
     setState(() {
       isSelectedMode
           ? (currentSelectable as SelectableTypo).text = text
-          : config.text = text;
+          : _config.text = text;
     });
   }
 
@@ -430,42 +424,42 @@ class ConfigWidgetState extends State<ConfigWidget>
     setState(() {
       isSelectedMode
           ? (currentSelectable as SelectableTypo).fontFamily = font
-          : config.font = font;
+          : _config.font = font;
     });
   }
 
   String getTextFont() {
     return isSelectedMode
         ? (currentSelectable as SelectableTypo).fontFamily
-        : config.font;
+        : _config.font;
   }
 
   setTextColor(Color color) {
     setState(() {
       isSelectedMode
           ? (currentSelectable as SelectableTypo).textColor = color
-          : config.textColor = color;
+          : _config.textColor = color;
     });
   }
 
   Color getTextColor() {
     return isSelectedMode
         ? (currentSelectable as SelectableTypo).textColor
-        : config.textColor;
+        : _config.textColor;
   }
 
   setTextWeight(double weight) {
     setState(() {
       isSelectedMode
           ? (currentSelectable as SelectableTypo).textWeight = weight.round()
-          : config.typoWeight = weight.round();
+          : _config.typoWeight = weight.round();
     });
   }
 
   int getTextWeight() {
     return isSelectedMode
         ? (currentSelectable as SelectableTypo).textWeight
-        : config.typoWeight.round();
+        : _config.typoWeight.round();
   }
 
   //Image
@@ -494,7 +488,7 @@ class ConfigWidgetState extends State<ConfigWidget>
 
       lastPoint = details.localPosition;
     } else {
-      switch (config.currentMode) {
+      switch (_config.currentMode) {
         case 0:
           addSelectable(SelectablePath(getCurrentPen())
             ..moveTo(details.localPosition.dx, details.localPosition.dy));
@@ -503,7 +497,7 @@ class ConfigWidgetState extends State<ConfigWidget>
           addSelectable(SelectableShape(
               startPoint:
                   Offset(details.localPosition.dx, details.localPosition.dy),
-              shapeType: config.shapeType,
+              shapeType: _config.shapeType,
               paint: getCurrentShape()));
           break;
         default:
@@ -569,7 +563,7 @@ class ConfigWidgetState extends State<ConfigWidget>
           }
         }
       } else {
-        switch (config.currentMode) {
+        switch (_config.currentMode) {
           case 0:
             (selectables[selectables.length - 1] as SelectablePath)
                 .lineTo(details.localPosition.dx, details.localPosition.dy);
@@ -593,7 +587,8 @@ class ConfigWidgetState extends State<ConfigWidget>
       }
       currentSelectable.isMoving = false;
       currentSelectable.isCtrling = false;
-    } else if (selectables.last.rect.width < 1) {
+    } else if (selectables.last.rect == null ||
+        selectables.last.rect.width < 2) {
       selectables.removeLast();
       setState(() {});
     }
@@ -602,6 +597,8 @@ class ConfigWidgetState extends State<ConfigWidget>
   var tmpScaleX;
   var tmpScaleY;
   var tmpRadius;
+  //Clockwise(1) or anticlockwise(-1) when start rotate(when set rotating to true), default value is 0.
+  int rotFlag;
 
   handleScaleStart(ScaleStartDetails details) {
     if (isSelectedMode) {
@@ -619,26 +616,22 @@ class ConfigWidgetState extends State<ConfigWidget>
         currentSelectable.scaleRadioY = tmpScaleY * details.scale;
 
         //Rotation
-        if (details.rotation.abs() > pi / 18) {
-          currentSelectable.rotRadians = details.rotation - pi / 18 + tmpRadius;
-          currentSelectable.tmpAngle = details.rotation - pi / 18 + tmpRadius;
+        if (rotFlag == 0 && details.rotation.abs() > pi / 18) {
+          rotFlag = details.rotation >= 0 ? 1 : -1;
+        }
+
+        if (rotFlag != 0) {
+          currentSelectable.rotRadians =
+              details.rotation + tmpRadius - pi / 18 * rotFlag;
+          currentSelectable.tmpAngle =
+              details.rotation + tmpRadius - pi / 18 * rotFlag;
         }
       }
-      // if (!isSelectedMode && details.scale != 1.0) {
-      //   canvasScale = tmpCanvasScale * details.scale;
-      // }
     });
   }
 
   handleScaleEnd(ScaleEndDetails details) {
-    // isCanvasScaling = false;
-    // if (canvasScale < 1.0) {
-    //   scaleTween.begin = canvasScale;
-    //   scaleController.forward(from: 0.0);
-    //   tmpCanvasScale = 1.0;
-    // } else {
-    //   tmpCanvasScale = canvasScale;
-    // }
+    rotFlag = 0;
   }
 
   handleTapUp(TapUpDetails details) {
@@ -694,9 +687,6 @@ class ConfigWidgetState extends State<ConfigWidget>
     position = box.localToGlobal(Offset.zero).dx + box.size.width / 2 - 8;
   }
 
-  // GlobalKey currentLeafToolKey = GlobalKey();
-  // GlobalKey lastLeafToolKey = GlobalKey();
-
   setLeafToolTop() {
     bottom = null;
     top = 50;
@@ -748,19 +738,19 @@ class ConfigWidgetState extends State<ConfigWidget>
   }
 
   _init() {
-    config = Configuration()
+    _config = Configuration()
       ..bgColor = Colors.white
       ..currentMode = 0
-      ..penColor = Colors.red
+      ..penColor = Colors.black
       ..penWidth = 5
       ..shapeType = 0
-      ..shapeColor = Colors.red
+      ..shapeColor = Colors.black
       ..shapeStyle = PaintingStyle.stroke
-      ..shapeFillColor = Colors.red
+      ..shapeFillColor = Colors.black
       ..shapeWidth = 5
       ..font = 'default'
       ..typoWeight = 3
-      ..textColor = Colors.red;
+      ..textColor = Colors.black;
 
     selectables = List();
     isSelectedMode = false;
@@ -776,13 +766,7 @@ class ConfigWidgetState extends State<ConfigWidget>
     currentEditImgPath = '';
 
     selectableStack = [];
-    stackIndex = -1;
-
     pushToStack();
-
-    // canvasScale = 1.0;
-    // tmpCanvasScale = 1.0;
-    // isCanvasScaling = false;
   }
 
   @override

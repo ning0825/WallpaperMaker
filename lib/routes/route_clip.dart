@@ -110,48 +110,63 @@ class _ClipRouteState extends State<ClipRoute> {
                       setState(() {
                         switch (clipImageBean.currentCtrl) {
                           case 0:
-                            clipImageBean.topClip = tmpClip1 +
+                            clipImageBean.topClip = ensureNumPositive(tmpClip1 +
                                 details.localPosition.dy -
-                                downPosition.dy;
-                            clipImageBean.leftClip = tmpClip2 +
-                                details.localPosition.dx -
-                                downPosition.dx;
+                                downPosition.dy);
+                            clipImageBean.leftClip = ensureNumPositive(
+                                tmpClip2 +
+                                    details.localPosition.dx -
+                                    downPosition.dx);
                             break;
                           case 1:
-                            clipImageBean.topClip = tmpClip1 +
+                            clipImageBean.topClip = ensureNumPositive(tmpClip1 +
                                 details.localPosition.dy -
-                                downPosition.dy;
-                            clipImageBean.rightClip = tmpClip2 -
-                                (details.localPosition.dx - downPosition.dx);
+                                downPosition.dy);
+                            clipImageBean.rightClip = ensureNumPositive(
+                                tmpClip2 -
+                                    (details.localPosition.dx -
+                                        downPosition.dx));
                             break;
                           case 2:
-                            clipImageBean.bottomClip = tmpClip1 -
-                                (details.localPosition.dy - downPosition.dy);
-                            clipImageBean.leftClip = tmpClip2 +
-                                details.localPosition.dx -
-                                downPosition.dx;
+                            clipImageBean.bottomClip = ensureNumPositive(
+                                tmpClip1 -
+                                    (details.localPosition.dy -
+                                        downPosition.dy));
+                            clipImageBean.leftClip = ensureNumPositive(
+                                tmpClip2 +
+                                    details.localPosition.dx -
+                                    downPosition.dx);
                             break;
                           case 3:
-                            clipImageBean.bottomClip = tmpClip1 -
-                                (details.localPosition.dy - downPosition.dy);
-                            clipImageBean.rightClip = tmpClip2 -
-                                (details.localPosition.dx - downPosition.dx);
+                            clipImageBean.bottomClip = ensureNumPositive(
+                                tmpClip1 -
+                                    (details.localPosition.dy -
+                                        downPosition.dy));
+                            clipImageBean.rightClip = ensureNumPositive(
+                                tmpClip2 -
+                                    (details.localPosition.dx -
+                                        downPosition.dx));
                             break;
                           case 4:
-                            clipImageBean.leftClip = tmpClip1 +
-                                (details.localPosition.dx - downPosition.dx);
-                            clipImageBean.topClip = tmpClip2 +
-                                (details.localPosition.dy - downPosition.dy);
-                            clipImageBean.rightClip = tmpClip3 -
-                                (details.localPosition.dx - downPosition.dx);
-                            clipImageBean.bottomClip = tmpClip4 -
-                                (details.localPosition.dy - downPosition.dy);
+                            clipImageBean.leftClip = ensureNumPositive(
+                                tmpClip1 +
+                                    (details.localPosition.dx -
+                                        downPosition.dx));
+                            clipImageBean.topClip = ensureNumPositive(tmpClip2 +
+                                (details.localPosition.dy - downPosition.dy));
+                            clipImageBean.rightClip = ensureNumPositive(
+                                tmpClip3 -
+                                    (details.localPosition.dx -
+                                        downPosition.dx));
+                            clipImageBean.bottomClip = ensureNumPositive(
+                                tmpClip4 -
+                                    (details.localPosition.dy -
+                                        downPosition.dy));
                             break;
                           default:
                         }
                       });
                     },
-                    onPanEnd: (details) {},
                     child: CustomPaint(
                       painter: ClipImagePainter(clipImageBean),
                       size: size ?? Size.zero,
@@ -186,6 +201,10 @@ class _ClipRouteState extends State<ClipRoute> {
         ],
       ),
     );
+  }
+
+  num ensureNumPositive(num n) {
+    return n <= 0.0 ? 0.0 : n;
   }
 }
 

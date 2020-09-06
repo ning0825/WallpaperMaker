@@ -67,7 +67,7 @@ class MyCanvas extends CustomPainter {
     );
 
     //draw background
-    canvas.drawColor(data.config.bgColor, BlendMode.src);
+    canvas.drawColor(data.getBackroundColor(), BlendMode.src);
 
     //draw selectables
     //TODO: draw select rect over other items, but iterate twice can cause performance issue.

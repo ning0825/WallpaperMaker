@@ -156,7 +156,7 @@ class PaletteRenderBox extends RenderBox {
       for (var j = 0; j < 12; j++) {
         context.canvas.drawRect(
             Offset(offset.dx + pieceWidth * j, offset.dy + pieceHeight * i) &
-                pieceSize,
+                pieceSize + Offset(1, 1),
             Paint()..color = colorlist[j][100 * (10 - i)]);
       }
     }

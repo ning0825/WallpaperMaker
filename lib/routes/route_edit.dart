@@ -40,27 +40,26 @@ class _EditRouteState extends State<EditRoute>
   Widget build(BuildContext context) {
     mContext = context;
     data = ConfigWidget.of(context);
+
     return SafeArea(
       child: Scaffold(
-        body: Container(
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  TopToolbar(),
-                  Expanded(child: CanvasPanel(rpbKey)),
-                  BottomToolbar()
-                ],
+        body: Stack(
+          children: [
+            Column(
+              children: [
+                Container(height: 50, child: TopToolbar()),
+                Expanded(child: CanvasPanel(rpbKey)),
+                BottomToolbar()
+              ],
+            ),
+            Positioned(
+              child: Container(
+                child: _buildAnimatedLeafTools(),
               ),
-              Positioned(
-                child: Container(
-                  child: _buildAnimatedLeafTools(),
-                ),
-                bottom: data.bottom,
-                top: data.top,
-              ),
-            ],
-          ),
+              bottom: data.bottom,
+              top: data.top,
+            ),
+          ],
         ),
       ),
     );
@@ -85,7 +84,6 @@ class _EditRouteState extends State<EditRoute>
           direction: data.direction,
         ),
       ),
-      width: MediaQuery.of(context).size.width - 16,
       margin: EdgeInsets.all(8.0),
       padding: EdgeInsets.all(10.0),
       child: _getLeafTool(data.currentLeafTool),
@@ -98,7 +96,7 @@ class _EditRouteState extends State<EditRoute>
       switch (leafTool) {
         case LeafTool.backgroundColor:
           result = Container(
-            width: double.infinity,
+            width: MediaQuery.of(context).size.width - 36,
             child: PaletteWidget(onColorPick: (color) {
               data.setBackgroundColor(color);
             }),
@@ -107,29 +105,30 @@ class _EditRouteState extends State<EditRoute>
         case LeafTool.align:
           result = Container(
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: Icon(Icons.format_align_left),
+                  icon: Icon(Icons.format_align_left, color: Colors.white),
                   onPressed: () => data.setLeftAlign(),
                 ),
                 IconButton(
-                  icon: Icon(Icons.format_align_right),
+                  icon: Icon(Icons.format_align_right, color: Colors.white),
                   onPressed: () => data.setRightAlign(),
                 ),
                 IconButton(
-                  icon: Icon(Icons.vertical_align_top),
+                  icon: Icon(Icons.vertical_align_top, color: Colors.white),
                   onPressed: () => data.setTopAlign(),
                 ),
                 IconButton(
-                  icon: Icon(Icons.vertical_align_bottom),
+                  icon: Icon(Icons.vertical_align_bottom, color: Colors.white),
                   onPressed: () => data.setBottomAlign(),
                 ),
                 IconButton(
-                  icon: Icon(Icons.vertical_align_center),
+                  icon: Icon(Icons.vertical_align_center, color: Colors.white),
                   onPressed: () => data.setCenterVerticalAlign(),
                 ),
                 IconButton(
-                  icon: Icon(Icons.border_horizontal),
+                  icon: Icon(Icons.border_horizontal, color: Colors.white),
                   onPressed: () => data.setCenterHorizonAlign(),
                 ),
               ],
@@ -138,7 +137,7 @@ class _EditRouteState extends State<EditRoute>
           break;
         case LeafTool.pen_color:
           result = Container(
-            width: double.infinity,
+            width: MediaQuery.of(context).size.width - 36,
             child: PaletteWidget(onColorPick: (color) {
               data.setPenColor(color);
             }),
@@ -167,32 +166,56 @@ class _EditRouteState extends State<EditRoute>
           break;
         case LeafTool.shape_color:
           result = Container(
-            width: double.infinity,
+            width: MediaQuery.of(context).size.width - 36,
             child: PaletteWidget(onColorPick: (color) {
               data.setShapeColor(color);
             }),
           );
           break;
         case LeafTool.shape_style:
-          result = Container(
-            width: double.infinity,
-            child: PaletteWidget(onColorPick: (color) {
-              data.setShapeFillColor(color);
-            }),
+          result = Column(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                alignment: Alignment.center,
+                width: MediaQuery.of(context).size.width - 36,
+                height: 30,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: Text(
+                  'transparent',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              SizedBox(
+                height: 4,
+              ),
+              Container(
+                width: MediaQuery.of(context).size.width - 36,
+                child: PaletteWidget(onColorPick: (color) {
+                  data.setShapeFillColor(color);
+                }),
+              ),
+            ],
           );
           break;
         case LeafTool.shape_width:
           result = WidthWidget(toolNum: shapeToolNum);
           break;
         case LeafTool.text_text:
-          result = TypoTextWidget();
+          result = Container(
+              width: MediaQuery.of(context).size.width - 36,
+              child: TypoTextWidget());
           break;
         case LeafTool.text_font:
-          result = TypoFontWidget();
+          result = Container(
+              width: MediaQuery.of(context).size.width - 36,
+              child: TypoFontWidget());
           break;
         case LeafTool.text_color:
           result = Container(
-            width: double.infinity,
+            width: MediaQuery.of(context).size.width - 36,
             child: PaletteWidget(onColorPick: (color) {
               data.setTextColor(color);
             }),
@@ -268,6 +291,7 @@ class _TopToolbarState extends State<TopToolbar> {
   @override
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
+
     return Container(
       color: Colors.black,
       width: double.infinity,
@@ -298,6 +322,7 @@ class _TopToolbarState extends State<TopToolbar> {
             child: IconButton(
                 key: alignBtKey,
                 disabledColor: Colors.grey,
+                color: Colors.white,
                 icon: Icon(Icons.format_align_center),
                 onPressed: data.isSelectedMode
                     ? () {
@@ -315,8 +340,10 @@ class _TopToolbarState extends State<TopToolbar> {
                 'assets/icons/remove.png',
                 width: 20,
                 height: 20,
+                color: data.isSelectedMode ? Colors.white : Colors.grey,
               ),
-              onPressed: () => data.removeCurrentSelected(),
+              onPressed: () =>
+                  data.isSelectedMode ? data.removeCurrentSelected() : null,
             ),
           ),
           //undo
@@ -532,9 +559,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
           IconButton(
             key: typoTextKey,
             iconSize: 50,
-            icon: Image.asset(
-              'assets/icons/typo_input.png',
-            ),
+            icon: Icon(Icons.space_bar),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.text_text);
               data.setLeafToolBottom();
@@ -608,12 +633,6 @@ class _BottomToolbarState extends State<BottomToolbar> {
               iconSize: 50,
               color: Colors.white,
               disabledColor: Colors.grey,
-              // icon: Image.asset(
-              //   'assets/icons/image_crop.png',
-              //   width: 30,
-              //   height: 30,
-              //   color: Colors.grey,
-              // ),
               icon: Icon(
                 Icons.crop,
                 size: 30,
@@ -816,9 +835,12 @@ class _BuildWidthState extends State<WidthWidget> {
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
     return Container(
+      width: MediaQuery.of(context).size.width - 36,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
+            width: MediaQuery.of(context).size.width - 36,
             padding: EdgeInsets.symmetric(horizontal: 20),
             child: CustomPaint(
               painter:
@@ -834,7 +856,7 @@ class _BuildWidthState extends State<WidthWidget> {
             min: 1.0,
             max: 8.0,
             label: sliderValue.toString(),
-            activeColor: Colors.black,
+            activeColor: Colors.yellow,
           ),
         ],
       ),
