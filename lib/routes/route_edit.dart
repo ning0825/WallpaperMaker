@@ -10,13 +10,28 @@ import 'package:wallpaper_maker/cus_widgets/cus_painter.dart';
 import 'package:wallpaper_maker/inherit/constants.dart';
 import 'package:wallpaper_maker/inherit/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_clip.dart';
-import 'package:wallpaper_maker/routes/route_library.dart';
 import 'package:wallpaper_maker/cus_widgets/cus_widget.dart';
 import 'package:wallpaper_maker/utils/utils.dart';
 
 GlobalKey rpbKey = GlobalKey();
 Size size;
 BuildContext mContext;
+
+GlobalKey backgroundBtKey = GlobalKey();
+
+GlobalKey alignBtKey = GlobalKey();
+GlobalKey rotBtKey = GlobalKey();
+
+GlobalKey penColorKey = GlobalKey();
+GlobalKey penWidthKey = GlobalKey();
+GlobalKey shapeTypeKey = GlobalKey();
+GlobalKey shapeColorKey = GlobalKey();
+GlobalKey shapeFillTypeKey = GlobalKey();
+GlobalKey shapeWidthKey = GlobalKey();
+GlobalKey typoTextKey = GlobalKey();
+GlobalKey typoFontKey = GlobalKey();
+GlobalKey typoFontWeightKey = GlobalKey();
+GlobalKey typoColorKey = GlobalKey();
 
 class EditRoute extends StatefulWidget {
   @override
@@ -67,7 +82,7 @@ class _EditRouteState extends State<EditRoute>
 
   _buildAnimatedLeafTools() {
     return Offstage(
-      offstage: data.offStage,
+      offstage: data.leafToolOffstage,
       child: FadeTransition(
         opacity: data.leafToolAnimation,
         child: _buildLeafTools(),
@@ -277,17 +292,6 @@ class TopToolbar extends StatefulWidget {
 class _TopToolbarState extends State<TopToolbar> {
   ConfigWidgetState data;
 
-  GlobalKey backgroundBtKey;
-  GlobalKey alignBtKey;
-
-  @override
-  void initState() {
-    super.initState();
-
-    backgroundBtKey = GlobalKey();
-    alignBtKey = GlobalKey();
-  }
-
   @override
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
@@ -317,21 +321,6 @@ class _TopToolbarState extends State<TopToolbar> {
                 color: data.getBackroundColor(),
               ),
             ),
-          ),
-          Expanded(
-            child: IconButton(
-                key: alignBtKey,
-                disabledColor: Colors.grey,
-                color: Colors.white,
-                icon: Icon(Icons.format_align_center),
-                onPressed: data.isSelectedMode
-                    ? () {
-                        data.setLeafToolTop();
-                        data.setCurrentLeafTool(LeafTool.align);
-                        data.setIndicatorPosition(alignBtKey);
-                        data.toggleLeafTool();
-                      }
-                    : null),
           ),
           //delete
           Expanded(
@@ -386,7 +375,7 @@ class _TopToolbarState extends State<TopToolbar> {
                 });
 
                 if (!data.newCanva) {
-                  await SeletectableImgFile(imgPath: data.currentEditImgPath)
+                  await SelectableImageFile(imgPath: data.currentEditImgPath)
                       .delete();
                 }
 
@@ -417,17 +406,6 @@ class _BottomToolbarState extends State<BottomToolbar> {
   static const toolIconList = ['pen', 'shape', 'font', 'image'];
 
   double height = 130;
-
-  GlobalKey penColorKey = GlobalKey();
-  GlobalKey penWidthKey = GlobalKey();
-  GlobalKey shapeTypeKey = GlobalKey();
-  GlobalKey shapeColorKey = GlobalKey();
-  GlobalKey shapeFillTypeKey = GlobalKey();
-  GlobalKey shapeWidthKey = GlobalKey();
-  GlobalKey typoTextKey = GlobalKey();
-  GlobalKey typoFontKey = GlobalKey();
-  GlobalKey typoFontWeightKey = GlobalKey();
-  GlobalKey typoColorKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -460,13 +438,12 @@ class _BottomToolbarState extends State<BottomToolbar> {
   ClipImageBean clipImageBean;
 
   List<Widget> _getSubtool(MainTool mainTool) {
-    var result;
+    List<Widget> result;
     switch (mainTool) {
       case MainTool.pen:
         result = [
-          IconButton(
-            key: penColorKey,
-            iconSize: 50,
+          SubToolIconWidget(
+            akey: penColorKey,
             icon: ColorWidget(data.getPenColor()),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.pen_color);
@@ -475,8 +452,8 @@ class _BottomToolbarState extends State<BottomToolbar> {
               data.toggleLeafTool();
             },
           ),
-          IconButton(
-            key: penWidthKey,
+          SubToolIconWidget(
+            akey: penWidthKey,
             icon: Text(
               data.getPenWidth().truncate().toString(),
               style: TextStyle(color: Colors.white, fontSize: 20),
@@ -487,14 +464,17 @@ class _BottomToolbarState extends State<BottomToolbar> {
               data.setIndicatorPosition(penWidthKey);
               data.toggleLeafTool();
             },
-          ),
+          )
         ];
         break;
       case MainTool.shape:
         result = [
-          IconButton(
-            key: shapeTypeKey,
-            icon: _getShapeIcon(data.getShapeType()),
+          SubToolIconWidget(
+            akey: shapeTypeKey,
+            icon: Padding(
+              padding: EdgeInsets.all(6),
+              child: _getShapeIcon(data.getShapeType()),
+            ),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.shape_type);
               data.setLeafToolBottom();
@@ -502,9 +482,8 @@ class _BottomToolbarState extends State<BottomToolbar> {
               data.toggleLeafTool();
             },
           ),
-          IconButton(
-            key: shapeColorKey,
-            iconSize: 50,
+          SubToolIconWidget(
+            akey: shapeColorKey,
             icon: Container(
               width: 30,
               height: 30,
@@ -520,8 +499,8 @@ class _BottomToolbarState extends State<BottomToolbar> {
               data.toggleLeafTool();
             },
           ),
-          IconButton(
-              key: shapeFillTypeKey,
+          SubToolIconWidget(
+              akey: shapeFillTypeKey,
               icon: Container(
                 width: 30,
                 height: 30,
@@ -539,8 +518,8 @@ class _BottomToolbarState extends State<BottomToolbar> {
                 data.setIndicatorPosition(shapeFillTypeKey);
                 data.toggleLeafTool();
               }),
-          IconButton(
-            key: shapeWidthKey,
+          SubToolIconWidget(
+            akey: shapeWidthKey,
             icon: Text(
               data.getShapeWidth().toInt().toString(),
               style: TextStyle(color: Colors.white, fontSize: 20),
@@ -556,9 +535,8 @@ class _BottomToolbarState extends State<BottomToolbar> {
         break;
       case MainTool.text:
         result = [
-          IconButton(
-            key: typoTextKey,
-            iconSize: 50,
+          SubToolIconWidget(
+            akey: typoTextKey,
             icon: Icon(Icons.space_bar),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.text_text);
@@ -567,8 +545,8 @@ class _BottomToolbarState extends State<BottomToolbar> {
               data.toggleLeafTool();
             },
           ),
-          IconButton(
-            key: typoFontKey,
+          SubToolIconWidget(
+            akey: typoFontKey,
             icon: Text(
               'F',
               style: TextStyle(
@@ -584,8 +562,8 @@ class _BottomToolbarState extends State<BottomToolbar> {
               data.toggleLeafTool();
             },
           ),
-          IconButton(
-            key: typoFontWeightKey,
+          SubToolIconWidget(
+            akey: typoFontWeightKey,
             icon: Text(
               data.getTextWeight().toString(),
               style: TextStyle(color: Colors.white, fontSize: 20),
@@ -597,8 +575,8 @@ class _BottomToolbarState extends State<BottomToolbar> {
               data.toggleLeafTool();
             },
           ),
-          IconButton(
-            key: typoColorKey,
+          SubToolIconWidget(
+            akey: typoColorKey,
             icon: Container(
               width: 30,
               height: 30,
@@ -618,8 +596,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
         break;
       case MainTool.image:
         result = [
-          IconButton(
-            iconSize: 50,
+          SubToolIconWidget(
             icon: Image.asset(
               'assets/icons/image_pick.png',
               width: 30,
@@ -629,10 +606,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
               _addImage();
             },
           ),
-          IconButton(
-              iconSize: 50,
-              color: Colors.white,
-              disabledColor: Colors.grey,
+          SubToolIconWidget(
               icon: Icon(
                 Icons.crop,
                 size: 30,
@@ -650,15 +624,53 @@ class _BottomToolbarState extends State<BottomToolbar> {
                       data.setImageClip(clipImageBean.clipRect);
                     }
                   : null),
-          RaisedButton(
-            child: Text('frame'),
-            onPressed: null,
+          SubToolIconWidget(
+            icon: Icon(
+              Icons.filter_frames,
+              size: 30,
+            ),
+            onPressed: data.isSelectedMode
+                ? () {
+                    //TODO add frame
+                  }
+                : null,
           ),
         ];
         break;
       default:
         break;
     }
+    result.addAll([
+      SubToolIconWidget(
+          akey: alignBtKey,
+          icon: Icon(
+            Icons.format_align_center,
+            size: 30,
+          ),
+          onPressed: data.isSelectedMode
+              ? () {
+                  data.setLeafToolBottom();
+                  data.setCurrentLeafTool(LeafTool.align);
+                  data.setIndicatorPosition(alignBtKey);
+                  data.toggleLeafTool();
+                }
+              : null),
+      SubToolIconWidget(
+          akey: rotBtKey,
+          icon: Icon(
+            Icons.rotate_90_degrees_ccw,
+            size: 30,
+          ),
+          onPressed: data.isSelectedMode
+              ? () {
+                  data.setLeafToolBottom();
+                  data.setCurrentLeafTool(LeafTool.align);
+                  data.setIndicatorPosition(rotBtKey);
+                  data.toggleLeafTool();
+                }
+              : null),
+    ]);
+
     return result;
   }
 
@@ -915,7 +927,16 @@ class TypoFontWidget extends StatefulWidget {
 
 class _TypoFontWidgetState extends State<TypoFontWidget> {
   ConfigWidgetState data;
-  var fontList = ['default', 'polingo', 'PlayfairDisplay'];
+  var fontList = [
+    'default',
+    'polingo',
+    'PlayfairDisplay',
+    '方正黑体',
+    '方正宋体',
+    '方正黑体',
+    '轻松体',
+    '优设标题黑'
+  ];
   String currentFont;
 
   @override
@@ -931,13 +952,33 @@ class _TypoFontWidgetState extends State<TypoFontWidget> {
               selected: fontList[index] == data.getTextFont(),
               title: Text(
                 fontList[index],
-                style: TextStyle(fontFamily: fontList[index]),
+                style:
+                    TextStyle(fontFamily: fontList[index], color: Colors.white),
               ),
               onTap: () {
                 data.setTextFont(fontList[index]);
               },
             );
           }),
+    );
+  }
+}
+
+class SubToolIconWidget extends StatelessWidget {
+  SubToolIconWidget({this.icon, this.onPressed, this.akey});
+
+  final Widget icon;
+  final VoidCallback onPressed;
+  final GlobalKey akey;
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      key: akey,
+      icon: icon,
+      onPressed: onPressed,
+      color: Colors.white,
+      disabledColor: Colors.grey,
+      iconSize: 50,
     );
   }
 }

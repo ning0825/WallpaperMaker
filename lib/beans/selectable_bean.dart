@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
 
@@ -6,6 +8,7 @@ import 'package:wallpaper_maker/utils/utils.dart';
 
 abstract class Selectable {
   Rect rect;
+  Rect scaledRect;
   Path selectedPath;
   Path dottedSelectedPath;
 
@@ -13,6 +16,7 @@ abstract class Selectable {
   double tmpScaleX = 1.0;
   double tmpScaleY = 1.0;
   double tmpAngle = 0.0;
+  Offset tmpOffset = Offset.zero;
 
   bool isSelected = false;
   // bool isRot = false;
@@ -34,10 +38,6 @@ abstract class Selectable {
       'rotRadians': rotRadians,
     };
   }
-
-  // double lastScaleX = 1.0;
-  // double lastScaleY = 1.0;
-  // double lastAngle = 0.0;
 
 //------------------Draw Controller------------------
   var controllerLength = 10;
@@ -71,6 +71,7 @@ abstract class Selectable {
   /// 7: br
   /// -1: none
   int currentControlPoint;
+  Offset lastPosition;
 
   ///down 事件命中某个控制点
   bool isCtrling;
@@ -82,38 +83,38 @@ abstract class Selectable {
   Rect rightBottomControlRect;
 
   bool hitTestControl(Offset offset) {
-    if (leftControlRect.contains(offset)) {
-      currentControlPoint = 0;
-      return true;
-    }
-    if (topControlRect.contains(offset)) {
-      currentControlPoint = 1;
-      return true;
-    }
-    if (rightControlRect.contains(offset)) {
-      currentControlPoint = 2;
-      return true;
-    }
-    if (bottomControlRect.contains(offset)) {
-      currentControlPoint = 3;
-      return true;
-    }
-    // if (tlControlRect.contains(offset)) {
-    //   currentControlPoint = 4;
+    // if (leftControlRect.contains(offset)) {
+    //   currentControlPoint = 0;
     //   return true;
     // }
-    // if (trControlRect.contains(offset)) {
-    //   currentControlPoint = 5;
+    // if (topControlRect.contains(offset)) {
+    //   currentControlPoint = 1;
     //   return true;
     // }
-    // if (blControlRect.contains(offset)) {
-    //   currentControlPoint = 6;
+    // if (rightControlRect.contains(offset)) {
+    //   currentControlPoint = 2;
     //   return true;
     // }
-    // if (brControlRect.contains(offset)) {
-    //   currentControlPoint = 7;
+    // if (bottomControlRect.contains(offset)) {
+    //   currentControlPoint = 3;
     //   return true;
     // }
+    if (tlControlRect.contains(offset)) {
+      currentControlPoint = 4;
+      return true;
+    }
+    if (trControlRect.contains(offset)) {
+      currentControlPoint = 5;
+      return true;
+    }
+    if (blControlRect.contains(offset)) {
+      currentControlPoint = 6;
+      return true;
+    }
+    if (brControlRect.contains(offset)) {
+      currentControlPoint = 7;
+      return true;
+    }
     return false;
   }
 
@@ -130,28 +131,13 @@ abstract class Selectable {
   bool hitTest(Offset offset) =>
       selectedPath != null ? selectedPath.contains(offset) : false;
 
-  void draw(Canvas canvas);
-
   void drawSelected(Canvas canvas) {
-    // rect = Rect.fromCenter(
-    //     center: rect.center,
-    //     width: rect.width * scaleRadioX,
-    //     height: rect.height * scaleRadioY);
-
     if (isSelected) {
       canvas.drawPath(toDottedLinePath(selectedPath), _selectedPaint);
-      if (this is SelectableShape) {
-        canvas.drawLine(leftCtrlStart, leftCtrlEnd, _ctrlPaint);
-        canvas.drawLine(topCtrlStart, topCtrlEnd, _ctrlPaint);
-        canvas.drawLine(rightCtrlStart, rightCtrlEnd, _ctrlPaint);
-        canvas.drawLine(bottomCtrlStart, bottomCtrlEnd, _ctrlPaint);
-
-        // canvas.drawRect(rightControlRect, _ctrlPaint);
-        // canvas.drawRect(leftControlRect, _ctrlPaint);
-      }
-      if (this is SelectableTypo) {
-        canvas.drawLine(rightCtrlStart, rightCtrlEnd, _ctrlPaint);
-      }
+      canvas.drawOval(tlControlRect, _ctrlPaint);
+      canvas.drawOval(trControlRect, _ctrlPaint);
+      canvas.drawOval(blControlRect, _ctrlPaint);
+      canvas.drawOval(brControlRect, _ctrlPaint);
     }
   }
 
@@ -159,11 +145,11 @@ abstract class Selectable {
   Path toPath(Rect rect, double rotAngle, double scaleX, [double scaleY]) {
     scaleY ??= scaleX;
 
-    rect = Rect.fromCenter(
+    scaledRect = Rect.fromCenter(
         center: rect.center,
         width: rect.width * scaleX,
         height: rect.height * scaleY);
-    rect = rect.inflate(10);
+    rect = scaledRect.inflate(10);
 
     var a = atan((rect.center.dy - rect.topLeft.dy) /
         (rect.center.dx - rect.topLeft.dx)); //原始弧度
@@ -268,6 +254,51 @@ abstract class Selectable {
     }
     return destPath;
   }
+
+  void draw(Canvas canvas);
+
+  void handleCtrlStart(Offset position) {
+    tmpScaleX = scaleRadioX;
+    tmpScaleY = scaleRadioY;
+    tmpOffset = offset;
+    lastPosition = position;
+  }
+
+  void handleCtrlUpdate(Offset localPosition) {
+    //local > last ? 1 : -1;
+    int xPre = (currentControlPoint == 5 || currentControlPoint == 7) ? 1 : -1;
+    int yPre = (currentControlPoint == 6 || currentControlPoint == 7) ? 1 : -1;
+
+    scaleRadioX = tmpScaleX *
+        (xPre * (localPosition.dx - lastPosition.dx) / rect.width / tmpScaleX +
+            1);
+    scaleRadioY = tmpScaleY *
+        (yPre * (localPosition.dy - lastPosition.dy) / rect.height / tmpScaleY +
+            1);
+    offset = Offset(
+            xPre * rect.width * tmpScaleX * (scaleRadioX / tmpScaleX - 1) / 2,
+            yPre *
+                rect.height *
+                tmpScaleY *
+                (scaleRadioY / tmpScaleY - 1) /
+                2) +
+        tmpOffset;
+  }
+
+  void handleMoveStart(Offset position) {
+    tmpOffset = offset;
+    lastPosition = position;
+  }
+
+  void handleMoveUpdate(Offset position) {
+    offset = tmpOffset + position - lastPosition;
+  }
+
+  void handleCtrlOrMoveEnd() {
+    isMoving = false;
+    isCtrling = false;
+    currentControlPoint = -1;
+  }
 }
 
 class SelectableTypo extends Selectable {
@@ -276,9 +307,6 @@ class SelectableTypo extends Selectable {
   Color textColor;
 
   TextSpan _ts;
-
-  //控制移动
-  // Offset totalOffset;
 
   //字体
   String fontFamily;
@@ -355,6 +383,30 @@ class SelectableTypo extends Selectable {
     tp.paint(canvas, offset - Offset(tp.size.width / 2, tp.size.height / 2));
     canvas.restore();
   }
+
+  @override
+  void drawSelected(ui.Canvas canvas) {
+    super.drawSelected(canvas);
+    canvas.drawLine(rightCtrlStart, rightCtrlEnd, _ctrlPaint);
+  }
+
+  @override
+  bool hitTestControl(ui.Offset offset) {
+    if (rightControlRect.contains(offset)) {
+      currentControlPoint = 8;
+      return true;
+    }
+    return super.hitTestControl(offset);
+  }
+
+  @override
+  void handleCtrlUpdate(ui.Offset position) {
+    if (currentControlPoint == 8) {
+      maxWidth = (position.dx - rect.center.dx) * 2;
+    } else {
+      super.handleCtrlUpdate(position);
+    }
+  }
 }
 
 class SelectableImage extends Selectable {
@@ -400,18 +452,15 @@ class SelectableImage extends Selectable {
 
   @override
   void draw(Canvas canvas) {
+    var clipRatio = clipRect.height / clipRect.width;
     rect = Rect.fromCenter(
-        center: offset,
-        width: width - 40,
-        height: (width - 40) * clipRect.height / clipRect.width);
+        center: offset, width: width - 40, height: (width - 40) * clipRatio);
     selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
     canvas.save();
     canvas.translate(rect.center.dx, rect.center.dy);
     canvas.rotate(rotRadians);
     canvas.scale(scaleRadioX, scaleRadioY);
     canvas.translate(-rect.center.dx, -rect.center.dy);
-    //TODO: Too small rect will cause pixel compression.
-    // paintImage(canvas: canvas, rect: rect, image: img);
     canvas.drawImageRect(img, clipRect, rect, mPaint);
     canvas.restore();
   }
@@ -423,14 +472,14 @@ class SelectableShape extends Selectable {
   Offset startPoint;
   Offset endPoint;
 
-//绘制时的startPoint和endPoint在draw中转换成tlpoint和brpoint
+//startPoint and endPoint will be converted to topLeftPoint and bottomRightPoint， subsequent operation will be easier.
   Offset topLeftPoint;
   Offset bottomRightPoint;
 
   Offset tlOffset;
   Offset brOffset;
-  Offset lastTLOffset;
-  Offset lastBROffset;
+  Offset tmpTLOffset;
+  Offset tmpBROffset;
 
   bool fill;
   Paint fillPaint;
@@ -441,8 +490,8 @@ class SelectableShape extends Selectable {
     endPoint = startPoint;
     tlOffset = Offset.zero;
     brOffset = Offset.zero;
-    lastTLOffset = Offset.zero;
-    lastBROffset = Offset.zero;
+    tmpTLOffset = Offset.zero;
+    tmpTLOffset = Offset.zero;
 
     fill = false;
     mPaint = paint;
@@ -547,6 +596,46 @@ class SelectableShape extends Selectable {
 
     canvas.restore();
   }
+
+  @override
+  void handleMoveStart(ui.Offset position) {
+    super.handleMoveStart(position);
+    tmpTLOffset = tlOffset;
+    tmpBROffset = brOffset;
+  }
+
+  @override
+  void handleMoveUpdate(ui.Offset position) {
+    tlOffset = tmpTLOffset + position - lastPosition;
+    brOffset = tmpBROffset + position - lastPosition;
+  }
+
+  @override
+  void handleCtrlStart(ui.Offset position) {
+    handleMoveStart(position);
+  }
+
+  @override
+  void handleCtrlUpdate(ui.Offset position) {
+    switch (currentControlPoint) {
+      case 4:
+        tlOffset = tmpTLOffset + position - lastPosition;
+        break;
+      case 5:
+        tlOffset = tmpTLOffset + Offset(0.0, position.dy - lastPosition.dy);
+        brOffset = tmpBROffset + Offset(position.dx - lastPosition.dx, 0.0);
+        break;
+      case 6:
+        tlOffset = tmpTLOffset + Offset(position.dx - lastPosition.dx, 0.0);
+        brOffset = tmpBROffset + Offset(0.0, position.dy - lastPosition.dy);
+        break;
+      case 7:
+        brOffset = tmpBROffset + position - lastPosition;
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 class SelectablePath extends Selectable {
@@ -606,27 +695,6 @@ class SelectablePath extends Selectable {
 
   @override
   void draw(Canvas canvas) {
-    //TODO: This implementation is more concise and easy-handle.But the path did not behave as expected.
-    // path = path.transform(Matrix4.compose(
-    //         Vector3.zero(),
-    //         Quaternion.fromRotation(
-    //             Matrix3.identity()..setRotationZ(rotRadians)),
-    //         Vector3.all(1.0))
-    //     .storage);
-    // var m = Matrix4.identity()..rotateZ(rotRadians * 3.1415927 / 180);
-    // path = path.transform(m.storage);
-    // canvas.drawPath(path, mPaint);
-
-    ///TODO: These code can produce interesting effect, try later.
-    // Matrix4 m = Matrix4.identity()..setEntry(3, 2, 0.1);
-    // m.rotateX(scaleRadio);
-    // path = path.transform(m.storage);
-    // canvas.drawPath(path, mPaint);
-
-    //TODO: why need double offset to match the fingner moving.
-    // path = path.transform(
-    //     Matrix4.translationValues(offset.dx * 2, offset.dy * 2, 0).storage);
-
     canvas.save();
     canvas.translate(path.getBounds().center.dx + offset.dx,
         path.getBounds().center.dy + offset.dy);
@@ -635,7 +703,8 @@ class SelectablePath extends Selectable {
     canvas.translate(-path.getBounds().center.dx, -path.getBounds().center.dy);
     canvas.drawPath(path, mPaint);
     canvas.restore();
-    rect = path.getBounds().translate(offset.dx, offset.dy);
+    rect = path.getBounds();
+    rect = rect.translate(offset.dx, offset.dy);
     selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
   }
 }
@@ -655,8 +724,46 @@ class MyPoint {
   }
 }
 
-// class SerializableBean {
-//   String name;
-//   dynamic value;
+class SelectableImageFile {
+  SelectableImageFile({this.imgPath, this.date, this.isSelected = false}) {
+    jsonPath = getJsonPath(imgPath);
+  }
 
-// }
+  bool isSelected;
+
+  String imgPath;
+  String jsonPath;
+
+  DateTime date;
+
+  Future delete() async {
+    String content = await File(jsonPath).readAsString();
+    if (content.contains('imgName')) {
+      List<Map<String, dynamic>> list = (jsonDecode(content) as List).cast();
+      list.forEach((element) {
+        element.forEach((key, value) {
+          if (key.contains('SelectableImage')) {
+            var imgName = value['imgName'];
+            String imgPath = getImgPath(imgName);
+            File(imgPath).delete();
+          }
+        });
+      });
+    }
+    await File(imgPath).delete();
+    await File(jsonPath).delete();
+  }
+
+  String getJsonPath(String imgPath) {
+    var list = imgPath.split('/');
+    String name = list.last.split('.').first;
+    list.removeLast();
+    return list.join('/') + '/jsons/' + name + '.json';
+  }
+
+  String getImgPath(String imgName) {
+    var list = imgPath.split('/');
+    list.removeLast();
+    return list.join('/') + '/jsons/' + imgName + '.png';
+  }
+}

@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:wallpaper_maker/inherit/inherited_config.dart';
-import 'package:wallpaper_maker/routes/route_detail.dart';
 import 'package:wallpaper_maker/routes/route_edit.dart';
 import 'package:wallpaper_maker/utils/constants.dart';
 
@@ -42,6 +41,7 @@ class _CreateRouteState extends State<CreateRoute>
       setState(() {
         top = ttDetectedKey.currentContext.size.height / 2;
         left = ttDetectedKey.currentContext.size.width / 2;
+        print('top: $top');
       });
     });
 
@@ -140,69 +140,68 @@ class _CreateRouteState extends State<CreateRoute>
           height: 200,
         ),
         Positioned(
-            top: top,
-            left: left,
-            right: 20,
-            bottom: 20,
-            child: InkWell(
-              onTap: () {
-                setState(() {
-                  selected = 1;
-                });
-              },
-              child: Container(
-                color: selected == 1 ? Color(0xFFFFF792) : Colors.white,
-                child: Form(
-                  key: formKey,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 80,
-                        child: TextFormField(
-                          onTap: () {
-                            setState(() {
-                              selected = 1;
-                            });
-                          },
-                          onSaved: (s) {
-                            if (s.isNotEmpty) {
-                              width = double.parse(s);
-                            }
-                          },
-                          autofocus: false,
-                          style: TextStyle(fontSize: 32),
-                          cursorColor: Colors.black,
-                          decoration: inputDeco,
-                        ),
+          top: top,
+          left: left,
+          right: 20,
+          bottom: 20,
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                selected = 1;
+              });
+            },
+            child: Container(
+              color: selected == 1 ? Color(0xFFFFF792) : Colors.white,
+              child: Form(
+                key: formKey,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 80,
+                      child: TextFormField(
+                        onTap: () {
+                          setState(() {
+                            selected = 1;
+                          });
+                        },
+                        onSaved: (s) {
+                          if (s.isNotEmpty) {
+                            width = double.parse(s);
+                          }
+                        },
+                        style: TextStyle(fontSize: 32),
+                        cursorColor: Colors.black,
+                        decoration: inputDeco,
                       ),
-                      SizedBox(width: 26),
-                      Text('x'),
-                      SizedBox(width: 26),
-                      Container(
-                        width: 80,
-                        child: TextFormField(
-                          onTap: () {
-                            setState(() {
-                              selected = 1;
-                            });
-                          },
-                          onSaved: (s) {
-                            if (s.isNotEmpty) {
-                              height = double.parse(s);
-                            }
-                          },
-                          autofocus: false,
-                          style: TextStyle(fontSize: 32),
-                          cursorColor: Colors.black,
-                          decoration: inputDeco,
-                        ),
+                    ),
+                    SizedBox(width: 26),
+                    Text('x'),
+                    SizedBox(width: 26),
+                    Container(
+                      width: 80,
+                      child: TextFormField(
+                        onTap: () {
+                          setState(() {
+                            selected = 1;
+                          });
+                        },
+                        onSaved: (s) {
+                          if (s.isNotEmpty) {
+                            height = double.parse(s);
+                          }
+                        },
+                        style: TextStyle(fontSize: 32),
+                        cursorColor: Colors.black,
+                        decoration: inputDeco,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            )),
+            ),
+          ),
+        ),
         Positioned(
           left: 40,
           child: Text(
@@ -225,41 +224,13 @@ class _CreateRouteState extends State<CreateRoute>
           controller.forward(from: 0.0);
         });
       },
-      // child: AnimatedContainer(
-      //   duration: Duration(milliseconds: 400),
-      //   curve: Curves.ease,
-      //   margin: EdgeInsets.only(
-      //       left: init ? 60 : 0, bottom: init ? 10 : 0, right: init ? 20 : 0),
-      //   padding: EdgeInsets.all(20),
-      //   color: Colors.black,
-      //   height: init ? 70 : 130,
-      //   onEnd: () {
-      //     (formKey.currentState as FormState).save();
-      //     data.size2Save = Size(width, height);
-      //     //Hide keyboard.
-      //     FocusScope.of(context).requestFocus(FocusNode());
-      //     Navigator.of(context).pop();
-      //     Navigator.of(context).push(CusPageRoute(child: EditRoute()));
-      //   },
-      //   child: Row(
-      //     children: [
-      //       Text(
-      //         'start',
-      //         style: TextStyle(color: Colors.white, fontSize: 30),
-      //       ),
-      //       Spacer(),
-      //       Icon(
-      //         Icons.arrow_forward,
-      //         color: Colors.white,
-      //         size: 30,
-      //       )
-      //     ],
-      //   ),
-      // ),
       child: Container(
-        margin: EdgeInsets.only(bottom: 20, right: 20),
+        margin: EdgeInsets.only(
+          bottom: 20,
+          right: 20,
+        ),
         child: Hero(
-          tag: tag_libToCreate,
+          tag: herotag_libToCreate,
           child: Material(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -267,9 +238,7 @@ class _CreateRouteState extends State<CreateRoute>
                 onTap: () {
                   (formKey.currentState as FormState).save();
                   data.size2Save = Size(width, height);
-                  //Hide keyboard.
                   FocusScope.of(context).requestFocus(FocusNode());
-                  // Navigator.of(context).pop();
                   Navigator.of(context)
                       .push(PageRouteBuilder(pageBuilder: (_, a1, a2) {
                     return AnimatedBuilder(
@@ -282,7 +251,9 @@ class _CreateRouteState extends State<CreateRoute>
                   }));
                 },
                 child: Container(
-                  width: 330,
+                  width: MediaQuery.of(context).size.width -
+                      (left == 0.0 ? 50 : left) -
+                      20,
                   padding: EdgeInsets.all(20),
                   color: Colors.black,
                   height: 70,

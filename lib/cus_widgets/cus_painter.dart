@@ -22,7 +22,6 @@ class _CanvasPanelState extends State<CanvasPanel> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       setState(() {
-        print('addPostFrameCallback');
         widgetHeight = context.size.height;
         data.setSize(height: widgetHeight, ratio: data.size2Save.aspectRatio);
       });
@@ -66,16 +65,16 @@ class MyCanvas extends CustomPainter {
           height: size.height),
     );
 
-    //draw background
+    //draw background.
     canvas.drawColor(data.getBackroundColor(), BlendMode.src);
 
-    //draw selectables
-    //TODO: draw select rect over other items, but iterate twice can cause performance issue.
+    //draw selectables.
     for (var item in data.selectables) {
       item.draw(canvas);
     }
-    for (var item in data.selectables) {
-      item.drawSelected(canvas);
+    //draw select frame.
+    if (data.isSelectedMode) {
+      data.currentSelectable?.drawSelected(canvas);
     }
   }
 

@@ -1,55 +1,12 @@
 import 'dart:io';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wallpaper_maker/inherit/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_create.dart';
 import 'package:wallpaper_maker/routes/route_detail.dart';
 import 'package:wallpaper_maker/utils/constants.dart';
-
-class SeletectableImgFile {
-  SeletectableImgFile({this.imgPath, this.date, this.isSelected = false}) {
-    jsonPath = getJsonPath(imgPath);
-  }
-
-  bool isSelected;
-
-  String imgPath;
-  String jsonPath;
-
-  DateTime date;
-
-  Future delete() async {
-    String content = await File(jsonPath).readAsString();
-    if (content.contains('imgName')) {
-      List<Map<String, dynamic>> list = (jsonDecode(content) as List).cast();
-      list.forEach((element) {
-        element.forEach((key, value) {
-          if (key.contains('SelectableImage')) {
-            var imgName = value['imgName'];
-            String imgPath = getImgPath(imgName);
-            File(imgPath).delete();
-          }
-        });
-      });
-    }
-    await File(imgPath).delete();
-    await File(jsonPath).delete();
-  }
-
-  String getJsonPath(String imgPath) {
-    var list = imgPath.split('/');
-    String name = list.last.split('.').first;
-    list.removeLast();
-    return list.join('/') + '/jsons/' + name + '.json';
-  }
-
-  String getImgPath(String imgName) {
-    var list = imgPath.split('/');
-    list.removeLast();
-    return list.join('/') + '/jsons/' + imgName + '.png';
-  }
-}
+import 'package:wallpaper_maker/beans/selectable_bean.dart';
 
 class LibraryRoute extends StatefulWidget {
   @override
@@ -57,14 +14,15 @@ class LibraryRoute extends StatefulWidget {
 }
 
 class _LibraryRouteState extends State<LibraryRoute> {
-  List<SeletectableImgFile> imgFiles = [];
-  List<SeletectableImgFile> cacheImgFiles = [];
+  List<SelectableImageFile> imgFiles = [];
   String appFilePath;
 
   bool selectMode = false;
 
   //Should del button be enable or diable.
   bool enableDelButton = false;
+
+  ConfigWidgetState data;
 
   @override
   void initState() {
@@ -78,25 +36,26 @@ class _LibraryRouteState extends State<LibraryRoute> {
         await getExternalStorageDirectory().then((value) => value.path);
   }
 
-  Future<List<SeletectableImgFile>> _getImages() async {
-    if (cacheImgFiles.length == 0) {
+  Future<List<SelectableImageFile>> _getImages() async {
+    if (data.cacheImgFiles.length == 0) {
       imgFiles.clear();
       Directory directory = await getExternalStorageDirectory();
       await for (var item in directory.list()) {
         if (item.path.endsWith('png')) {
-          imgFiles.add(SeletectableImgFile(
+          imgFiles.add(SelectableImageFile(
               imgPath: item.path, date: item.statSync().changed));
         }
       }
-      cacheImgFiles.addAll(imgFiles);
-      cacheImgFiles
+      data.cacheImgFiles.addAll(imgFiles);
+      data.cacheImgFiles
           .sort((file1, file2) => file1.date.isAfter(file2.date) ? -1 : 1);
     }
-    return cacheImgFiles;
+    return data.cacheImgFiles;
   }
 
   @override
   Widget build(BuildContext context) {
+    data = ConfigWidget.of(context);
     enableDelButton = _hasImageSelected();
 
     return Scaffold(
@@ -127,7 +86,7 @@ class _LibraryRouteState extends State<LibraryRoute> {
                       onPressed: () {
                         if (selectMode) {
                           setState(() {
-                            cacheImgFiles.forEach((element) {
+                            data.cacheImgFiles.forEach((element) {
                               element.isSelected = !element.isSelected;
                             });
                           });
@@ -147,10 +106,10 @@ class _LibraryRouteState extends State<LibraryRoute> {
                     child: IconButton(
                       onPressed: enableDelButton
                           ? () async {
-                              for (var item in cacheImgFiles) {
+                              for (var item in data.cacheImgFiles) {
                                 if (item.isSelected) await item.delete();
                               }
-                              cacheImgFiles.clear();
+                              data.cacheImgFiles.clear();
                               setState(() {});
                             }
                           : null,
@@ -185,7 +144,7 @@ class _LibraryRouteState extends State<LibraryRoute> {
         onTap: () => Navigator.of(context)
             .push(MaterialPageRoute(builder: (_) => CreateRoute())),
         child: Hero(
-          tag: tag_libToCreate,
+          tag: herotag_libToCreate,
           child: Container(
             width: 50,
             height: 50,
@@ -201,7 +160,7 @@ class _LibraryRouteState extends State<LibraryRoute> {
   }
 
   bool _hasImageSelected() {
-    for (var item in cacheImgFiles) {
+    for (var item in data.cacheImgFiles) {
       if (item.isSelected) {
         return true;
       }
@@ -214,7 +173,7 @@ class _LibraryRouteState extends State<LibraryRoute> {
       future: _getImages(),
       builder: (_, snap) {
         if (snap.hasData) {
-          if (cacheImgFiles.length > 0) {
+          if (data.cacheImgFiles.length > 0) {
             return SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3, childAspectRatio: 0.6),
@@ -224,14 +183,14 @@ class _LibraryRouteState extends State<LibraryRoute> {
                     onTap: () {
                       if (selectMode) {
                         setState(() {
-                          cacheImgFiles[index].isSelected =
-                              !cacheImgFiles[index].isSelected;
+                          data.cacheImgFiles[index].isSelected =
+                              !data.cacheImgFiles[index].isSelected;
                         });
                       } else {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => DetailRoute(
-                              image: File(cacheImgFiles[index].imgPath),
+                              image: File(data.cacheImgFiles[index].imgPath),
                               heroTag: 'image$index',
                             ),
                           ),
@@ -243,19 +202,19 @@ class _LibraryRouteState extends State<LibraryRoute> {
                       decoration: BoxDecoration(
                           color: Colors.white,
                           border: selectMode
-                              ? cacheImgFiles[index].isSelected
+                              ? data.cacheImgFiles[index].isSelected
                                   ? Border.all(color: Colors.black, width: 2)
                                   : null
                               : null),
                       padding: EdgeInsets.all(8.0),
                       child: Hero(
                           tag: 'image$index',
-                          child:
-                              Image.file(File(cacheImgFiles[index].imgPath))),
+                          child: Image.file(
+                              File(data.cacheImgFiles[index].imgPath))),
                     ),
                   );
                 },
-                childCount: cacheImgFiles.length,
+                childCount: data.cacheImgFiles.length,
               ),
             );
           } else {

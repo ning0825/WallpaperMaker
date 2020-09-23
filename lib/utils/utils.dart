@@ -8,7 +8,9 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wallpaper_maker/routes/route_library.dart';
+import 'package:wallpaper_maker/utils/constants.dart';
 
+//TODO move this to another isolate.
 Future<void> saveImage(
     GlobalKey key, BuildContext context, double pixelRatio, String name) async {
   RenderRepaintBoundary boundary = key.currentContext.findRenderObject();
@@ -26,12 +28,7 @@ Future<void> saveImage(
   }
   file.writeAsBytesSync(sourceBytes);
   await showToast(context: context, msg: 'success');
-  Navigator.of(context).pop();
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => LibraryRoute(),
-    ),
-  );
+  Navigator.popUntil(context, ModalRoute.withName('/'));
 }
 
 //保存用户添加到画板的图片，供二次编辑
@@ -95,13 +92,12 @@ Future<void> setAswallPaper(BuildContext context, String path) async {
 ///to /storage/emulated/0/WallpaperMaker/example.png
 Future<void> saveImage2Local(String path) async {
   File file = File(path);
-
-  String appDirPath = '/storage/emulated/0/WallpaperMaker/';
-  Directory dir = Directory(appDirPath);
+  Directory dir = Directory(app_external_path);
   if (!await dir.exists()) {
     await dir.create();
   }
-  File newFile = await file.copy(appDirPath + path.split('/').last);
+  File newFile = await file.copy(app_external_path + path.split('/').last);
+
   refreshMedia(newFile.path);
 }
 

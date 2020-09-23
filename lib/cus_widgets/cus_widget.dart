@@ -7,7 +7,7 @@ enum MessageBoxDirection { left, right, top, bottom }
 
 ///A rectangular border with a triangle indicator at bottom.
 ///
-///@param position: indicator
+///@param position: indicator's position.
 class MessageBoxBorder extends OutlinedBorder {
   const MessageBoxBorder(
       {this.color,
@@ -75,7 +75,14 @@ class MessageBoxBorder extends OutlinedBorder {
   ShapeBorder scale(double t) => MessageBoxBorder(color: color);
 }
 
+/// Color picker widget.
 typedef OnColorPick = void Function(Color color);
+
+class SelectColorRect {
+  SelectColorRect(this.row, this.col);
+  int row;
+  int col;
+}
 
 class PaletteWidget extends LeafRenderObjectWidget {
   PaletteWidget({this.onColorPick});
@@ -103,6 +110,8 @@ class PaletteRenderBox extends RenderBox {
 
   Size pieceSize;
 
+  SelectColorRect selectColorRect;
+
   var colorlist = [
     Colors.red,
     Colors.deepOrange,
@@ -126,6 +135,8 @@ class PaletteRenderBox extends RenderBox {
     super.handleEvent(event, entry);
     int row = (event.localPosition.dy / (size.width / 10)).floor();
     int col = (event.localPosition.dx / (size.width / 12)).floor();
+
+    selectColorRect = SelectColorRect(row, col);
 
     //第一行是黑白
     if (row == 0) {
@@ -154,12 +165,23 @@ class PaletteRenderBox extends RenderBox {
     //后9行
     for (var i = 1; i < 10; i++) {
       for (var j = 0; j < 12; j++) {
+        //draw color.
         context.canvas.drawRect(
             Offset(offset.dx + pieceWidth * j, offset.dy + pieceHeight * i) &
                 pieceSize + Offset(1, 1),
             Paint()..color = colorlist[j][100 * (10 - i)]);
       }
     }
+
+    //selected color frame.
+    context.canvas.drawRect(
+        Offset(offset.dx + pieceWidth * selectColorRect.col,
+                offset.dy + pieceHeight * selectColorRect.row) &
+            pieceSize + Offset(1, 1),
+        Paint()
+          ..color = Colors.black
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.0);
   }
 
   @override

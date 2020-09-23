@@ -187,25 +187,25 @@ class ConfigWidgetState extends State<ConfigWidget>
   //---------------------------------------------------------------------------------
   setLeftAlign() {
     setState(() {
-      _setAlign(Offset(-currentSelectable.rect.left, 0.0));
+      _setAlign(Offset(-currentSelectable.scaledRect.left, 0.0));
     });
   }
 
   setTopAlign() {
     setState(() {
-      _setAlign(Offset(0.0, -currentSelectable.rect.top));
+      _setAlign(Offset(0.0, -currentSelectable.scaledRect.top));
     });
   }
 
   setRightAlign() {
     setState(() {
-      _setAlign(Offset(size.width - currentSelectable.rect.right, 0.0));
+      _setAlign(Offset(size.width - currentSelectable.scaledRect.right, 0.0));
     });
   }
 
   setBottomAlign() {
     setState(() {
-      _setAlign(Offset(0.0, size.height - currentSelectable.rect.bottom));
+      _setAlign(Offset(0.0, size.height - currentSelectable.scaledRect.bottom));
     });
   }
 
@@ -255,6 +255,7 @@ class ConfigWidgetState extends State<ConfigWidget>
   clean() {
     setState(() {
       selectables.clear();
+      isSelectedMode = false;
       pushToStack();
     });
   }
@@ -469,24 +470,19 @@ class ConfigWidgetState extends State<ConfigWidget>
     });
   }
 
-  var lastPoint = Offset.zero;
-  var tmpOffset = Offset.zero;
-  var tmpTLOffset = Offset.zero;
-  var tmpBROffset = Offset.zero;
-
   handleTapDown(TapDownDetails details) {
     if (isSelectedMode) {
-      currentSelectable.isCtrling =
-          currentSelectable.hitTestControl(details.localPosition);
+      if (currentSelectable.isCtrling =
+          currentSelectable.hitTestControl(details.localPosition)) {
+        currentSelectable.handleCtrlStart(details.localPosition);
+      }
+
       currentSelectable.isMoving =
           currentSelectable.hitTest(details.localPosition) &&
               !currentSelectable.isCtrling;
-
       if (currentSelectable.isMoving) {
-        tmpOffset = currentSelectable.offset;
+        currentSelectable.handleMoveStart(details.localPosition);
       }
-
-      lastPoint = details.localPosition;
     } else {
       switch (_config.currentMode) {
         case 0:
@@ -501,66 +497,19 @@ class ConfigWidgetState extends State<ConfigWidget>
               paint: getCurrentShape()));
           break;
         default:
+          break;
       }
     }
   }
-
-  var currentShape;
 
   handleTapUpdate(DragUpdateDetails details) {
     setState(() {
       if (isSelectedMode) {
         if (currentSelectable.isCtrling) {
-          var ctrlIndex = currentSelectable.currentControlPoint;
-
-          if (currentSelectable is SelectableShape) {
-            currentShape = currentSelectable as SelectableShape;
-            switch (ctrlIndex) {
-              case 0:
-                currentShape.tlOffset = currentShape.lastTLOffset +
-                    Offset(details.localPosition.dx - lastPoint.dx, 0.0);
-                tmpTLOffset = currentShape.tlOffset;
-                break;
-              case 1:
-                currentShape.tlOffset = currentShape.lastTLOffset +
-                    Offset(0.0, details.localPosition.dy - lastPoint.dy);
-                tmpTLOffset = currentShape.tlOffset;
-                break;
-              case 2:
-                currentShape.brOffset = currentShape.lastBROffset +
-                    Offset(details.localPosition.dx - lastPoint.dx, 0.0);
-                tmpBROffset = currentShape.brOffset;
-                break;
-              case 3:
-                currentShape.brOffset = currentShape.lastBROffset +
-                    Offset(0.0, details.localPosition.dy - lastPoint.dy);
-                tmpBROffset = currentShape.brOffset;
-                break;
-              default:
-                break;
-            }
-          }
-
-          if (currentSelectable is SelectableTypo) {
-            (currentSelectable as SelectableTypo).maxWidth =
-                (details.localPosition.dx - currentSelectable.rect.center.dx) *
-                    2;
-          }
+          currentSelectable.handleCtrlUpdate(details.localPosition);
         }
         if (currentSelectable.isMoving) {
-          if (currentSelectable is SelectableShape) {
-            var sshape = currentSelectable as SelectableShape;
-            sshape.tlOffset =
-                sshape.lastTLOffset + details.localPosition - lastPoint;
-            sshape.brOffset =
-                sshape.lastBROffset + details.localPosition - lastPoint;
-
-            tmpTLOffset = sshape.tlOffset;
-            tmpBROffset = sshape.brOffset;
-          } else {
-            currentSelectable.offset =
-                tmpOffset + details.localPosition - lastPoint;
-          }
+          currentSelectable.handleMoveUpdate(details.localPosition);
         }
       } else {
         switch (_config.currentMode) {
@@ -573,6 +522,7 @@ class ConfigWidgetState extends State<ConfigWidget>
                 Offset(details.localPosition.dx, details.localPosition.dy);
             break;
           default:
+            break;
         }
       }
     });
@@ -580,13 +530,7 @@ class ConfigWidgetState extends State<ConfigWidget>
 
   handleTapEnd(DragEndDetails details) {
     if (isSelectedMode) {
-      currentSelectable.currentControlPoint = -1;
-      if (currentSelectable is SelectableShape) {
-        (currentSelectable as SelectableShape).lastTLOffset = tmpTLOffset;
-        (currentSelectable as SelectableShape).lastBROffset = tmpBROffset;
-      }
-      currentSelectable.isMoving = false;
-      currentSelectable.isCtrling = false;
+      currentSelectable.handleCtrlOrMoveEnd();
     } else if (selectables.last.rect == null ||
         selectables.last.rect.width < 2) {
       selectables.removeLast();
@@ -597,7 +541,8 @@ class ConfigWidgetState extends State<ConfigWidget>
   var tmpScaleX;
   var tmpScaleY;
   var tmpRadius;
-  //Clockwise(1) or anticlockwise(-1) when start rotate(when set rotating to true), default value is 0.
+
+  ///Clockwise(1) or anticlockwise(-1) when start rotate(when set rotating to true), default value is 0.
   int rotFlag;
 
   handleScaleStart(ScaleStartDetails details) {
@@ -635,7 +580,8 @@ class ConfigWidgetState extends State<ConfigWidget>
   }
 
   handleTapUp(TapUpDetails details) {
-    if (!offStage) {
+    print('length:' + selectables.length.toString());
+    if (!leafToolOffstage) {
       hideLeafTool();
       return;
     }
@@ -675,7 +621,7 @@ class ConfigWidgetState extends State<ConfigWidget>
   //---------------------------------------------------------------------------------
   AnimationController controller;
   Animation leafToolAnimation;
-  bool offStage = true;
+  bool leafToolOffstage = true;
 
   double bottom = 0;
   double top = 0;
@@ -701,7 +647,7 @@ class ConfigWidgetState extends State<ConfigWidget>
 
   showLeafTool() {
     controller.forward();
-    offStage = false;
+    leafToolOffstage = false;
   }
 
   hideLeafTool() {
@@ -709,7 +655,7 @@ class ConfigWidgetState extends State<ConfigWidget>
   }
 
   toggleLeafTool() {
-    if (offStage) {
+    if (leafToolOffstage) {
       showLeafTool();
     } else if (currentLeafTool != lastLeafTool) {
       setState(() {});
@@ -717,6 +663,8 @@ class ConfigWidgetState extends State<ConfigWidget>
       hideLeafTool();
     }
   }
+
+  List<SelectableImageFile> cacheImgFiles = [];
 
   @override
   void initState() {
@@ -729,7 +677,7 @@ class ConfigWidgetState extends State<ConfigWidget>
     controller.addListener(() {
       if (controller.isDismissed && controller.value == 0.0) {
         setState(() {
-          offStage = true;
+          leafToolOffstage = true;
         });
       }
     });
@@ -766,6 +714,7 @@ class ConfigWidgetState extends State<ConfigWidget>
     currentEditImgPath = '';
 
     selectableStack = [];
+    cacheImgFiles = [];
     pushToStack();
   }
 

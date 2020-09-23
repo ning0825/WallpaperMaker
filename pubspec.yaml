@@ -76,6 +76,21 @@ flutter:
     - family: PlayfairDisplay
       fonts:
         - asset: assets/fonts/PlayfairDisplay-Regular.ttf
+    - family: 方正黑体
+      fonts:
+        - asset: assets/fonts/fzheiti.ttf
+    - family: 方正楷体
+      fonts:
+        - asset: assets/fonts/fzkaiti.ttf
+    - family: 方正宋体
+      fonts:
+        - asset: assets/fonts/fzsongti.ttf
+    - family: 轻松体
+      fonts:
+        - asset: assets/fonts/qingsongti.ttf
+    - family: 优设标题黑
+      fonts:
+        - asset: assets/fonts/youshebiaotihei.ttf
 #      - asset: assets/fonts/PlayfairDisplay-Italic.ttf
 #        style: italic
 #      - asset: assets/fonts/PlayfairDisplay-Medium.ttf
