@@ -265,15 +265,45 @@ abstract class Selectable {
   }
 
   void handleCtrlUpdate(Offset localPosition) {
+    print('rotradians:' + rotRadians.toString());
+
     //local > last ? 1 : -1;
     int xPre = (currentControlPoint == 5 || currentControlPoint == 7) ? 1 : -1;
     int yPre = (currentControlPoint == 6 || currentControlPoint == 7) ? 1 : -1;
+    // int xPre = localPosition.dx - lastPosition.dx >= 0 ? 1 : -1;
+    // int yPre = localPosition.dy - lastPosition.dy >= 0 ? 1 : -1;
+
+    // xPre = (localPosition.dx >= lastPosition.dx ? 1 : -1) * xPre;
+    // yPre = (localPosition.dy >= lastPosition.dy ? 1 : -1) * yPre;
+
+    // scaleRadioX = tmpScaleX *
+    //     (xPre *
+    //             (localPosition.dx - lastPosition.dx) *
+    //             cos(rotRadians) /
+    //             rect.width /
+    //             tmpScaleX +
+    //         1);
+    // scaleRadioY = tmpScaleY *
+    //     (yPre *
+    //             (localPosition.dy - lastPosition.dy) *
+    //             (sin(rotRadians) == 0 ? 1 : sin(rotRadians)) /
+    //             rect.height /
+    //             tmpScaleY +
+    //         1);
 
     scaleRadioX = tmpScaleX *
-        (xPre * (localPosition.dx - lastPosition.dx) / rect.width / tmpScaleX +
+        (xPre *
+                (localPosition - lastPosition).distance *
+                cos((localPosition - lastPosition).direction - rotRadians) /
+                rect.width /
+                tmpScaleX +
             1);
     scaleRadioY = tmpScaleY *
-        (yPre * (localPosition.dy - lastPosition.dy) / rect.height / tmpScaleY +
+        (yPre *
+                (localPosition.dy - lastPosition.dy) *
+                cos(rotRadians) /
+                rect.height /
+                tmpScaleY +
             1);
     offset = Offset(
             xPre * rect.width * tmpScaleX * (scaleRadioX / tmpScaleX - 1) / 2,

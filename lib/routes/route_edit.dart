@@ -14,7 +14,6 @@ import 'package:wallpaper_maker/cus_widgets/cus_widget.dart';
 import 'package:wallpaper_maker/utils/utils.dart';
 
 GlobalKey rpbKey = GlobalKey();
-Size size;
 BuildContext mContext;
 
 GlobalKey backgroundBtKey = GlobalKey();
@@ -33,6 +32,10 @@ GlobalKey typoFontKey = GlobalKey();
 GlobalKey typoFontWeightKey = GlobalKey();
 GlobalKey typoColorKey = GlobalKey();
 
+GlobalKey keyStack = GlobalKey();
+GlobalKey topToolBarKey = GlobalKey();
+GlobalKey bottomToolBarKey = GlobalKey();
+
 class EditRoute extends StatefulWidget {
   @override
   _EditRouteState createState() => _EditRouteState();
@@ -47,7 +50,21 @@ class _EditRouteState extends State<EditRoute>
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      size = rpbKey.currentContext.size;
+      data.canvasTop =
+          (topToolBarKey.currentContext.findRenderObject() as RenderBox)
+              .size
+              .height;
+
+      data.canvasBottom =
+          (bottomToolBarKey.currentContext.findRenderObject() as RenderBox)
+              .size
+              .height;
+
+      data.setCanvasSize(
+          height: keyStack.currentContext.size.height -
+              data.canvasTop -
+              data.canvasBottom,
+          ratio: data.size2Save.aspectRatio);
     });
   }
 
@@ -59,13 +76,30 @@ class _EditRouteState extends State<EditRoute>
     return SafeArea(
       child: Scaffold(
         body: Stack(
+          key: keyStack,
+          alignment: Alignment.center,
           children: [
-            Column(
-              children: [
-                Container(height: 50, child: TopToolbar()),
-                Expanded(child: CanvasPanel(rpbKey)),
-                BottomToolbar()
-              ],
+            //Give size to this stack.
+            Container(
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+            ),
+            Positioned(
+              top: data.canvasTop,
+              bottom: data.canvasBottom,
+              child: CanvasPanel(rpbKey),
+            ),
+            Positioned(
+              top: 0,
+              child: TopToolbar(
+                key: topToolBarKey,
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              child: BottomToolbar(
+                key: bottomToolBarKey,
+              ),
             ),
             Positioned(
               child: Container(
@@ -112,9 +146,12 @@ class _EditRouteState extends State<EditRoute>
         case LeafTool.backgroundColor:
           result = Container(
             width: MediaQuery.of(context).size.width - 36,
-            child: PaletteWidget(onColorPick: (color) {
-              data.setBackgroundColor(color);
-            }),
+            child: PaletteWidget(
+              onColorPick: (color) {
+                data.setBackgroundColor(color);
+              },
+              selectColor: data.getBackroundColor(),
+            ),
           );
           break;
         case LeafTool.align:
@@ -153,9 +190,12 @@ class _EditRouteState extends State<EditRoute>
         case LeafTool.pen_color:
           result = Container(
             width: MediaQuery.of(context).size.width - 36,
-            child: PaletteWidget(onColorPick: (color) {
-              data.setPenColor(color);
-            }),
+            child: PaletteWidget(
+              onColorPick: (color) {
+                data.setPenColor(color);
+              },
+              selectColor: data.getPenColor(),
+            ),
           );
           break;
         case LeafTool.pen_width:
@@ -182,9 +222,12 @@ class _EditRouteState extends State<EditRoute>
         case LeafTool.shape_color:
           result = Container(
             width: MediaQuery.of(context).size.width - 36,
-            child: PaletteWidget(onColorPick: (color) {
-              data.setShapeColor(color);
-            }),
+            child: PaletteWidget(
+              onColorPick: (color) {
+                data.setShapeColor(color);
+              },
+              selectColor: data.getShapeColor(),
+            ),
           );
           break;
         case LeafTool.shape_style:
@@ -208,9 +251,12 @@ class _EditRouteState extends State<EditRoute>
               ),
               Container(
                 width: MediaQuery.of(context).size.width - 36,
-                child: PaletteWidget(onColorPick: (color) {
-                  data.setShapeFillColor(color);
-                }),
+                child: PaletteWidget(
+                  onColorPick: (color) {
+                    data.setShapeFillColor(color);
+                  },
+                  selectColor: data.getShapeFillColor(),
+                ),
               ),
             ],
           );
@@ -273,6 +319,16 @@ class _EditRouteState extends State<EditRoute>
             ),
           );
           break;
+        case LeafTool.rotate:
+          result = Container(
+            width: MediaQuery.of(context).size.width,
+            height: 110,
+            child: RotateWidget(
+              angle: data.getCurrentRotation(),
+              rotateCallback: (angle) => data.rotate(angle),
+            ),
+          );
+          break;
         default:
           break;
       }
@@ -285,6 +341,8 @@ class _EditRouteState extends State<EditRoute>
 }
 
 class TopToolbar extends StatefulWidget {
+  TopToolbar({Key key}) : super(key: key);
+
   @override
   _TopToolbarState createState() => _TopToolbarState();
 }
@@ -292,105 +350,160 @@ class TopToolbar extends StatefulWidget {
 class _TopToolbarState extends State<TopToolbar> {
   ConfigWidgetState data;
 
+  OverlayEntry entry;
+
+  @override
+  void initState() {
+    super.initState();
+
+    entry = OverlayEntry(builder: (context) {
+      return Positioned(
+          top: MediaQuery.of(context).size.height * 0.5,
+          child: Container(
+            width: MediaQuery.of(context).size.width,
+            alignment: Alignment.center,
+            child: Container(
+              width: 200,
+              height: 200,
+              color: Colors.grey,
+              alignment: Alignment.center,
+              child: FutureBuilder(
+                future: saveBoard(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done) {
+                    _removeEntry();
+                    return Material(
+                      type: MaterialType.transparency,
+                      child: Text(
+                        'save success',
+                      ),
+                    );
+                  } else {
+                    return CircularProgressIndicator();
+                  }
+                },
+              ),
+            ),
+          ));
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
 
     return Container(
       color: Colors.black,
-      width: double.infinity,
+      width: MediaQuery.of(context).size.width,
       alignment: Alignment.centerRight,
       height: 50,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Spacer(),
-          Flexible(
-            child: IconButton(
-              key: backgroundBtKey,
-              onPressed: () {
-                data.setLeafToolTop();
-                data.setCurrentLeafTool(LeafTool.backgroundColor);
-                data.setIndicatorPosition(backgroundBtKey);
-                data.toggleLeafTool();
-              },
-              icon: Container(
-                margin: EdgeInsets.all(8),
-                width: 20,
-                height: 20,
-                color: data.getBackroundColor(),
+          //Cancel select mode.
+          IconButton(
+            icon: Icon(
+              Icons.cancel_sharp,
+              color: Colors.white,
+            ),
+            onPressed: data.isSelectedMode ? data.setUnselected : null,
+          ),
+          IconButton(
+              icon: Icon(
+                Icons.fullscreen_exit,
+                color: Colors.white,
               ),
+              onPressed: data.canvasScale > 1.0 ? data.exitScaleMode : null),
+          IconButton(
+            key: backgroundBtKey,
+            onPressed: () {
+              data.setLeafToolTop();
+              data.setCurrentLeafTool(LeafTool.backgroundColor);
+              data.setIndicatorPosition(backgroundBtKey);
+              data.toggleLeafTool();
+            },
+            icon: Container(
+              margin: EdgeInsets.all(8),
+              width: 20,
+              height: 20,
+              color: data.getBackroundColor(),
             ),
           ),
           //delete
-          Expanded(
-            child: IconButton(
-              icon: Image.asset(
-                'assets/icons/remove.png',
-                width: 20,
-                height: 20,
-                color: data.isSelectedMode ? Colors.white : Colors.grey,
-              ),
-              onPressed: () =>
-                  data.isSelectedMode ? data.removeCurrentSelected() : null,
+          IconButton(
+            icon: Image.asset(
+              'assets/icons/remove.png',
+              width: 20,
+              height: 20,
+              color: data.isSelectedMode ? Colors.white : Colors.grey,
             ),
+            onPressed: () =>
+                data.isSelectedMode ? data.removeCurrentSelected() : null,
           ),
           //undo
-          Expanded(
-            child: IconButton(
-              icon: Image.asset(
-                'assets/icons/undo.png',
-                width: 20,
-                height: 20,
-              ),
-              onPressed: () => data.undo(),
+          IconButton(
+            icon: Image.asset(
+              'assets/icons/undo.png',
+              width: 20,
+              height: 20,
             ),
+            onPressed: () => data.undo(),
           ),
           //clear
-          Expanded(
-            child: IconButton(
-              icon: Image.asset(
-                'assets/icons/trash.png',
-                width: 20,
-                height: 20,
-              ),
-              onPressed: () => data.clean(),
+          IconButton(
+            icon: Image.asset(
+              'assets/icons/trash.png',
+              width: 20,
+              height: 20,
             ),
+            onPressed: () => data.clean(),
           ),
-          Expanded(
-            child: IconButton(
-              icon: Image.asset(
-                'assets/icons/save.png',
-                width: 20,
-                height: 20,
-              ),
-              onPressed: () async {
-                List<Map<String, dynamic>> list = [
-                  {
-                    'background': {'background': data.getBackroundColor().value}
-                  }
-                ];
-                data.selectables.forEach((element) {
-                  list.add({element.runtimeType.toString(): element});
-                });
-
-                if (!data.newCanva) {
-                  await SelectableImageFile(imgPath: data.currentEditImgPath)
-                      .delete();
-                }
-
-                String jsonString = jsonEncode(list);
-                String name = DateTime.now().millisecondsSinceEpoch.toString();
-                await saveImage(rpbKey, mContext,
-                    data.size2Save.width / data.size.width, name);
-                await saveJson(name, jsonString);
-                data.reset();
-              },
+          IconButton(
+            icon: Image.asset(
+              'assets/icons/save.png',
+              width: 20,
+              height: 20,
             ),
+            onPressed: () {
+              _showSaveDialog(context);
+            },
           ),
         ],
       ),
     );
+  }
+
+  void _showSaveDialog(BuildContext context) {
+    Overlay.of(context).insert(entry);
+  }
+
+  Future<int> saveBoard() async {
+    List<Map<String, dynamic>> list = [
+      {
+        'background': {'background': data.getBackroundColor().value}
+      }
+    ];
+    data.selectables.forEach((element) {
+      list.add({element.runtimeType.toString(): element});
+    });
+
+    if (!data.newCanva) {
+      await SelectableImageFile(imgPath: data.currentEditImgPath).delete();
+    }
+
+    String jsonString = jsonEncode(list);
+    String name = DateTime.now().millisecondsSinceEpoch.toString();
+    await saveImage(
+        mContext, rpbKey, data.size2Save.width / data.size.width, name);
+    await saveJson(name, jsonString);
+    data.reset();
+    return 0;
+  }
+
+  _removeEntry() async {
+    await Future.delayed(Duration(seconds: 1))
+        .then((value) => Navigator.popUntil(context, ModalRoute.withName('/')));
+    entry.remove();
   }
 }
 
@@ -664,7 +777,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
           onPressed: data.isSelectedMode
               ? () {
                   data.setLeafToolBottom();
-                  data.setCurrentLeafTool(LeafTool.align);
+                  data.setCurrentLeafTool(LeafTool.rotate);
                   data.setIndicatorPosition(rotBtKey);
                   data.toggleLeafTool();
                 }
@@ -1003,28 +1116,50 @@ class _TypoTextWidgetState extends State<TypoTextWidget> {
     data = ConfigWidget.of(context);
     controller.text = data.getText();
     return Container(
-      padding: EdgeInsets.all(10),
+      padding: EdgeInsets.all(6),
       child: Row(
         children: [
           Expanded(
             child: TextField(
               controller: controller,
+              autofocus: true,
+              style: TextStyle(color: Colors.white, fontSize: 30),
+              cursorColor: Colors.white,
+              decoration: InputDecoration(
+                border: UnderlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.white),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.white),
+                ),
+              ),
             ),
           ),
-          RaisedButton(
-            onPressed: () {
-              data.addSelectable(
-                data.assembleSelectableTypo(
-                    controller.text,
-                    Offset(size.height / 2 / 2, size.height / 2),
-                    data.size.width - 20),
-              );
-              data.setSeleteLast();
+          Material(
+            color: Colors.white,
+            child: InkWell(
+              highlightColor: Colors.black12,
+              onTap: () {
+                data.addSelectable(
+                  data.assembleSelectableTypo(
+                      controller.text,
+                      Offset(data.size.width / 2, data.size.height / 2),
+                      data.size.width - 20),
+                );
+                data.setSeleteLast();
+                data.setCurrentLeafTool(LeafTool.text_text);
+                data.toggleLeafTool();
 
-              //Hide soft keyboard
-              FocusScope.of(context).requestFocus(FocusNode());
-            },
-            child: Text('OK'),
+                //Hide soft keyboard
+                FocusScope.of(context).requestFocus(FocusNode());
+              },
+              child: Container(
+                width: 60,
+                height: 30,
+                alignment: Alignment.center,
+                child: Text('OK'),
+              ),
+            ),
           ),
         ],
       ),

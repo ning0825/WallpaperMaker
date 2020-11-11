@@ -5,8 +5,8 @@ class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
   GestureTapDownCallback onDown;
   GestureDragUpdateCallback onUpdate;
   GestureDragEndCallback onEnd;
-  GestureScaleStartCallback onTransStart;
-  GestureScaleUpdateCallback onTransUpdate;
+  // GestureScaleStartCallback onTransStart;
+  // GestureScaleUpdateCallback onTransUpdate;
 
   Offset currentLocalPosition;
   Offset currentGlobalPosition;

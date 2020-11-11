@@ -18,7 +18,7 @@ class _CreateRouteState extends State<CreateRoute>
   ConfigWidgetState data;
 
   double top = 0.0;
-  double left = 0.0;
+  double left = 100.0;
 
   var width;
   var height;
@@ -40,8 +40,7 @@ class _CreateRouteState extends State<CreateRoute>
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       setState(() {
         top = ttDetectedKey.currentContext.size.height / 2;
-        left = ttDetectedKey.currentContext.size.width / 2;
-        print('top: $top');
+        // left = ttDetectedKey.currentContext.size.width / 2;
       });
     });
 

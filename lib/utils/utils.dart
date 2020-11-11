@@ -7,12 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:wallpaper_maker/routes/route_library.dart';
 import 'package:wallpaper_maker/utils/constants.dart';
 
-//TODO move this to another isolate.
 Future<void> saveImage(
-    GlobalKey key, BuildContext context, double pixelRatio, String name) async {
+    BuildContext context, GlobalKey key, double pixelRatio, String name) async {
   RenderRepaintBoundary boundary = key.currentContext.findRenderObject();
   ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
 
@@ -27,8 +25,8 @@ Future<void> saveImage(
     file.createSync();
   }
   file.writeAsBytesSync(sourceBytes);
-  await showToast(context: context, msg: 'success');
-  Navigator.popUntil(context, ModalRoute.withName('/'));
+  // await showToast(context: context, msg: 'success');
+  // Navigator.popUntil(context, ModalRoute.withName('/'));
 }
 
 //保存用户添加到画板的图片，供二次编辑
@@ -52,7 +50,8 @@ Future<ui.Image> getImgObject(String name) async {
       .then((value) => value.getNextFrame().then((value) => value.image));
 }
 
-Future<void> showToast({BuildContext context, String msg}) async {
+Future<void> showToast(
+    {@required BuildContext context, String msg, Widget child}) async {
   OverlayEntry overlayEntry = OverlayEntry(
       builder: (context) {
         return Positioned(

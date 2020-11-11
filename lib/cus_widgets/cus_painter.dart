@@ -18,33 +18,27 @@ class _CanvasPanelState extends State<CanvasPanel> {
   ConfigWidgetState data;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      setState(() {
-        widgetHeight = context.size.height;
-        data.setSize(height: widgetHeight, ratio: data.size2Save.aspectRatio);
-      });
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
-
     return CanvasGestureDetector(
-      onTapDownCallback: (details) => data.handleTapDown(details),
-      onDragUpdateCallback: (details) => data.handleTapUpdate(details),
-      ondragEndCallback: (details) => data.handleTapEnd(details),
-      onScaleStartCallback: (details) => data.handleScaleStart(details),
-      onScaleUpdateCallback: (details) => data.handleScaleUpdate(details),
-      onScaleEndCallback: (details) => data.handleScaleEnd(details),
-      onTapUpCallback: (details) => data.handleTapUp(details),
-      child: RepaintBoundary(
-        key: widget.rKey,
-        child: CustomPaint(
-          size: data.size,
-          painter: MyCanvas(data: data),
+      onTapDownCallback: data.handleTapDown,
+      onDragUpdateCallback: data.handleTapUpdate,
+      ondragEndCallback: data.handleTapEnd,
+      onScaleStartCallback: data.handleScaleStart,
+      onScaleUpdateCallback: data.handleScaleUpdate,
+      onScaleEndCallback: data.handleScaleEnd,
+      onTapUpCallback: data.handleTapUp,
+      child: Transform(
+        alignment: Alignment.center,
+        transform:
+            Matrix4.diagonal3Values(data.canvasScale, data.canvasScale, 1.0)
+              ..translate(data.canvasOffset.dx, data.canvasOffset.dy),
+        child: RepaintBoundary(
+          key: widget.rKey,
+          child: CustomPaint(
+            size: data.size,
+            painter: MyCanvas(data: data),
+          ),
         ),
       ),
     );

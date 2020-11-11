@@ -193,6 +193,79 @@ class _DetailRouteState extends State<DetailRoute>
   }
 }
 
+// class InteractiveWidet extends StatefulWidget {
+//   InteractiveWidet(
+//       {@required this.child,
+//       this.onScaleStart,
+//       this.onScaleUpdate,
+//       this.onScaleEnd,
+//       this.onDragStart,
+//       this.onDragUpdate,
+//       this.onDragEnd})
+//       : hasInternalOperation = onDragUpdate != null;
+
+//   final Widget child;
+
+//   final GestureScaleStartCallback onScaleStart;
+//   final GestureScaleUpdateCallback onScaleUpdate;
+//   final GestureScaleEndCallback onScaleEnd;
+//   final GestureDragStartCallback onPanStart;
+//   final GestureDragUpdateCallback onPanUpdate;
+//   final GestureDragEndCallback onDragEnd;
+
+//   final hasInternalOperation;
+
+//   @override
+//   _InteractiveWidetState createState() => _InteractiveWidetState();
+// }
+
+// class _InteractiveWidetState extends State<InteractiveWidet> {
+//   double preScale = 1.0;
+//   double scale = 1.0;
+
+//   Offset startPoint;
+//   Offset preOffset = Offset.zero;
+//   Offset offset = Offset.zero;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return GestureDetector(
+//       onScaleStart: _handleScaleStart,
+//       onScaleUpdate: _handleScaleUpdate,
+//       onScaleEnd: _handleScaleEnd,
+//       child: Transform(
+//         transform: _getTransform(),
+//         child: widget.child,
+//       ),
+//     );
+//   }
+
+//   Matrix4 _getTransform() => Matrix4.diagonal3Values(scale, scale, 1.0)
+//     ..translate(offset.dx, offset.dy);
+
+//   void _handleScaleStart(ScaleStartDetails details) {
+//     //有自己操作的话，需要双指拖动，所以需要在 scaleStart 里设置startPoint
+//     if (widget.hasInternalOperation) {
+//       startPoint = details.localFocalPoint;
+//       widget.onScaleStart(details);
+//     } else {}
+//   }
+
+//   _handleScaleUpdate(ScaleUpdateDetails details) {
+//     scale = preScale * details.scale;
+//     if (widget.hasInternalOperation) {
+//       widget.onScaleUpdate(details);
+//     }
+//   }
+
+//   void _handleScaleEnd(ScaleEndDetails details) {
+//     preScale = scale;
+//     if (widget.hasInternalOperation) {
+//       widget.onScaleEnd(details);
+//     }
+//   }
+// }
+
 class DetailTool extends StatefulWidget {
   DetailTool(this.imageFile);
 
@@ -210,38 +283,58 @@ class _DetailToolState extends State<DetailTool> {
     return Container(
       width: MediaQuery.of(context).size.width,
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          RaisedButton(
-            onPressed: () async {
-              Directory dir = await getExternalStorageDirectory();
-              String jsonDir = dir.path + '/jsons';
-              String jsonName = jsonDir +
-                  '/' +
-                  widget.imageFile.split('/').last.split('.').first +
-                  '.json';
-              await _getSelectables(jsonName);
-              data.newCanva = false;
-              data.currentEditImgPath = widget.imageFile;
-              Navigator.of(context).push(MaterialPageRoute(
-                builder: (context) => EditRoute(),
-              ));
-            },
-            child: Text('edit'),
+          InkWell(
+              onTap: () async {
+                Directory dir = await getExternalStorageDirectory();
+                String jsonDir = dir.path + '/jsons';
+                String jsonName = jsonDir +
+                    '/' +
+                    widget.imageFile.split('/').last.split('.').first +
+                    '.json';
+                await _getSelectables(jsonName);
+                data.newCanva = false;
+                data.currentEditImgPath = widget.imageFile;
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => EditRoute(),
+                ));
+              },
+              child: _buildButton('Edit')),
+          InkWell(
+            onTap: () => saveImage2Local(widget.imageFile),
+            child: _buildButton('Save'),
           ),
-          RaisedButton(
-            onPressed: () => saveImage2Local(widget.imageFile),
-            child: Text('save'),
-          ),
-          RaisedButton(
-            onPressed: () => setAswallPaper(context, widget.imageFile),
-            child: Text('set wallpaper'),
+          InkWell(
+            onTap: () => setAswallPaper(context, widget.imageFile),
+            child: _buildButton('Set wallpaper'),
           ),
         ],
       ),
     );
   }
 
-  _getSelectables(String name) async {
+  Widget _buildButton(String text) {
+    return Container(
+      height: 50,
+      alignment: Alignment.center,
+      margin: EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 30),
+      decoration: BoxDecoration(
+          border: Border(
+            right: BorderSide(
+              color: Colors.white,
+            ),
+          ),
+          color: Colors.black),
+      child: Text(
+        text,
+        style: TextStyle(color: Colors.white, fontSize: 18),
+      ),
+    );
+  }
+
+  Future<void> _getSelectables(String name) async {
     File file = File(name);
     String string = await file.readAsString();
     List<Map> list = (jsonDecode(string) as List).cast();
