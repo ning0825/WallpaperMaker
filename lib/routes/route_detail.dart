@@ -4,10 +4,10 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:wallpaper_maker/beans/selectable_bean.dart';
-import 'package:wallpaper_maker/inherit/inherited_config.dart';
+import 'package:wallpaper_maker/selectable_bean.dart';
+import 'package:wallpaper_maker/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_edit.dart';
-import 'package:wallpaper_maker/utils/utils.dart';
+import 'package:wallpaper_maker/utils.dart';
 
 class DetailRoute extends StatefulWidget {
   final File image;

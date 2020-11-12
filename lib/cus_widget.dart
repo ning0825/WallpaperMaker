@@ -1,7 +1,9 @@
 import 'dart:ui';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:wallpaper_maker/inherited_config.dart';
 
 enum MessageBoxDirection { left, right, top, bottom }
 
@@ -313,7 +315,6 @@ class PaletteRenderBox extends RenderBox {
             Offset(offset.dx + pieceWidth * j, offset.dy + pieceHeight * i) &
                 pieceSize + Offset(1, 1),
             Paint()..color = colorlist[j][100 * (10 - i)]);
-        print('R$i, C$j -> ' + colorlist[j][100 * (10 - i)].value.toString());
       }
     }
 
@@ -343,4 +344,218 @@ class PaletteRenderBox extends RenderBox {
 
   @override
   bool hitTestSelf(Offset position) => size.contains(position);
+}
+
+class CanvasPanel extends StatefulWidget {
+  final GlobalKey rKey;
+
+  CanvasPanel(this.rKey);
+
+  @override
+  _CanvasPanelState createState() => _CanvasPanelState();
+}
+
+class _CanvasPanelState extends State<CanvasPanel> {
+  double widgetHeight = 0;
+  ConfigWidgetState data;
+
+  @override
+  Widget build(BuildContext context) {
+    data = ConfigWidget.of(context);
+    return CanvasGestureDetector(
+      onTapDownCallback: data.handleTapDown,
+      onDragUpdateCallback: data.handleTapUpdate,
+      ondragEndCallback: data.handleTapEnd,
+      onScaleStartCallback: data.handleScaleStart,
+      onScaleUpdateCallback: data.handleScaleUpdate,
+      onScaleEndCallback: data.handleScaleEnd,
+      onTapUpCallback: data.handleTapUp,
+      child: Transform(
+        alignment: Alignment.center,
+        transform:
+            Matrix4.diagonal3Values(data.canvasScale, data.canvasScale, 1.0)
+              ..translate(data.canvasOffset.dx, data.canvasOffset.dy),
+        child: RepaintBoundary(
+          key: widget.rKey,
+          child: CustomPaint(
+            size: data.size,
+            painter: MyCanvas(data: data),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class MyCanvas extends CustomPainter {
+  ConfigWidgetState data;
+
+  MyCanvas({this.data});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.clipRect(
+      Rect.fromCenter(
+          center: Offset(size.width / 2, size.height / 2),
+          width: size.width,
+          height: size.height),
+    );
+
+    //draw background.
+    canvas.drawColor(data.getBackroundColor(), BlendMode.src);
+
+    //draw selectables.
+    for (var item in data.selectables) {
+      item.draw(canvas);
+    }
+    //draw select frame.
+    if (data.isSelectedMode) {
+      data.currentSelectable?.drawSelected(canvas);
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => oldDelegate != this;
+}
+
+class WidthPicker extends CustomPainter {
+  WidthPicker({this.width, this.color});
+
+  double width;
+  Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Path path = Path()
+      ..moveTo(0, size.height / 2)
+      ..conicTo(size.width / 4, 0, size.width / 2, size.height / 2, 1)
+      ..conicTo(
+          size.width / 4 * 3, size.height, size.width, size.height / 2, 1);
+    canvas.drawPath(
+        path,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = width);
+  }
+
+  @override
+  bool shouldRepaint(WidthPicker oldDelegate) => oldDelegate.width != width;
+}
+
+class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
+  GestureTapDownCallback onDown;
+  GestureDragUpdateCallback onUpdate;
+  GestureDragEndCallback onEnd;
+  // GestureScaleStartCallback onTransStart;
+  // GestureScaleUpdateCallback onTransUpdate;
+
+  Offset currentLocalPosition;
+  Offset currentGlobalPosition;
+
+  bool isTracking = false;
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    if (!isTracking) {
+      startTrackingPointer(event.pointer, event.transform);
+      isTracking = true;
+    }
+  }
+
+  @override
+  void handleEvent(PointerEvent event) {
+    currentLocalPosition =
+        PointerEvent.transformPosition(event.transform, event.position);
+    var localDelta = PointerEvent.transformDeltaViaPositions(
+        untransformedEndPosition: event.position,
+        untransformedDelta: event.delta,
+        transform: event.transform);
+
+    if (event is PointerDownEvent) {
+      invokeCallback('on tap down',
+          () => onDown(TapDownDetails(localPosition: currentLocalPosition)));
+    }
+
+    if (event is PointerMoveEvent) {
+      invokeCallback(
+        'on tap update',
+        () => onUpdate(
+          DragUpdateDetails(
+              localPosition: currentLocalPosition,
+              globalPosition: event.position,
+              delta: localDelta),
+        ),
+      );
+    }
+
+    if (event is PointerUpEvent) {
+      invokeCallback('on tap end', () => onEnd(DragEndDetails()));
+      isTracking = false;
+    }
+  }
+
+  @override
+  void didStopTrackingLastPointer(int pointer) {}
+
+  @override
+  String get debugDescription => throw UnimplementedError();
+}
+
+class CanvasGestureDetector extends StatelessWidget {
+  final GestureTapDownCallback onTapDownCallback;
+  final GestureDragUpdateCallback onDragUpdateCallback;
+  final GestureDragEndCallback ondragEndCallback;
+  final GestureScaleStartCallback onScaleStartCallback;
+  final GestureScaleUpdateCallback onScaleUpdateCallback;
+  final GestureScaleEndCallback onScaleEndCallback;
+  final GestureTapUpCallback onTapUpCallback;
+
+  final Widget child;
+
+  CanvasGestureDetector(
+      {this.child,
+      this.onScaleStartCallback,
+      this.onScaleUpdateCallback,
+      this.onScaleEndCallback,
+      this.onTapDownCallback,
+      this.onDragUpdateCallback,
+      this.ondragEndCallback,
+      this.onTapUpCallback});
+
+  @override
+  Widget build(BuildContext context) {
+    final Map<Type, GestureRecognizerFactory> gestures =
+        <Type, GestureRecognizerFactory>{};
+
+    gestures[TapGestureRecognizer] =
+        GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+            () => TapGestureRecognizer(), (TapGestureRecognizer instance) {
+      instance..onTapUp = onTapUpCallback;
+    });
+
+    gestures[CanvasGestureRecognizer] =
+        GestureRecognizerFactoryWithHandlers<CanvasGestureRecognizer>(
+            () => CanvasGestureRecognizer(),
+            (CanvasGestureRecognizer instance) {
+      instance
+        ..onDown = onTapDownCallback
+        ..onUpdate = onDragUpdateCallback
+        ..onEnd = ondragEndCallback;
+    });
+
+    gestures[ScaleGestureRecognizer] =
+        GestureRecognizerFactoryWithHandlers<ScaleGestureRecognizer>(
+            () => ScaleGestureRecognizer(), (ScaleGestureRecognizer instance) {
+      instance
+        ..onStart = onScaleStartCallback
+        ..onUpdate = onScaleUpdateCallback
+        ..onEnd = onScaleEndCallback;
+    });
+
+    return RawGestureDetector(
+      gestures: gestures,
+      child: child,
+    );
+  }
 }

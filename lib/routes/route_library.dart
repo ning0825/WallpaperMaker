@@ -2,11 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:wallpaper_maker/inherit/inherited_config.dart';
+
+import 'package:wallpaper_maker/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_create.dart';
 import 'package:wallpaper_maker/routes/route_detail.dart';
-import 'package:wallpaper_maker/utils/constants.dart';
-import 'package:wallpaper_maker/beans/selectable_bean.dart';
+import 'package:wallpaper_maker/selectable_bean.dart';
+import 'package:wallpaper_maker/utils.dart';
 
 class LibraryRoute extends StatefulWidget {
   @override
@@ -18,8 +19,6 @@ class _LibraryRouteState extends State<LibraryRoute> {
   String appFilePath;
 
   bool selectMode = false;
-
-  //Should del button be enable or diable.
   bool enableDelButton = false;
 
   ConfigWidgetState data;

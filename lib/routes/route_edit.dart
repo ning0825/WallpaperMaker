@@ -5,13 +5,11 @@ import 'dart:ui' as ui;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' hide Image;
 import 'package:image_picker/image_picker.dart';
-import 'package:wallpaper_maker/beans/selectable_bean.dart';
-import 'package:wallpaper_maker/cus_widgets/cus_painter.dart';
-import 'package:wallpaper_maker/inherit/constants.dart';
-import 'package:wallpaper_maker/inherit/inherited_config.dart';
+import 'package:wallpaper_maker/selectable_bean.dart';
+import 'package:wallpaper_maker/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_clip.dart';
-import 'package:wallpaper_maker/cus_widgets/cus_widget.dart';
-import 'package:wallpaper_maker/utils/utils.dart';
+import 'package:wallpaper_maker/cus_widget.dart';
+import 'package:wallpaper_maker/utils.dart';
 
 GlobalKey rpbKey = GlobalKey();
 BuildContext mContext;
@@ -103,6 +101,8 @@ class _EditRouteState extends State<EditRoute>
             ),
             Positioned(
               child: Container(
+                width: MediaQuery.of(context).size.width,
+                alignment: Alignment.centerLeft,
                 child: _buildAnimatedLeafTools(),
               ),
               bottom: data.bottom,
@@ -203,6 +203,7 @@ class _EditRouteState extends State<EditRoute>
           break;
         case LeafTool.shape_type:
           result = Row(
+            mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               IconButton(
                 onPressed: () => data.setShapeType(0),
@@ -233,21 +234,21 @@ class _EditRouteState extends State<EditRoute>
         case LeafTool.shape_style:
           result = Column(
             children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                alignment: Alignment.center,
-                width: MediaQuery.of(context).size.width - 36,
-                height: 30,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white, width: 2),
+              InkWell(
+                onTap: () => data.setShapeFillColor(Colors.transparent),
+                child: Container(
+                  alignment: Alignment.center,
+                  margin: EdgeInsets.only(bottom: 4.0),
+                  width: MediaQuery.of(context).size.width - 36,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: Text(
+                    'transparent',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
-                child: Text(
-                  'transparent',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              SizedBox(
-                height: 4,
               ),
               Container(
                 width: MediaQuery.of(context).size.width - 36,
@@ -276,11 +277,13 @@ class _EditRouteState extends State<EditRoute>
           break;
         case LeafTool.text_color:
           result = Container(
-            width: MediaQuery.of(context).size.width - 36,
-            child: PaletteWidget(onColorPick: (color) {
-              data.setTextColor(color);
-            }),
-          );
+              width: MediaQuery.of(context).size.width - 36,
+              child: PaletteWidget(
+                onColorPick: (color) {
+                  data.setTextColor(color);
+                },
+                selectColor: data.getTextColor(),
+              ));
           break;
         case LeafTool.text_weight:
           result = WidthWidget(toolNum: typoToolNum);
@@ -402,16 +405,18 @@ class _TopToolbarState extends State<TopToolbar> {
         children: [
           //Cancel select mode.
           IconButton(
+            color: Colors.white,
+            disabledColor: Colors.grey,
             icon: Icon(
               Icons.cancel_sharp,
-              color: Colors.white,
             ),
             onPressed: data.isSelectedMode ? data.setUnselected : null,
           ),
           IconButton(
+              color: Colors.white,
+              disabledColor: Colors.grey,
               icon: Icon(
                 Icons.fullscreen_exit,
-                color: Colors.white,
               ),
               onPressed: data.canvasScale > 1.0 ? data.exitScaleMode : null),
           IconButton(
@@ -583,8 +588,8 @@ class _BottomToolbarState extends State<BottomToolbar> {
       case MainTool.shape:
         result = [
           SubToolIconWidget(
-            akey: shapeTypeKey,
             icon: Padding(
+              key: shapeTypeKey,
               padding: EdgeInsets.all(6),
               child: _getShapeIcon(data.getShapeType()),
             ),
@@ -618,9 +623,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
                 width: 30,
                 height: 30,
                 decoration: BoxDecoration(
-                  color: data.getShapeStyle()
-                      ? data.getShapeFillColor()
-                      : Colors.transparent,
+                  color: data.getShapeFillColor(),
                   border: Border.all(color: data.getShapeColor(), width: 5),
                   borderRadius: BorderRadius.circular(20),
                 ),

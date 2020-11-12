@@ -4,7 +4,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:wallpaper_maker/utils/utils.dart';
+import 'package:wallpaper_maker/utils.dart';
 
 abstract class Selectable {
   Rect rect;
@@ -391,6 +391,7 @@ class SelectableTypo extends Selectable {
     _ts = TextSpan(
       text: text,
       style: TextStyle(
+          height: 0.8,
           color: textColor,
           fontSize: 30 + 5 * fontSize,
           fontFamily: fontFamily,
@@ -523,11 +524,10 @@ class SelectableShape extends Selectable {
     tmpTLOffset = Offset.zero;
     tmpTLOffset = Offset.zero;
 
-    fill = false;
     mPaint = paint;
     fillPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = mPaint.color;
+      ..color = Colors.transparent;
   }
 
   Map<String, dynamic> toJson() {
@@ -611,15 +611,11 @@ class SelectableShape extends Selectable {
         break;
       case 1:
         canvas.drawRect(rect, mPaint);
-        if (fill) {
-          canvas.drawRect(rect.deflate(mPaint.strokeWidth / 2), fillPaint);
-        }
+        canvas.drawRect(rect.deflate(mPaint.strokeWidth / 2), fillPaint);
         break;
       case 2:
         canvas.drawOval(rect, mPaint);
-        if (fill) {
-          canvas.drawOval(rect.deflate(mPaint.strokeWidth / 2), fillPaint);
-        }
+        canvas.drawOval(rect.deflate(mPaint.strokeWidth / 2), fillPaint);
         break;
       default:
     }

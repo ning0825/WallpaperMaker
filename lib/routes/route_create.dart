@@ -1,9 +1,9 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:wallpaper_maker/inherit/inherited_config.dart';
+import 'package:wallpaper_maker/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_edit.dart';
-import 'package:wallpaper_maker/utils/constants.dart';
+import 'package:wallpaper_maker/utils.dart';
 
 class CreateRoute extends StatefulWidget {
   @override

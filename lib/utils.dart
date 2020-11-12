@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:wallpaper_maker/utils/constants.dart';
+
+const herotag_libToCreate = 'tag_libToCreate';
+const app_external_path = '/storage/emulated/0/WallpaperMaker/';
 
 Future<void> saveImage(
     BuildContext context, GlobalKey key, double pixelRatio, String name) async {
