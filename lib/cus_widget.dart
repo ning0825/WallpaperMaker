@@ -1,15 +1,16 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:wallpaper_maker/inherited_config.dart';
 
 enum MessageBoxDirection { left, right, top, bottom }
 
-///A rectangular border with a triangle indicator at bottom.
-///
-///@param position: indicator's position.
+///A rectangular border with a triangle indicator at specific [position].
 class MessageBoxBorder extends OutlinedBorder {
   const MessageBoxBorder(
       {this.color,
@@ -19,11 +20,8 @@ class MessageBoxBorder extends OutlinedBorder {
   EdgeInsetsGeometry get dimensions => EdgeInsets.all(0.0);
 
   final Color color;
-
   final double position;
-
   final MessageBoxDirection direction;
-
   final double indicatorHeight = 10;
 
   @override
@@ -79,29 +77,131 @@ class MessageBoxBorder extends OutlinedBorder {
 
 typedef RotateCallback = void Function(double angle);
 
-///Rotate widget
-///
-///10dp 是 1 度
-class RotateWidget extends LeafRenderObjectWidget {
-  RotateWidget({this.rotateCallback, this.angle});
+class RotateControllerWidget extends StatefulWidget {
+  RotateControllerWidget({this.angle = 0.0, this.rotateCallback});
 
   final RotateCallback rotateCallback;
+  final double angle;
+  @override
+  _RotateControllerWidgetState createState() => _RotateControllerWidgetState();
+}
+
+class _RotateControllerWidgetState extends State<RotateControllerWidget>
+    with TickerProviderStateMixin {
+  Ticker ticker;
+  Simulation simulation;
+
+  double _angle;
+
+  AnimationController controller;
+  Tween<double> tween;
+  Animation animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _angle = -widget.angle;
+
+    controller =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 150));
+    tween = Tween();
+    animation =
+        tween.chain(CurveTween(curve: Curves.easeIn)).animate(controller);
+    animation.addListener(() {
+      _angle = animation.value;
+      if (_angle > 0) {
+        _angle = 0;
+      } else if (_angle < -360) {
+        _angle = -360;
+      }
+
+      widget.rotateCallback?.call(-_angle);
+    });
+
+    ticker = this.createTicker((elapsed) {
+      setState(() {
+        _angle += simulation.dx(elapsed.inMilliseconds / 1000) / 100 / 5;
+
+        if (_angle > 0) {
+          _angle = 0;
+        } else if (_angle < -360) {
+          _angle = -360;
+        }
+
+        widget.rotateCallback?.call(-_angle);
+      });
+      if (elapsed.inMilliseconds > 1000) {
+        tween.begin = _angle;
+        tween.end = _angle.round().toDouble();
+        controller.forward(from: 0.0);
+
+        ticker.stop(canceled: true);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      child: Container(
+        width: double.infinity,
+        height: 60,
+        child: RotateWidget(
+          angle: _angle,
+        ),
+      ),
+      onPanUpdate: (details) {
+        setState(() {
+          _angle += details.delta.dx / 5;
+          if (_angle > 0) {
+            _angle = 0;
+          } else if (_angle < -360) {
+            _angle = -360;
+          }
+
+          widget.rotateCallback?.call(-_angle);
+        });
+      },
+      onPanEnd: (details) {
+        ticker.stop(canceled: true);
+        simulation = SpringSimulation(
+            SpringDescription(damping: 1.5, mass: 0.5, stiffness: 0.2),
+            0.0,
+            0.0,
+            details.velocity.pixelsPerSecond.dx);
+
+        ticker.start();
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    ticker.dispose();
+    super.dispose();
+  }
+}
+
+///Rotate widget
+///
+class RotateWidget extends LeafRenderObjectWidget {
+  RotateWidget({this.angle});
+
   final double angle;
 
   @override
   RenderObject createRenderObject(BuildContext context) =>
-      RotateRenderBox(rotateCallback: this.rotateCallback, angle: this.angle);
+      RotateRenderBox(angle: this.angle);
 
   @override
   void updateRenderObject(
       BuildContext context, covariant RotateRenderBox renderObject) {
-    // renderObject.angle = this.angle;
+    renderObject.angle = this.angle;
   }
 }
 
 class RotateRenderBox extends RenderBox {
-  RotateRenderBox({this.rotateCallback, double angle}) {
-    this.angle = angle ?? 0;
+  RotateRenderBox({double angle}) {
     linePainter = Paint()
       ..color = Colors.white
       ..strokeWidth = 2.0
@@ -113,8 +213,10 @@ class RotateRenderBox extends RenderBox {
 
     linePath = Path();
 
-    frac = 0;
+    this.angle = angle;
   }
+
+  double get angle => _angle;
 
   double _angle;
   set angle(double ang) {
@@ -122,61 +224,63 @@ class RotateRenderBox extends RenderBox {
     markNeedsPaint();
   }
 
-  RotateCallback rotateCallback;
-
   double mainLength = 20;
+  double midLength = 15;
   double subLength = 10;
   //10dp表示1度
-  double subGap = 10;
+  double subGap = 5;
 
   Path linePath;
   Paint linePainter;
   Paint indicatorPainter;
 
-  double frac;
+  double minFrac;
+  double maxFrac;
 
   @override
   bool get sizedByParent => true;
 
   @override
-  void handleEvent(PointerEvent event, covariant BoxHitTestEntry entry) {
-    super.handleEvent(event, entry);
-    angle = _angle - event.delta.dx / subGap;
-    frac = (frac + event.delta.dx) % subGap;
-    rotateCallback(_angle);
-    markNeedsPaint();
-  }
-
-  @override
   void paint(PaintingContext context, Offset offset) {
     context.canvas.clipRect(offset & size);
 
-    for (int i = 0; i < (size.width - 20) / subGap; i++) {
-      var x = offset.dx + 10 + i * subGap;
+    for (int i = 0; i <= 360; i++) {
+      var x = offset.dx + i * subGap + angle * 5 + maxFrac;
 
       linePath.moveTo(x, offset.dy);
-      linePath.lineTo(x, offset.dy + subLength);
+      linePath.lineTo(
+          x,
+          offset.dy +
+              (i % 5 == 0
+                  ? i % 10 == 0
+                      ? mainLength
+                      : midLength
+                  : subLength));
 
-      var angle2Draw =
-          ((_angle.toInt() - size.width / subGap / 2 + i) % 360).toInt();
-      if (angle2Draw % 5 == 0) {
-        TextSpan ts = TextSpan(
-            text: angle2Draw.toString(), style: TextStyle(fontSize: 10));
+      if (i % 10 == 0) {
+        TextSpan ts =
+            TextSpan(text: i.toString(), style: TextStyle(fontSize: 10));
         TextPainter painter =
             TextPainter(text: ts, textDirection: TextDirection.ltr);
         painter.layout();
-        painter.paint(
-            context.canvas,
-            Offset(offset.dx + i * subGap + frac - painter.width / 2,
-                offset.dy + subLength));
+        painter.paint(context.canvas,
+            Offset(x - painter.width / 2, offset.dy + mainLength));
       }
     }
 
     context.canvas.drawPath(linePath, linePainter);
+    //draw indicator.
     context.canvas.drawLine(Offset(offset.dx + size.width / 2, offset.dy),
         Offset(offset.dx + size.width / 2, offset.dy + 60), indicatorPainter);
 
     linePath.reset();
+  }
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    maxFrac = size.width / 2;
+    minFrac = size.width / 2 - subGap * 360;
   }
 
   @override
@@ -362,25 +466,16 @@ class _CanvasPanelState extends State<CanvasPanel> {
   @override
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
-    return CanvasGestureDetector(
-      onTapDownCallback: data.handleTapDown,
-      onDragUpdateCallback: data.handleTapUpdate,
-      ondragEndCallback: data.handleTapEnd,
-      onScaleStartCallback: data.handleScaleStart,
-      onScaleUpdateCallback: data.handleScaleUpdate,
-      onScaleEndCallback: data.handleScaleEnd,
-      onTapUpCallback: data.handleTapUp,
-      child: Transform(
-        alignment: Alignment.center,
-        transform:
-            Matrix4.diagonal3Values(data.canvasScale, data.canvasScale, 1.0)
-              ..translate(data.canvasOffset.dx, data.canvasOffset.dy),
-        child: RepaintBoundary(
-          key: widget.rKey,
-          child: CustomPaint(
-            size: data.size,
-            painter: MyCanvas(data: data),
-          ),
+    return Transform(
+      alignment: Alignment.center,
+      transform:
+          Matrix4.diagonal3Values(data.canvasScale, data.canvasScale, 1.0)
+            ..translate(data.canvasOffset.dx, data.canvasOffset.dy),
+      child: RepaintBoundary(
+        key: widget.rKey,
+        child: CustomPaint(
+          size: data.size,
+          painter: MyCanvas(data: data),
         ),
       ),
     );
@@ -443,56 +538,87 @@ class WidthPicker extends CustomPainter {
   bool shouldRepaint(WidthPicker oldDelegate) => oldDelegate.width != width;
 }
 
+enum _PaintPointerState {
+  ///Waiting for pointer down event
+  ready,
+
+  ///Received down event and is in arena
+  possible,
+
+  ///Won in arena.
+  painting
+}
+
 class CanvasGestureRecognizer extends OneSequenceGestureRecognizer {
   GestureTapDownCallback onDown;
   GestureDragUpdateCallback onUpdate;
   GestureDragEndCallback onEnd;
-  // GestureScaleStartCallback onTransStart;
-  // GestureScaleUpdateCallback onTransUpdate;
 
   Offset currentLocalPosition;
   Offset currentGlobalPosition;
 
   bool isTracking = false;
 
+  int ptrNum = 0;
+
+  Timer timer;
+
+  _PaintPointerState state = _PaintPointerState.ready;
+
+  int startMs = 0;
+
   @override
   void addAllowedPointer(PointerDownEvent event) {
-    if (!isTracking) {
-      startTrackingPointer(event.pointer, event.transform);
-      isTracking = true;
-    }
+    ptrNum++;
+    startMs = event.timeStamp.inMilliseconds;
+    startTrackingPointer(event.pointer, event.transform);
   }
 
   @override
   void handleEvent(PointerEvent event) {
     currentLocalPosition =
         PointerEvent.transformPosition(event.transform, event.position);
-    var localDelta = PointerEvent.transformDeltaViaPositions(
-        untransformedEndPosition: event.position,
-        untransformedDelta: event.delta,
-        transform: event.transform);
 
-    if (event is PointerDownEvent) {
-      invokeCallback('on tap down',
-          () => onDown(TapDownDetails(localPosition: currentLocalPosition)));
-    }
+    if (event is PointerDownEvent && state == _PaintPointerState.ready)
+      state = _PaintPointerState.possible;
 
     if (event is PointerMoveEvent) {
-      invokeCallback(
-        'on tap update',
-        () => onUpdate(
-          DragUpdateDetails(
-              localPosition: currentLocalPosition,
-              globalPosition: event.position,
-              delta: localDelta),
-        ),
-      );
+      if (state == _PaintPointerState.possible) {
+        if (ptrNum == 1 && (event.timeStamp.inMilliseconds - startMs) > 20) {
+          state = _PaintPointerState.painting;
+          _invokeDown(event);
+          resolve(GestureDisposition.accepted);
+        }
+      } else if (state == _PaintPointerState.painting) {
+        _invokeUpdate(event);
+      }
     }
 
     if (event is PointerUpEvent) {
-      invokeCallback('on tap end', () => onEnd(DragEndDetails()));
-      isTracking = false;
+      if (state == _PaintPointerState.painting) {
+        invokeCallback('on painter end', () => onEnd(DragEndDetails()));
+        state = _PaintPointerState.ready;
+      }
+      ptrNum--;
     }
+  }
+
+  _invokeDown(PointerEvent event) {
+    var details = TapDownDetails(localPosition: currentLocalPosition);
+    invokeCallback('on painter down', () => onDown(details));
+  }
+
+  _invokeUpdate(PointerEvent event) {
+    var details = DragUpdateDetails(
+        localPosition: currentLocalPosition, globalPosition: event.position);
+    invokeCallback('on painter update', () => onUpdate(details));
+  }
+
+  @override
+  void rejectGesture(int pointer) {
+    stopTrackingPointer(pointer);
+    ptrNum = 0;
+    super.rejectGesture(pointer);
   }
 
   @override
@@ -513,15 +639,16 @@ class CanvasGestureDetector extends StatelessWidget {
 
   final Widget child;
 
-  CanvasGestureDetector(
-      {this.child,
-      this.onScaleStartCallback,
-      this.onScaleUpdateCallback,
-      this.onScaleEndCallback,
-      this.onTapDownCallback,
-      this.onDragUpdateCallback,
-      this.ondragEndCallback,
-      this.onTapUpCallback});
+  CanvasGestureDetector({
+    this.child,
+    this.onScaleStartCallback,
+    this.onScaleUpdateCallback,
+    this.onScaleEndCallback,
+    this.onTapDownCallback,
+    this.onDragUpdateCallback,
+    this.ondragEndCallback,
+    this.onTapUpCallback,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -530,32 +657,30 @@ class CanvasGestureDetector extends StatelessWidget {
 
     gestures[TapGestureRecognizer] =
         GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
-            () => TapGestureRecognizer(), (TapGestureRecognizer instance) {
-      instance..onTapUp = onTapUpCallback;
-    });
+            () => TapGestureRecognizer(),
+            (TapGestureRecognizer instance) =>
+                instance..onTapUp = onTapUpCallback);
 
     gestures[CanvasGestureRecognizer] =
         GestureRecognizerFactoryWithHandlers<CanvasGestureRecognizer>(
             () => CanvasGestureRecognizer(),
-            (CanvasGestureRecognizer instance) {
-      instance
-        ..onDown = onTapDownCallback
-        ..onUpdate = onDragUpdateCallback
-        ..onEnd = ondragEndCallback;
-    });
+            (CanvasGestureRecognizer instance) => instance
+              ..onDown = onTapDownCallback
+              ..onUpdate = onDragUpdateCallback
+              ..onEnd = ondragEndCallback);
 
     gestures[ScaleGestureRecognizer] =
         GestureRecognizerFactoryWithHandlers<ScaleGestureRecognizer>(
-            () => ScaleGestureRecognizer(), (ScaleGestureRecognizer instance) {
-      instance
-        ..onStart = onScaleStartCallback
-        ..onUpdate = onScaleUpdateCallback
-        ..onEnd = onScaleEndCallback;
-    });
+            () => ScaleGestureRecognizer(),
+            (ScaleGestureRecognizer instance) => instance
+              ..onStart = onScaleStartCallback
+              ..onUpdate = onScaleUpdateCallback
+              ..onEnd = onScaleEndCallback);
 
     return RawGestureDetector(
       gestures: gestures,
       child: child,
+      behavior: HitTestBehavior.opaque,
     );
   }
 }

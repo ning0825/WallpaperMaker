@@ -119,14 +119,14 @@ abstract class Selectable {
   }
 
   Paint _selectedPaint = Paint()
-    ..color = Colors.black
+    ..color = Colors.blue[200]
     ..strokeWidth = 2
     ..style = PaintingStyle.stroke;
 
   Paint _ctrlPaint = Paint()
-    ..color = Colors.black
+    ..color = Colors.blue[400]
     ..strokeWidth = 5
-    ..style = PaintingStyle.stroke;
+    ..style = PaintingStyle.fill;
 
   bool hitTest(Offset offset) =>
       selectedPath != null ? selectedPath.contains(offset) : false;
@@ -134,10 +134,10 @@ abstract class Selectable {
   void drawSelected(Canvas canvas) {
     if (isSelected) {
       canvas.drawPath(toDottedLinePath(selectedPath), _selectedPaint);
-      canvas.drawOval(tlControlRect, _ctrlPaint);
-      canvas.drawOval(trControlRect, _ctrlPaint);
-      canvas.drawOval(blControlRect, _ctrlPaint);
-      canvas.drawOval(brControlRect, _ctrlPaint);
+      canvas.drawRect(tlControlRect.deflate(3), _ctrlPaint);
+      canvas.drawRect(trControlRect.deflate(3), _ctrlPaint);
+      canvas.drawRect(blControlRect.deflate(3), _ctrlPaint);
+      canvas.drawRect(brControlRect.deflate(3), _ctrlPaint);
     }
   }
 
@@ -265,53 +265,66 @@ abstract class Selectable {
   }
 
   void handleCtrlUpdate(Offset localPosition) {
-    print('rotradians:' + rotRadians.toString());
+    int xPre = 1;
+    int yPre = 1;
 
-    //local > last ? 1 : -1;
-    int xPre = (currentControlPoint == 5 || currentControlPoint == 7) ? 1 : -1;
-    int yPre = (currentControlPoint == 6 || currentControlPoint == 7) ? 1 : -1;
-    // int xPre = localPosition.dx - lastPosition.dx >= 0 ? 1 : -1;
-    // int yPre = localPosition.dy - lastPosition.dy >= 0 ? 1 : -1;
+    int xPre2 = 1;
+    int yPre2 = 1;
 
-    // xPre = (localPosition.dx >= lastPosition.dx ? 1 : -1) * xPre;
-    // yPre = (localPosition.dy >= lastPosition.dy ? 1 : -1) * yPre;
+    if (currentControlPoint == 7) {
+      xPre = 1;
+      yPre = 1;
 
-    // scaleRadioX = tmpScaleX *
-    //     (xPre *
-    //             (localPosition.dx - lastPosition.dx) *
-    //             cos(rotRadians) /
-    //             rect.width /
-    //             tmpScaleX +
-    //         1);
-    // scaleRadioY = tmpScaleY *
-    //     (yPre *
-    //             (localPosition.dy - lastPosition.dy) *
-    //             (sin(rotRadians) == 0 ? 1 : sin(rotRadians)) /
-    //             rect.height /
-    //             tmpScaleY +
-    //         1);
+      xPre2 = 1;
+      yPre2 = -1;
+    }
 
-    scaleRadioX = tmpScaleX *
-        (xPre *
-                (localPosition - lastPosition).distance *
-                cos((localPosition - lastPosition).direction - rotRadians) /
-                rect.width /
-                tmpScaleX +
-            1);
-    scaleRadioY = tmpScaleY *
-        (yPre *
-                (localPosition.dy - lastPosition.dy) *
-                cos(rotRadians) /
-                rect.height /
-                tmpScaleY +
-            1);
+    if (currentControlPoint == 4) {
+      xPre = -1;
+      yPre = -1;
+
+      xPre2 = 1;
+      yPre2 = -1;
+    }
+
+    if (currentControlPoint == 5) {
+      xPre = 1;
+      yPre = -1;
+
+      yPre2 = -1;
+      xPre2 = 1;
+    }
+
+    if (currentControlPoint == 6) {
+      xPre = -1;
+      yPre = 1;
+
+      xPre2 = 1;
+      yPre2 = -1;
+    }
+
+    var wScale = 1 +
+        (localPosition - lastPosition).distance *
+            cos((localPosition - lastPosition).direction - rotRadians) /
+            (rect.width * tmpScaleX) *
+            xPre;
+    var hScale = 1 +
+        (localPosition - lastPosition).distance *
+            sin((localPosition - lastPosition).direction - rotRadians) /
+            (rect.height * tmpScaleY) *
+            yPre;
+
+    scaleRadioX = tmpScaleX * wScale;
+    scaleRadioY = tmpScaleY * hScale;
+
+    var wOffset = (rect.width) * tmpScaleX * (scaleRadioX / tmpScaleX - 1) / 2;
+    var hOffset = (rect.height) * tmpScaleY * (scaleRadioY / tmpScaleY - 1) / 2;
     offset = Offset(
-            xPre * rect.width * tmpScaleX * (scaleRadioX / tmpScaleX - 1) / 2,
-            yPre *
-                rect.height *
-                tmpScaleY *
-                (scaleRadioY / tmpScaleY - 1) /
-                2) +
+          xPre * wOffset * cos(rotRadians) +
+              yPre2 * yPre * hOffset * sin(rotRadians),
+          yPre * hOffset * cos(rotRadians) +
+              xPre2 * xPre * wOffset * sin(rotRadians),
+        ) +
         tmpOffset;
   }
 
@@ -559,7 +572,9 @@ class SelectableShape extends Selectable {
       ..tlOffset = Offset(map['tlOffsetX'], map['tlOffsetY'])
       ..brOffset = Offset(map['brOffsetX'], map['brOffsetY'])
       ..fill = map['fill']
-      ..fillPaint = fillPaint;
+      ..fillPaint = fillPaint
+      ..scaleRadioX = map['scaleRadioX']
+      ..scaleRadioY = map['scaleRadioY'];
   }
 
   @override

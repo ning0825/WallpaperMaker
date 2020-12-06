@@ -12,7 +12,6 @@ import 'package:wallpaper_maker/cus_widget.dart';
 import 'package:wallpaper_maker/utils.dart';
 
 GlobalKey rpbKey = GlobalKey();
-BuildContext mContext;
 
 GlobalKey backgroundBtKey = GlobalKey();
 
@@ -68,47 +67,67 @@ class _EditRouteState extends State<EditRoute>
 
   @override
   Widget build(BuildContext context) {
-    mContext = context;
     data = ConfigWidget.of(context);
 
     return SafeArea(
-      child: Scaffold(
-        body: Stack(
-          key: keyStack,
-          alignment: Alignment.center,
-          children: [
-            //Give size to this stack.
-            Container(
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.height,
-            ),
-            Positioned(
-              top: data.canvasTop,
-              bottom: data.canvasBottom,
-              child: CanvasPanel(rpbKey),
-            ),
-            Positioned(
-              top: 0,
-              child: TopToolbar(
-                key: topToolBarKey,
-              ),
-            ),
-            Positioned(
-              bottom: 0,
-              child: BottomToolbar(
-                key: bottomToolBarKey,
-              ),
-            ),
-            Positioned(
-              child: Container(
+      child: WillPopScope(
+        onWillPop: () {
+          data.reset();
+          return Future.value(true);
+        },
+        child: Scaffold(
+          body: Stack(
+            key: keyStack,
+            alignment: Alignment.center,
+            children: [
+              //Give size to this stack.
+              Container(
                 width: MediaQuery.of(context).size.width,
-                alignment: Alignment.centerLeft,
-                child: _buildAnimatedLeafTools(),
+                height: MediaQuery.of(context).size.height,
+                color: Colors.grey[200],
               ),
-              bottom: data.bottom,
-              top: data.top,
-            ),
-          ],
+              Positioned(
+                top: data.canvasTop,
+                bottom: data.canvasBottom,
+                child: CanvasGestureDetector(
+                  onTapDownCallback: data.handleTapDown,
+                  onDragUpdateCallback: data.handleTapUpdate,
+                  ondragEndCallback: data.handleTapEnd,
+                  onScaleStartCallback: data.handleScaleStart,
+                  onScaleUpdateCallback: data.handleScaleUpdate,
+                  onScaleEndCallback: data.handleScaleEnd,
+                  onTapUpCallback: data.handleTapUp,
+                  child: Container(
+                    width: MediaQuery.of(context).size.width,
+                    child: Center(
+                      child: CanvasPanel(rpbKey),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 0,
+                child: TopToolbar(
+                  key: topToolBarKey,
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                child: BottomToolbar(
+                  key: bottomToolBarKey,
+                ),
+              ),
+              Positioned(
+                child: Container(
+                  width: MediaQuery.of(context).size.width,
+                  alignment: Alignment.centerLeft,
+                  child: _buildAnimatedLeafTools(),
+                ),
+                bottom: data.bottom,
+                top: data.top,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -323,13 +342,9 @@ class _EditRouteState extends State<EditRoute>
           );
           break;
         case LeafTool.rotate:
-          result = Container(
-            width: MediaQuery.of(context).size.width,
-            height: 110,
-            child: RotateWidget(
-              angle: data.getCurrentRotation(),
-              rotateCallback: (angle) => data.rotate(angle),
-            ),
+          result = RotateControllerWidget(
+            angle: data.getCurrentRotation(),
+            rotateCallback: (angle) => data.rotate(angle),
           );
           break;
         default:
@@ -350,7 +365,7 @@ class TopToolbar extends StatefulWidget {
   _TopToolbarState createState() => _TopToolbarState();
 }
 
-class _TopToolbarState extends State<TopToolbar> {
+class _TopToolbarState extends State<TopToolbar> with TickerProviderStateMixin {
   ConfigWidgetState data;
 
   OverlayEntry entry;
@@ -360,35 +375,74 @@ class _TopToolbarState extends State<TopToolbar> {
     super.initState();
 
     entry = OverlayEntry(builder: (context) {
-      return Positioned(
-          top: MediaQuery.of(context).size.height * 0.5,
-          child: Container(
-            width: MediaQuery.of(context).size.width,
-            alignment: Alignment.center,
-            child: Container(
-              width: 200,
-              height: 200,
-              color: Colors.grey,
-              alignment: Alignment.center,
-              child: FutureBuilder(
-                future: saveBoard(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    _removeEntry();
-                    return Material(
-                      type: MaterialType.transparency,
-                      child: Text(
-                        'save success',
-                      ),
-                    );
-                  } else {
-                    return CircularProgressIndicator();
-                  }
-                },
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        child: Material(
+          type: MaterialType.transparency,
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0),
+            child: Center(
+              child: Container(
+                width: 100,
+                height: 100,
+                color: Colors.black,
+                alignment: Alignment.center,
+                child: FutureBuilder(
+                  future: saveBoard(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.done) {
+                      _removeEntry();
+                      return Icon(
+                        Icons.done,
+                        color: Colors.white,
+                      );
+                    } else {
+                      return CircularProgressIndicator(
+                        valueColor:
+                            Tween<Color>(begin: Colors.white, end: Colors.red)
+                                .animate(AnimationController(vsync: this)),
+                      );
+                    }
+                  },
+                ),
               ),
             ),
-          ));
+          ),
+        ),
+      );
     });
+  }
+
+  void _showSaveDialog() {
+    Overlay.of(context).insert(entry);
+  }
+
+  Future<int> saveBoard() async {
+    List<Map<String, dynamic>> list = [
+      {
+        'background': {'background': data.getBackroundColor().value}
+      }
+    ];
+    data.selectables.forEach((element) {
+      list.add({element.runtimeType.toString(): element});
+    });
+
+    if (!data.newCanva) {
+      await SelectableImageFile(imgPath: data.currentEditImgPath).delete();
+    }
+
+    String jsonString = jsonEncode(list);
+    String name = DateTime.now().millisecondsSinceEpoch.toString();
+    await saveImage(rpbKey, data.size2Save.width / data.size.width, name);
+    await saveJson(name, jsonString);
+    return 0;
+  }
+
+  _removeEntry() async {
+    await Future.delayed(Duration(seconds: 1))
+        .then((value) => Navigator.popUntil(context, ModalRoute.withName('/')));
+    data.reset();
+    entry.remove();
   }
 
   @override
@@ -403,6 +457,15 @@ class _TopToolbarState extends State<TopToolbar> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          // IconButton(
+          //   icon: Image.asset(
+          //     'assets/icons/eraser.png',
+          //     width: 20,
+          //     height: 20,
+          //     color: Colors.white,
+          //   ),
+          //   onPressed: () => data.setCurrentMainTool(MainTool.eraser),
+          // ),
           //Cancel select mode.
           IconButton(
             color: Colors.white,
@@ -457,9 +520,10 @@ class _TopToolbarState extends State<TopToolbar> {
           //clear
           IconButton(
             icon: Image.asset(
-              'assets/icons/trash.png',
+              'assets/icons/clear.png',
               width: 20,
               height: 20,
+              color: Colors.white,
             ),
             onPressed: () => data.clean(),
           ),
@@ -470,45 +534,13 @@ class _TopToolbarState extends State<TopToolbar> {
               height: 20,
             ),
             onPressed: () {
-              _showSaveDialog(context);
+              data.setUnselected();
+              _showSaveDialog();
             },
           ),
         ],
       ),
     );
-  }
-
-  void _showSaveDialog(BuildContext context) {
-    Overlay.of(context).insert(entry);
-  }
-
-  Future<int> saveBoard() async {
-    List<Map<String, dynamic>> list = [
-      {
-        'background': {'background': data.getBackroundColor().value}
-      }
-    ];
-    data.selectables.forEach((element) {
-      list.add({element.runtimeType.toString(): element});
-    });
-
-    if (!data.newCanva) {
-      await SelectableImageFile(imgPath: data.currentEditImgPath).delete();
-    }
-
-    String jsonString = jsonEncode(list);
-    String name = DateTime.now().millisecondsSinceEpoch.toString();
-    await saveImage(
-        mContext, rpbKey, data.size2Save.width / data.size.width, name);
-    await saveJson(name, jsonString);
-    data.reset();
-    return 0;
-  }
-
-  _removeEntry() async {
-    await Future.delayed(Duration(seconds: 1))
-        .then((value) => Navigator.popUntil(context, ModalRoute.withName('/')));
-    entry.remove();
   }
 }
 
@@ -573,7 +605,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
           SubToolIconWidget(
             akey: penWidthKey,
             icon: Text(
-              data.getPenWidth().truncate().toString(),
+              data.getPenWidth().toStringAsFixed(1).toString(),
               style: TextStyle(color: Colors.white, fontSize: 20),
             ),
             onPressed: () {
@@ -637,7 +669,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
           SubToolIconWidget(
             akey: shapeWidthKey,
             icon: Text(
-              data.getShapeWidth().toInt().toString(),
+              data.getShapeWidth().toStringAsFixed(1).toString(),
               style: TextStyle(color: Colors.white, fontSize: 20),
             ),
             onPressed: () {

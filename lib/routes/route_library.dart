@@ -1,6 +1,9 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:wallpaper_maker/inherited_config.dart';
@@ -61,6 +64,7 @@ class _LibraryRouteState extends State<LibraryRoute> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: CustomScrollView(
+          primary: true,
           physics: BouncingScrollPhysics(),
           slivers: <Widget>[
             SliverAppBar(
@@ -104,12 +108,25 @@ class _LibraryRouteState extends State<LibraryRoute> {
                   child: Center(
                     child: IconButton(
                       onPressed: enableDelButton
-                          ? () async {
-                              for (var item in data.cacheImgFiles) {
-                                if (item.isSelected) await item.delete();
-                              }
-                              data.cacheImgFiles.clear();
-                              setState(() {});
+                          ? () {
+                              showGeneralDialog(
+                                  context: context,
+                                  pageBuilder: (_, a1, a2) {
+                                    return AlertDialog(
+                                      title: Text('Delete'),
+                                      content: Text(
+                                          'Delete all you have selected? This operation can not be undo.'),
+                                      actions: [
+                                        FlatButton(
+                                            onPressed: () =>
+                                                Navigator.of(_).pop(),
+                                            child: Text('Cancel')),
+                                        FlatButton(
+                                            onPressed: () => _deleteSelected(_),
+                                            child: Text('OK')),
+                                      ],
+                                    );
+                                  });
                             }
                           : null,
                       icon: Icon(
@@ -158,6 +175,17 @@ class _LibraryRouteState extends State<LibraryRoute> {
     );
   }
 
+  _deleteSelected(BuildContext context) async {
+    for (var item in data.cacheImgFiles) {
+      if (item.isSelected) await item.delete();
+    }
+    data.cacheImgFiles.clear();
+    setState(() {});
+
+    Navigator.of(context).pop();
+    selectMode = false;
+  }
+
   bool _hasImageSelected() {
     for (var item in data.cacheImgFiles) {
       if (item.isSelected) {
@@ -189,8 +217,8 @@ class _LibraryRouteState extends State<LibraryRoute> {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => DetailRoute(
-                              image: File(data.cacheImgFiles[index].imgPath),
-                              heroTag: 'image$index',
+                              images: data.cacheImgFiles,
+                              imageIndex: index,
                             ),
                           ),
                         );
@@ -200,16 +228,13 @@ class _LibraryRouteState extends State<LibraryRoute> {
                       margin: EdgeInsets.all(4),
                       decoration: BoxDecoration(
                           color: Colors.white,
-                          border: selectMode
-                              ? data.cacheImgFiles[index].isSelected
+                          border:
+                              selectMode && data.cacheImgFiles[index].isSelected
                                   ? Border.all(color: Colors.black, width: 2)
-                                  : null
-                              : null),
+                                  : null),
                       padding: EdgeInsets.all(8.0),
-                      child: Hero(
-                          tag: 'image$index',
-                          child: Image.file(
-                              File(data.cacheImgFiles[index].imgPath))),
+                      child:
+                          Image.file(File(data.cacheImgFiles[index].imgPath)),
                     ),
                   );
                 },
@@ -221,7 +246,7 @@ class _LibraryRouteState extends State<LibraryRoute> {
               child: Align(
                   alignment: Alignment.topCenter,
                   child: Container(
-                    padding: EdgeInsets.only(top: 100),
+                    padding: EdgeInsets.only(top: 200),
                     width: 200,
                     child: Text(
                       'No wallpaper in your library, click + button below to create one.',

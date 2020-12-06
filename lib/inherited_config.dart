@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -7,7 +8,7 @@ import 'package:wallpaper_maker/selectable_bean.dart';
 import 'package:wallpaper_maker/cus_widget.dart';
 import 'configuration.dart';
 
-enum MainTool { background, pen, shape, text, image, more }
+enum MainTool { background, pen, shape, text, image, more, eraser }
 
 enum LeafTool {
   backgroundColor,
@@ -68,6 +69,7 @@ class ConfigWidgetState extends State<ConfigWidget>
   Offset canvasOffset = Offset.zero;
   bool isCanvasScaling;
   double maxCanvasScale = 5.0;
+  double mincanvasScale = 0.5;
 
   var tmpScaleX;
   var tmpScaleY;
@@ -117,8 +119,8 @@ class ConfigWidgetState extends State<ConfigWidget>
     setState(() {
       currentMainTool = mainTool;
 
-      if (mainTool == MainTool.pen) _config.currentMode = 0;
-      if (mainTool == MainTool.shape) _config.currentMode = 1;
+      // if (mainTool == MainTool.pen) _config.currentMode = 0;
+      // if (mainTool == MainTool.shape) _config.currentMode = 1;
     });
   }
 
@@ -139,17 +141,27 @@ class ConfigWidgetState extends State<ConfigWidget>
   }
 
   undo() {
-    stackIndex--;
-    if (stackIndex < 0) {
-      stackIndex = 0;
-    }
-    selectables = selectableStack[stackIndex];
+    if (selectableStack.length == 1) return;
+    selectableStack.removeLast();
+    stackIndex = selectableStack.length - 1;
+    //selectables = selectableStack.last;
+    selectables = selectableStack.last.map((e) => e).toList();
     setState(() {});
+    assert(() {
+      print('selectableStack.length:' + selectableStack.length.toString());
+      print('currentStackIndex:' + stackIndex.toString());
+      return true;
+    }());
   }
 
   pushToStack() {
-    selectableStack.add([]..addAll(selectables));
+    selectableStack.add(selectables.map((e) => e).toList());
     stackIndex = selectableStack.length - 1;
+    assert(() {
+      print(
+          'pushToStack: selectableStack.first.length-> ${selectableStack.first.length}');
+      return true;
+    }());
   }
 
   //---------------------------------------------------------------------------------
@@ -158,8 +170,8 @@ class ConfigWidgetState extends State<ConfigWidget>
   addSelectable(Selectable selectable) {
     setState(() {
       selectables.add(selectable);
+      pushToStack();
     });
-    pushToStack();
   }
 
   setSelected(int index) {
@@ -205,7 +217,6 @@ class ConfigWidgetState extends State<ConfigWidget>
       selectables.removeAt(selectedIndex);
       isSelectedMode = false;
     });
-    pushToStack();
   }
 
   setUnselected() {
@@ -301,7 +312,7 @@ class ConfigWidgetState extends State<ConfigWidget>
   }
 
   double getCurrentRotation() {
-    return currentSelectable?.rotRadians;
+    return currentSelectable?.rotRadians * 180 / pi;
   }
 
   //---------------------------------------------------------------------------------
@@ -311,7 +322,6 @@ class ConfigWidgetState extends State<ConfigWidget>
     setState(() {
       selectables.clear();
       isSelectedMode = false;
-      pushToStack();
     });
   }
 
@@ -455,7 +465,7 @@ class ConfigWidgetState extends State<ConfigWidget>
       String text, Offset offset, double maxWidth) {
     return SelectableTypo(text: text, mOffset: offset, maxWidth: maxWidth)
       ..textColor = _config.textColor
-      ..textWeight = 3;
+      ..textWeight = _config.typoWeight;
   }
 
   setText(String text) {
@@ -519,6 +529,8 @@ class ConfigWidgetState extends State<ConfigWidget>
     });
   }
 
+  bool hasUpdate = false;
+
   handleTapDown(TapDownDetails details) {
     var localPos = _getUntransformedPosition(details.localPosition);
 
@@ -534,19 +546,12 @@ class ConfigWidgetState extends State<ConfigWidget>
         currentSelectable.handleMoveStart(localPos);
       }
     } else {
-      var localPosition = Offset(
-          size.width / 2 -
-              (size.width / 2 - localPos.dx) / canvasScale -
-              canvasOffset.dx,
-          size.height / 2 -
-              (size.height / 2 - localPos.dy) / canvasScale -
-              canvasOffset.dy);
-      switch (_config.currentMode) {
-        case 0:
+      switch (currentMainTool) {
+        case MainTool.pen:
           addSelectable(SelectablePath(getCurrentPen())
-            ..moveTo(localPosition.dx, localPosition.dy));
+            ..moveTo(localPos.dx, localPos.dy));
           break;
-        case 1:
+        case MainTool.shape:
           addSelectable(
             SelectableShape(
               startPoint: Offset(localPos.dx, localPos.dy),
@@ -563,15 +568,23 @@ class ConfigWidgetState extends State<ConfigWidget>
 
   bool lastRemoved = false;
 
-  Offset _getUntransformedPosition(Offset localPosition) => Offset(
-      size.width / 2 -
-          (size.width / 2 - localPosition.dx) / canvasScale -
-          canvasOffset.dx,
-      size.height / 2 -
-          (size.height / 2 - localPosition.dy) / canvasScale -
-          canvasOffset.dy);
+  Offset _getUntransformedPosition(Offset localPosition) {
+    var localPos = Offset(
+        localPosition.dx -
+            (window.physicalSize.width / window.devicePixelRatio - size.width) /
+                2,
+        localPosition.dy);
+    return Offset(
+        size.width / 2 -
+            (size.width / 2 - localPos.dx) / canvasScale -
+            canvasOffset.dx,
+        size.height / 2 -
+            (size.height / 2 - localPos.dy) / canvasScale -
+            canvasOffset.dy);
+  }
 
   handleTapUpdate(DragUpdateDetails details) {
+    hasUpdate = true;
     var localPosition = _getUntransformedPosition(details.localPosition);
 
     setState(() {
@@ -583,47 +596,32 @@ class ConfigWidgetState extends State<ConfigWidget>
           currentSelectable.handleMoveUpdate(localPosition);
         }
       } else {
-        if (isScalingCanvas && !lastRemoved) {
-          selectables.removeLast();
-          lastRemoved = true;
-        } else if (!isScalingCanvas) {
-          switch (_config.currentMode) {
-            case 0:
-              (selectables[selectables.length - 1] as SelectablePath)
-                  .lineTo(localPosition.dx, localPosition.dy);
-              break;
-            case 1:
-              (selectables[selectables.length - 1] as SelectableShape)
-                  .endPoint = Offset(localPosition.dx, localPosition.dy);
-              break;
-            default:
-              break;
-          }
+        switch (currentMainTool) {
+          case MainTool.pen:
+            (selectables[selectables.length - 1] as SelectablePath)
+                .lineTo(localPosition.dx, localPosition.dy);
+            break;
+          case MainTool.shape:
+            (selectables[selectables.length - 1] as SelectableShape).endPoint =
+                Offset(localPosition.dx, localPosition.dy);
+            break;
+          default:
+            break;
         }
       }
     });
   }
 
   handleTapEnd(DragEndDetails details) {
-    if (isSelectedMode) {
+    if (isSelectedMode && hasUpdate) {
       currentSelectable.handleCtrlOrMoveEnd();
-    } else if (selectables.last.rect == null ||
-        selectables.last.rect.width < 2) {
-      selectables.removeLast();
-      setState(() {});
+      hasUpdate = false;
     }
 
-    if (isScalingCanvas) {
-      isScalingCanvas = false;
-      lastRemoved = false;
-
-      if (canvasScale < 1.0) {
-        scaleTween.begin = canvasScale;
-        scaleController.forward(from: 0.0);
-
-        transTween.begin = canvasOffset;
-        transController.forward(from: 0.0);
-      }
+    if (selectables.last.rect == null || selectables.last.rect.width < 1) {
+      selectableStack.removeLast();
+      selectedIndex = selectableStack.length - 1;
+      selectables.removeLast();
     }
   }
 
@@ -637,6 +635,12 @@ class ConfigWidgetState extends State<ConfigWidget>
       tmpScaleX = currentSelectable.scaleRadioX;
       tmpScaleY = currentSelectable.scaleRadioY;
       tmpRadius = currentSelectable.rotRadians;
+
+      currentSelectable.isMoving = true;
+      if (currentSelectable.isMoving) {
+        currentSelectable.handleMoveStart(
+            _getUntransformedPosition(details.localFocalPoint));
+      }
     } else {
       tmpFocal = details.localFocalPoint;
     }
@@ -649,7 +653,7 @@ class ConfigWidgetState extends State<ConfigWidget>
         currentSelectable.scaleRadioX = tmpScaleX * details.scale;
         currentSelectable.scaleRadioY = tmpScaleY * details.scale;
 
-        //Rotation
+        //Rotate
         if (rotFlag == 0 && details.rotation.abs() > pi / 18) {
           rotFlag = details.rotation >= 0 ? 1 : -1;
         }
@@ -660,11 +664,19 @@ class ConfigWidgetState extends State<ConfigWidget>
           currentSelectable.tmpAngle =
               details.rotation + tmpRadius - pi / 18 * rotFlag;
         }
+
+        if (currentSelectable.isMoving) {
+          currentSelectable.handleMoveUpdate(
+              _getUntransformedPosition(details.localFocalPoint));
+        }
       } else if (!isSelectedMode && details.scale != 1.0) {
         canvasScale = tmpCanvasScale * details.scale;
-        canvasOffset = tmpCanvasOffset + (details.localFocalPoint - tmpFocal);
+        canvasOffset =
+            (tmpCanvasOffset + (details.localFocalPoint - tmpFocal)) /
+                canvasScale;
 
         if (canvasScale > maxCanvasScale) canvasScale = maxCanvasScale;
+        if (canvasScale < mincanvasScale) canvasScale = mincanvasScale;
 
         isScalingCanvas = true;
       }
@@ -672,9 +684,23 @@ class ConfigWidgetState extends State<ConfigWidget>
   }
 
   handleScaleEnd(ScaleEndDetails details) {
+    if (isScalingCanvas) {
+      isScalingCanvas = false;
+      lastRemoved = false;
+
+      if (canvasScale < 1.0) {
+        scaleTween.begin = canvasScale;
+        scaleController.forward(from: 0.0);
+
+        transTween.begin = canvasOffset;
+        transController.forward(from: 0.0);
+      }
+    }
+
     rotFlag = 0;
     tmpCanvasScale = canvasScale;
     tmpCanvasOffset = canvasOffset;
+    currentSelectable?.isMoving = false;
   }
 
   handleTapUp(TapUpDetails details) {
@@ -683,10 +709,6 @@ class ConfigWidgetState extends State<ConfigWidget>
     if (!leafToolOffstage) {
       hideLeafTool();
       return;
-    }
-
-    if (selectables.last.selectedPath == null) {
-      selectables.removeLast();
     }
 
     var newSelectables = selectables.reversed;
@@ -826,7 +848,6 @@ class ConfigWidgetState extends State<ConfigWidget>
   _init() {
     _config = Configuration()
       ..bgColor = Colors.white
-      ..currentMode = 0
       ..penColor = Colors.black
       ..penWidth = 5
       ..shapeType = 0
@@ -856,6 +877,7 @@ class ConfigWidgetState extends State<ConfigWidget>
 
     selectableStack = [];
     cacheImgFiles = [];
+
     pushToStack();
   }
 

@@ -29,7 +29,7 @@ class _CreateRouteState extends State<CreateRoute>
 
   AnimationController controller;
 
-  static const inputDeco = const InputDecoration(
+  var inputDeco = const InputDecoration(
       focusedBorder: UnderlineInputBorder(borderSide: BorderSide()));
 
   @override

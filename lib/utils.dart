@@ -11,8 +11,7 @@ import 'package:path_provider/path_provider.dart';
 const herotag_libToCreate = 'tag_libToCreate';
 const app_external_path = '/storage/emulated/0/WallpaperMaker/';
 
-Future<void> saveImage(
-    BuildContext context, GlobalKey key, double pixelRatio, String name) async {
+Future<void> saveImage(GlobalKey key, double pixelRatio, String name) async {
   RenderRepaintBoundary boundary = key.currentContext.findRenderObject();
   ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
 
@@ -27,8 +26,6 @@ Future<void> saveImage(
     file.createSync();
   }
   file.writeAsBytesSync(sourceBytes);
-  // await showToast(context: context, msg: 'success');
-  // Navigator.popUntil(context, ModalRoute.withName('/'));
 }
 
 //保存用户添加到画板的图片，供二次编辑
@@ -52,8 +49,8 @@ Future<ui.Image> getImgObject(String name) async {
       .then((value) => value.getNextFrame().then((value) => value.image));
 }
 
-Future<void> showToast(
-    {@required BuildContext context, String msg, Widget child}) async {
+Future<void> showToast(BuildContext context,
+    [String msg = '', Duration duration = const Duration(seconds: 2)]) async {
   OverlayEntry overlayEntry = OverlayEntry(
       builder: (context) {
         return Positioned(
@@ -66,8 +63,11 @@ Future<void> showToast(
                   width: 100,
                   height: 50,
                   alignment: Alignment.center,
-                  color: Colors.yellow,
-                  child: Text(msg)),
+                  color: Colors.black,
+                  child: Text(
+                    msg,
+                    style: TextStyle(color: Colors.white),
+                  )),
             ),
           ),
         );
@@ -84,22 +84,22 @@ Future<void> showToast(
 Future<void> setAswallPaper(BuildContext context, String path) async {
   const platform = MethodChannel('example.wallpaper_maker/wallpaper');
   await platform.invokeMethod('setAsWallpaper', {'path': path});
-  showToast(context: context, msg: 'set success');
+  showToast(context, 'set success');
 }
 
 ///Save the image to internal storage
 ///
 ///This function copy the image from /storage/emulated/0/Android/data/com.example.wallpaper_maker/files/example.png
 ///to /storage/emulated/0/WallpaperMaker/example.png
-Future<void> saveImage2Local(String path) async {
+Future<void> saveImage2Local(BuildContext context, String path) async {
   File file = File(path);
   Directory dir = Directory(app_external_path);
   if (!await dir.exists()) {
     await dir.create();
   }
   File newFile = await file.copy(app_external_path + path.split('/').last);
-
   refreshMedia(newFile.path);
+  showToast(context, 'Saved');
 }
 
 //Refresh system media library to make image visiable in the gallery.

@@ -67,6 +67,9 @@ flutter:
     - assets/icons/typo_input.png
     - assets/icons/image_crop.png
     - assets/icons/image_pick.png
+    - assets/icons/eraser.png
+    - assets/icons/selectall.png
+    - assets/icons/clear.png
 
 
   fonts:

@@ -7,7 +7,7 @@ class Configuration {
   ///1: shape
   ///2: typo
   ///3: image
-  int currentMode;
+  // int currentMode;
 
   //Background color
   Color bgColor;

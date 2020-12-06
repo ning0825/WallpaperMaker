@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wallpaper_maker/selectable_bean.dart';
@@ -9,11 +10,16 @@ import 'package:wallpaper_maker/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_edit.dart';
 import 'package:wallpaper_maker/utils.dart';
 
-class DetailRoute extends StatefulWidget {
-  final File image;
-  final String heroTag;
+class HitCorner {
+  double scale = 1.0;
+  Offset offset = Offset.zero;
+}
 
-  DetailRoute({this.image, this.heroTag});
+class DetailRoute extends StatefulWidget {
+  final List<SelectableImageFile> images;
+  final int imageIndex;
+
+  DetailRoute({this.images, this.imageIndex});
   @override
   _DetailRouteState createState() => _DetailRouteState();
 }
@@ -36,10 +42,10 @@ class _DetailRouteState extends State<DetailRoute>
 
   bool isButtonShow = true;
 
-  double scale = 1.0;
+  // double scale = 1.0;
   double tmpScale = 1.0;
 
-  Offset offset = Offset.zero;
+  // Offset offset = Offset.zero;
   Offset tmpOffset = Offset.zero;
   Offset startPoint;
 
@@ -47,6 +53,15 @@ class _DetailRouteState extends State<DetailRoute>
 
   List<Selectable> selectables;
   ConfigWidgetState data;
+
+  PageController _pageController;
+  int currentImage;
+
+  HitCorner corner;
+
+//Scale and offset data for all images.
+  List<double> scales;
+  List<Offset> offsets;
 
   @override
   void initState() {
@@ -71,8 +86,9 @@ class _DetailRouteState extends State<DetailRoute>
         scaleAnimController.drive(CurveTween(curve: Curves.easeIn));
     scaleAnimation.addListener(() {
       setState(() {
-        scale = scaleTween.evaluate(scaleAnimation);
-        tmpScale = scale;
+        scales[currentImage] = scaleTween.evaluate(scaleAnimation);
+        tmpScale = scales[currentImage];
+        corner.scale = scales[currentImage];
       });
     });
 
@@ -82,16 +98,145 @@ class _DetailRouteState extends State<DetailRoute>
     transAnimation = transTween.animate(transAnimController);
     transAnimation.addListener(() {
       setState(() {
-        offset = transAnimation.value;
-        tmpOffset = offset;
+        offsets[currentImage] = transAnimation.value;
+        tmpOffset = offsets[currentImage];
+        corner.offset = offsets[currentImage];
       });
     });
+
+    _pageController = PageController(initialPage: widget.imageIndex);
+
+    currentImage = widget.imageIndex;
+
+    corner = HitCorner();
+
+    scales = List.filled(widget.images.length, 1.0);
+    offsets = List.filled(widget.images.length, Offset.zero);
+  }
+
+  get backBar => SlideTransition(
+        position: backSlideAnimation,
+        child: Opacity(
+          opacity: 0.7,
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 2.0),
+            child: Container(
+              alignment: Alignment.centerLeft,
+              width: MediaQuery.of(context).size.width,
+              height: 60,
+              color: Colors.black,
+              child: IconButton(
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ),
+        ),
+      );
+
+  Widget _buildGestureDetector(Widget child) {
+    return ImageGestureDetector(
+      onTap: () {
+        isButtonShow ? controller.forward() : controller.reverse();
+        isButtonShow = !isButtonShow;
+      },
+      onDoubleTap: () {
+        if (scales[currentImage] == 1.0) {
+          scaleTween.end = 5.0;
+          scaleAnimController.forward(from: 0.0);
+        } else if (scales[currentImage] > 1.0) {
+          scaleTween.end = scales[currentImage];
+          scaleAnimController.reverse(from: scales[currentImage]);
+
+          if (offsets[currentImage].distance > 0) {
+            transTween.begin = offsets[currentImage];
+            transTween.end = Offset.zero;
+            transAnimController.forward(from: 0.0);
+          }
+        }
+      },
+      onScaleStart: (details) => startPoint = details.localFocalPoint,
+      onScaleUpdate: (details) {
+        if (details.scale == 1.0) {
+          offsets[currentImage] =
+              tmpOffset + (details.localFocalPoint - startPoint);
+        } else {
+          scales[currentImage] = tmpScale * details.scale;
+        }
+
+        corner
+          ..offset = offsets[currentImage]
+          ..scale = scales[currentImage];
+
+        setState(() {});
+      },
+      onScaleEnd: (details) {
+        if (scales[currentImage] < 1.0) {
+          scaleTween.begin = scales[currentImage];
+          scaleTween.end = 1;
+          scaleAnimController.forward(from: scales[currentImage]);
+        }
+
+        if (offsets[currentImage].distance >
+            Offset(size.width * (scales[currentImage] - 1) / 2,
+                    size.height * (scales[currentImage] - 1) / 2)
+                .distance) {
+          transTween.begin = offsets[currentImage];
+          transTween.end = Offset.zero;
+          transAnimController.forward(from: 0.0);
+        }
+        tmpScale = scales[currentImage];
+        tmpOffset = offsets[currentImage];
+      },
+      corner: corner,
+      child: child,
+    );
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     size = MediaQuery.of(context).size;
+    _pageController.addListener(() {
+      if (_pageController.offset % size.width == 0) {
+        int tmpIndex = (_pageController.offset / size.width).floor();
+        if (tmpIndex != currentImage) {
+          scales[currentImage] = 1.0;
+          offsets[currentImage] = Offset.zero;
+          currentImage = tmpIndex;
+          corner
+            ..scale = scales[currentImage]
+            ..offset = offsets[currentImage];
+          print('currentImage->$currentImage');
+          setState(() {});
+        }
+      }
+    });
+  }
+
+  List _buildPageChildren() {
+    List<Widget> children = [];
+    for (int i = 0; i < widget.images.length; i++) {
+      children.add(
+        ClipRect(
+          clipper: ImageClipper(),
+          child: Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.diagonal3Values(scales[i], scales[i], 1.0)
+              ..translate(offsets[i].dx, offsets[i].dy),
+            child: _buildGestureDetector(
+              Image.file(
+                File(widget.images[i].imgPath),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    return children;
   }
 
   @override
@@ -104,65 +249,12 @@ class _DetailRouteState extends State<DetailRoute>
             Expanded(
               child: Stack(
                 children: <Widget>[
-                  GestureDetector(
-                    onTap: () {
-                      isButtonShow
-                          ? controller.forward()
-                          : controller.reverse();
-                      isButtonShow = !isButtonShow;
-                    },
-                    onDoubleTap: () {
-                      if (scale == 1.0) {
-                        scaleTween.end = 5.0;
-                        scaleAnimController.forward(from: 0.0);
-                      } else if (scale > 1.0) {
-                        scaleTween.end = scale;
-                        scaleAnimController.reverse(from: scale);
-
-                        if (offset.distance > 0) {
-                          transTween.begin = offset;
-                          transTween.end = Offset.zero;
-                          transAnimController.forward(from: 0.0);
-                        }
-                      }
-                    },
-                    onScaleStart: (details) =>
-                        startPoint = details.localFocalPoint,
-                    onScaleUpdate: (details) {
-                      if (details.scale == 1.0) {
-                        offset =
-                            tmpOffset + (details.localFocalPoint - startPoint);
-                      } else {
-                        scale = tmpScale * details.scale;
-                      }
-                      setState(() {});
-                    },
-                    onScaleEnd: (details) {
-                      if (scale < 1.0) {
-                        scaleTween.begin = scale;
-                        scaleTween.end = 1;
-                        scaleAnimController.forward(from: scale);
-                      }
-
-                      if (offset.distance >
-                          Offset(size.width * (scale - 1) / 2,
-                                  size.height * (scale - 1) / 2)
-                              .distance) {
-                        transTween.begin = offset;
-                        transTween.end = Offset.zero;
-                        transAnimController.forward(from: 0.0);
-                      }
-                      tmpScale = scale;
-                      tmpOffset = offset;
-                    },
-                    child: Center(
-                      child: Transform(
-                        alignment: Alignment.center,
-                        transform: Matrix4.diagonal3Values(scale, scale, 1.0)
-                          ..translate(offset.dx / scale, offset.dy / scale),
-                        child: Hero(
-                            tag: widget.heroTag,
-                            child: Image.file(widget.image)),
+                  Center(
+                    child: Hero(
+                      tag: widget.imageIndex,
+                      child: PageView(
+                        controller: _pageController,
+                        children: _buildPageChildren(),
                       ),
                     ),
                   ),
@@ -170,18 +262,12 @@ class _DetailRouteState extends State<DetailRoute>
                     bottom: 0.0,
                     child: SlideTransition(
                       position: slideAnimation,
-                      child: DetailTool(widget.image.path),
+                      child: DetailTool(widget.images[currentImage].imgPath),
                     ),
                   ),
                   Positioned(
                     top: 0.0,
-                    child: SlideTransition(
-                      position: backSlideAnimation,
-                      child: IconButton(
-                        icon: Icon(Icons.arrow_back),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
+                    child: backBar,
                   )
                 ],
               ),
@@ -193,78 +279,15 @@ class _DetailRouteState extends State<DetailRoute>
   }
 }
 
-// class InteractiveWidet extends StatefulWidget {
-//   InteractiveWidet(
-//       {@required this.child,
-//       this.onScaleStart,
-//       this.onScaleUpdate,
-//       this.onScaleEnd,
-//       this.onDragStart,
-//       this.onDragUpdate,
-//       this.onDragEnd})
-//       : hasInternalOperation = onDragUpdate != null;
+class ImageClipper extends CustomClipper<Rect> {
+  @override
+  getClip(ui.Size size) {
+    return Offset.zero & size;
+  }
 
-//   final Widget child;
-
-//   final GestureScaleStartCallback onScaleStart;
-//   final GestureScaleUpdateCallback onScaleUpdate;
-//   final GestureScaleEndCallback onScaleEnd;
-//   final GestureDragStartCallback onPanStart;
-//   final GestureDragUpdateCallback onPanUpdate;
-//   final GestureDragEndCallback onDragEnd;
-
-//   final hasInternalOperation;
-
-//   @override
-//   _InteractiveWidetState createState() => _InteractiveWidetState();
-// }
-
-// class _InteractiveWidetState extends State<InteractiveWidet> {
-//   double preScale = 1.0;
-//   double scale = 1.0;
-
-//   Offset startPoint;
-//   Offset preOffset = Offset.zero;
-//   Offset offset = Offset.zero;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return GestureDetector(
-//       onScaleStart: _handleScaleStart,
-//       onScaleUpdate: _handleScaleUpdate,
-//       onScaleEnd: _handleScaleEnd,
-//       child: Transform(
-//         transform: _getTransform(),
-//         child: widget.child,
-//       ),
-//     );
-//   }
-
-//   Matrix4 _getTransform() => Matrix4.diagonal3Values(scale, scale, 1.0)
-//     ..translate(offset.dx, offset.dy);
-
-//   void _handleScaleStart(ScaleStartDetails details) {
-//     //有自己操作的话，需要双指拖动，所以需要在 scaleStart 里设置startPoint
-//     if (widget.hasInternalOperation) {
-//       startPoint = details.localFocalPoint;
-//       widget.onScaleStart(details);
-//     } else {}
-//   }
-
-//   _handleScaleUpdate(ScaleUpdateDetails details) {
-//     scale = preScale * details.scale;
-//     if (widget.hasInternalOperation) {
-//       widget.onScaleUpdate(details);
-//     }
-//   }
-
-//   void _handleScaleEnd(ScaleEndDetails details) {
-//     preScale = scale;
-//     if (widget.hasInternalOperation) {
-//       widget.onScaleEnd(details);
-//     }
-//   }
-// }
+  @override
+  bool shouldReclip(covariant CustomClipper oldClipper) => true;
+}
 
 class DetailTool extends StatefulWidget {
   DetailTool(this.imageFile);
@@ -300,21 +323,21 @@ class _DetailToolState extends State<DetailTool> {
                   builder: (context) => EditRoute(),
                 ));
               },
-              child: _buildButton('Edit')),
+              child: _buildBottomButton('Edit')),
           InkWell(
-            onTap: () => saveImage2Local(widget.imageFile),
-            child: _buildButton('Save'),
+            onTap: () => saveImage2Local(context, widget.imageFile),
+            child: _buildBottomButton('Save'),
           ),
           InkWell(
             onTap: () => setAswallPaper(context, widget.imageFile),
-            child: _buildButton('Set wallpaper'),
+            child: _buildBottomButton('Set wallpaper'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildButton(String text) {
+  Widget _buildBottomButton(String text) {
     return Container(
       height: 50,
       alignment: Alignment.center,
@@ -370,5 +393,114 @@ class _DetailToolState extends State<DetailTool> {
         }
       });
     });
+  }
+}
+
+class ImageGestureRecognizer extends ScaleGestureRecognizer {
+  ImageGestureRecognizer({
+    @required this.screenSize,
+    @required this.imageSize,
+    this.corner,
+  }) : assert(screenSize != null && imageSize != null,
+            'screenSize & imageSize must not be null');
+
+  Size screenSize;
+  Size imageSize;
+
+  HitCorner corner;
+
+  Offset startOffset;
+  Offset currentOffset;
+
+  @override
+  void handleEvent(PointerEvent event) {
+    if (event is PointerDownEvent) {
+      startOffset = event.localPosition;
+    }
+
+    if (event is PointerMoveEvent) {
+      currentOffset = event.localPosition;
+
+      if (_shouldAcceptGesture() &&
+          (currentOffset - startOffset).distance > 8) {
+        acceptGesture(event.pointer);
+        print('paix' + 'acceptgesture');
+      } else {
+        rejectGesture(event.pointer);
+        print('paix : rejectgesture');
+      }
+    }
+
+    super.handleEvent(event);
+  }
+
+  bool _shouldAcceptGesture() {
+    return imageSize.width * (corner.scale - 1.0) / 2 >=
+        (corner.offset.dx * corner.scale).abs();
+  }
+}
+
+class ImageGestureDetector extends StatelessWidget {
+  ImageGestureDetector(
+      {Key key,
+      this.onTap,
+      this.onDoubleTap,
+      this.onScaleStart,
+      this.onScaleUpdate,
+      this.onScaleEnd,
+      this.corner,
+      this.child})
+      : super(key: key);
+
+  final GestureTapCallback onTap;
+  final GestureDoubleTapCallback onDoubleTap;
+  final GestureScaleStartCallback onScaleStart;
+  final GestureScaleUpdateCallback onScaleUpdate;
+  final GestureScaleEndCallback onScaleEnd;
+
+  final HitCorner corner;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    Map<Type, GestureRecognizerFactory> gestures =
+        <Type, GestureRecognizerFactory>{};
+
+    if (onTap != null) {
+      gestures[TapGestureRecognizer] =
+          GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+        () => TapGestureRecognizer(debugOwner: this),
+        (TapGestureRecognizer instance) => instance..onTap = onTap,
+      );
+    }
+
+    if (onDoubleTap != null) {
+      gestures[DoubleTapGestureRecognizer] =
+          GestureRecognizerFactoryWithHandlers<DoubleTapGestureRecognizer>(
+        () => DoubleTapGestureRecognizer(debugOwner: this),
+        (DoubleTapGestureRecognizer instance) =>
+            instance.onDoubleTap = onDoubleTap,
+      );
+    }
+
+    var size = MediaQuery.of(context).size;
+    if (onScaleStart != null || onScaleUpdate != null || onScaleEnd != null) {
+      gestures[ImageGestureRecognizer] =
+          GestureRecognizerFactoryWithHandlers<ImageGestureRecognizer>(
+        () => ImageGestureRecognizer(screenSize: size, imageSize: size),
+        (ImageGestureRecognizer instance) => instance
+          ..onStart = onScaleStart
+          ..onUpdate = onScaleUpdate
+          ..onEnd = onScaleEnd
+          ..corner = corner
+          ..imageSize = size
+          ..screenSize = size,
+      );
+    }
+    return RawGestureDetector(
+      gestures: gestures,
+      child: child,
+    );
   }
 }
