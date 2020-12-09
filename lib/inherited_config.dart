@@ -312,6 +312,7 @@ class ConfigWidgetState extends State<ConfigWidget>
   }
 
   double getCurrentRotation() {
+    // ignore: null_aware_before_operator
     return currentSelectable?.rotRadians * 180 / pi;
   }
 

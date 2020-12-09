@@ -161,10 +161,23 @@ class _DetailRouteState extends State<DetailRoute>
       onScaleStart: (details) => startPoint = details.localFocalPoint,
       onScaleUpdate: (details) {
         if (details.scale == 1.0) {
+          if (offsets[currentImage].dx.abs() * scales[currentImage] >=
+              size.width * (corner.scale - 1) / 2) {
+            return;
+          }
           offsets[currentImage] =
               tmpOffset + (details.localFocalPoint - startPoint);
         } else {
           scales[currentImage] = tmpScale * details.scale;
+
+          Offset preScaleDistance =
+              details.localFocalPoint - Offset(size.width / 2, size.height / 2);
+          Offset postScaleDistance =
+              preScaleDistance * scales[currentImage] / tmpScale;
+          Offset finalOffset = (postScaleDistance - preScaleDistance) /
+              scales[currentImage] /
+              tmpScale;
+          offsets[currentImage] = tmpOffset - finalOffset;
         }
 
         corner
@@ -206,11 +219,12 @@ class _DetailRouteState extends State<DetailRoute>
         if (tmpIndex != currentImage) {
           scales[currentImage] = 1.0;
           offsets[currentImage] = Offset.zero;
+          tmpScale = 1.0;
+          tmpOffset = Offset.zero;
           currentImage = tmpIndex;
           corner
             ..scale = scales[currentImage]
             ..offset = offsets[currentImage];
-          print('currentImage->$currentImage');
           setState(() {});
         }
       }
@@ -401,42 +415,81 @@ class ImageGestureRecognizer extends ScaleGestureRecognizer {
     @required this.screenSize,
     @required this.imageSize,
     this.corner,
-  }) : assert(screenSize != null && imageSize != null,
-            'screenSize & imageSize must not be null');
+  })  : assert(screenSize != null && imageSize != null,
+            'screenSize & imageSize must not be null'),
+        assert(() {
+          print('screenSize->$screenSize, imageSize->$imageSize');
+          return true;
+        }()),
+        _pointers = [];
 
   Size screenSize;
   Size imageSize;
 
   HitCorner corner;
 
-  Offset startOffset;
-  Offset currentOffset;
+  Offset startPosition;
+  Offset currentPosition;
+  List<int> _pointers;
+
+  @override
+  void addAllowedPointer(PointerEvent event) {
+    _pointers.add(event.pointer);
+    super.addAllowedPointer(event);
+  }
 
   @override
   void handleEvent(PointerEvent event) {
-    if (event is PointerDownEvent) {
-      startOffset = event.localPosition;
-    }
+    // if (_shouldAcceptGesture() && event is PointerMoveEvent) {
+    //   resolve(GestureDisposition.accepted);
+    // }
 
+    // if (!_shouldAcceptGesture() && corner.offset.dx.abs() > 1) {
+    //   print('going to reject gesture');
+    //   rejectGesture(event.pointer);
+    // }
+    // scale = 1.0 ->
     if (event is PointerMoveEvent) {
-      currentOffset = event.localPosition;
-
-      if (_shouldAcceptGesture() &&
-          (currentOffset - startOffset).distance > 8) {
+      if (_shouldAcceptGesture()) {
         acceptGesture(event.pointer);
-        print('paix' + 'acceptgesture');
       } else {
         rejectGesture(event.pointer);
-        print('paix : rejectgesture');
       }
+    }
+
+    if (event is PointerUpEvent) {
+      _pointers.remove(event.pointer);
     }
 
     super.handleEvent(event);
   }
 
   bool _shouldAcceptGesture() {
-    return imageSize.width * (corner.scale - 1.0) / 2 >=
-        (corner.offset.dx * corner.scale).abs();
+    print('should -> ${corner.scale}');
+    print('length->' + _pointers.length.toString());
+    if (corner.scale == 1.0) {
+      return _pointers.length > 1;
+    }
+    double extraHalfWidth = imageSize.width * (corner.scale - 1) / 2;
+    return corner.offset.dx.abs() * corner.scale < extraHalfWidth;
+  }
+
+  @override
+  void acceptGesture(int pointer) {
+    print('acceptGesture');
+    super.acceptGesture(pointer);
+  }
+
+  @override
+  void rejectGesture(int pointer) {
+    print('rejectGesture');
+    super.rejectGesture(pointer);
+  }
+
+  @override
+  void didStopTrackingLastPointer(int pointer) {
+    _pointers.remove(pointer);
+    super.didStopTrackingLastPointer(pointer);
   }
 }
 

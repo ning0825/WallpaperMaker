@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:wallpaper_maker/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_library.dart';
@@ -11,4 +12,5 @@ void main() {
       ),
     ),
   );
+  debugPrintGestureArenaDiagnostics = true;
 }
