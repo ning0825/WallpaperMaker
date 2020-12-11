@@ -8,7 +8,15 @@ import 'package:wallpaper_maker/selectable_bean.dart';
 import 'package:wallpaper_maker/cus_widget.dart';
 import 'configuration.dart';
 
-enum MainTool { background, pen, shape, text, image, more, eraser }
+enum MainTool {
+  background,
+  pen,
+  shape,
+  text,
+  image,
+  more,
+  eraser,
+}
 
 enum LeafTool {
   backgroundColor,
@@ -26,6 +34,9 @@ enum LeafTool {
   text_color,
   text_weight,
 
+  frameColor,
+  frameWidth,
+
   align,
   rotate
 }
@@ -35,6 +46,7 @@ const shapeToolNum = 1;
 const typoToolNum = 2;
 const shapeFillNum = 3;
 const backgroundColorNum = 4;
+const frameWidthNum = 5;
 
 class ConfigWidget extends StatefulWidget {
   final Widget child;
@@ -327,11 +339,37 @@ class ConfigWidgetState extends State<ConfigWidget>
   }
 
   //---------------------------------------------------------------------------------
-  //save image
+  //Image
   //---------------------------------------------------------------------------------
-  // save(GlobalKey key) {
-  //   saveImage(key);
-  // }
+  get frameColor => isSelectedMode
+      ? (currentSelectable as SelectableImage).frameColor
+      : _config.frameColor;
+  get frameWidth => isSelectedMode
+      ? (currentSelectable as SelectableImage)?.frameWidth
+      : _config.frameWidth;
+
+  void setFrameColor(Color color) {
+    setState(() {
+      isSelectedMode
+          ? (currentSelectable as SelectableImage).frameColor = color
+          : _config.frameColor = color;
+    });
+  }
+
+  void switchHasFrame() {
+    setState(() {
+      (currentSelectable as SelectableImage)?.hasFrame =
+          !(currentSelectable as SelectableImage).hasFrame;
+    });
+  }
+
+  void setFrameWidth(double width) {
+    setState(() {
+      isSelectedMode
+          ? (currentSelectable as SelectableImage).frameWidth = width
+          : _config.frameWidth = width;
+    });
+  }
 
   //---------------------------------------------------------------------------------
   //Background
@@ -342,9 +380,7 @@ class ConfigWidgetState extends State<ConfigWidget>
     });
   }
 
-  Color getBackroundColor() {
-    return _config.bgColor ?? Colors.white;
-  }
+  Color getBackroundColor() => _config.bgColor;
 
   //---------------------------------------------------------------------------------
   //Pen
@@ -858,7 +894,9 @@ class ConfigWidgetState extends State<ConfigWidget>
       ..shapeWidth = 5
       ..font = 'default'
       ..typoWeight = 3
-      ..textColor = Colors.black;
+      ..textColor = Colors.black
+      ..frameColor = Colors.black
+      ..frameWidth = 10;
 
     selectables = List();
     isSelectedMode = false;

@@ -28,6 +28,8 @@ GlobalKey typoTextKey = GlobalKey();
 GlobalKey typoFontKey = GlobalKey();
 GlobalKey typoFontWeightKey = GlobalKey();
 GlobalKey typoColorKey = GlobalKey();
+GlobalKey frameColorKey = GlobalKey();
+GlobalKey frameWidthKey = GlobalKey();
 
 GlobalKey keyStack = GlobalKey();
 GlobalKey topToolBarKey = GlobalKey();
@@ -307,6 +309,18 @@ class _EditRouteState extends State<EditRoute>
         case LeafTool.text_weight:
           result = WidthWidget(toolNum: typoToolNum);
           break;
+        case LeafTool.frameColor:
+          result = Container(
+            width: MediaQuery.of(context).size.width - 36,
+            child: PaletteWidget(
+              onColorPick: data.setFrameColor,
+              selectColor: data.frameColor,
+            ),
+          );
+          break;
+        case LeafTool.frameWidth:
+          result = WidthWidget(toolNum: frameWidthNum);
+          break;
         case LeafTool.align:
           result = Container(
             height: 40,
@@ -509,14 +523,14 @@ class _TopToolbarState extends State<TopToolbar> with TickerProviderStateMixin {
                 data.isSelectedMode ? data.removeCurrentSelected() : null,
           ),
           //undo
-          IconButton(
-            icon: Image.asset(
-              'assets/icons/undo.png',
-              width: 20,
-              height: 20,
-            ),
-            onPressed: () => data.undo(),
-          ),
+          // IconButton(
+          //   icon: Image.asset(
+          //     'assets/icons/undo.png',
+          //     width: 20,
+          //     height: 20,
+          //   ),
+          //   onPressed: () => data.undo(),
+          // ),
           //clear
           IconButton(
             icon: Image.asset(
@@ -557,6 +571,8 @@ class _BottomToolbarState extends State<BottomToolbar> {
 
   double height = 130;
 
+  ClipImageBean clipImageBean;
+
   @override
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
@@ -584,8 +600,6 @@ class _BottomToolbarState extends State<BottomToolbar> {
       ),
     );
   }
-
-  ClipImageBean clipImageBean;
 
   List<Widget> _getSubtool(MainTool mainTool) {
     List<Widget> result;
@@ -773,13 +787,38 @@ class _BottomToolbarState extends State<BottomToolbar> {
                     }
                   : null),
           SubToolIconWidget(
-            icon: Icon(
-              Icons.filter_frames,
-              size: 30,
+            icon: Icon(Icons.crop_square,
+                color: data.isSelectedMode &&
+                        (data.currentSelectable as SelectableImage).hasFrame
+                    ? Colors.white
+                    : Colors.grey,
+                size: 30),
+            onPressed: data.switchHasFrame,
+          ),
+          SubToolIconWidget(
+            akey: frameColorKey,
+            icon: _getColorIcon(data.frameColor),
+            onPressed: data.isSelectedMode
+                ? () {
+                    data.setCurrentLeafTool(LeafTool.frameColor);
+                    data.setLeafToolBottom();
+                    data.setIndicatorPosition(frameColorKey);
+                    data.toggleLeafTool();
+                  }
+                : null,
+          ),
+          SubToolIconWidget(
+            akey: frameWidthKey,
+            icon: Text(
+              data.frameWidth.toStringAsFixed(1).toString(),
+              style: TextStyle(color: Colors.white, fontSize: 20),
             ),
             onPressed: data.isSelectedMode
                 ? () {
-                    //TODO add frame
+                    data.setCurrentLeafTool(LeafTool.frameWidth);
+                    data.setLeafToolBottom();
+                    data.setIndicatorPosition(frameWidthKey);
+                    data.toggleLeafTool();
                   }
                 : null,
           ),
@@ -822,6 +861,17 @@ class _BottomToolbarState extends State<BottomToolbar> {
     return result;
   }
 
+  _getColorIcon(Color color) {
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.all(Radius.circular(15)),
+          border: Border.all(color: Colors.white)),
+    );
+  }
+
   Widget _getShapeIcon(int shapeType) {
     switch (shapeType) {
       case 0:
@@ -853,7 +903,9 @@ class _BottomToolbarState extends State<BottomToolbar> {
       SelectableImage(
           img: img,
           mOffset: Offset(size.width / 2, size.height / 2),
-          width: size.width),
+          width: size.width,
+          frameColor: data.frameColor,
+          frameWidth: data.frameWidth),
     );
   }
 
@@ -1014,7 +1066,7 @@ class _BuildWidthState extends State<WidthWidget> {
               setToolWidth(value);
             },
             min: 1.0,
-            max: 8.0,
+            max: 10.0,
             label: sliderValue.toString(),
             activeColor: Colors.yellow,
           ),
@@ -1034,6 +1086,9 @@ class _BuildWidthState extends State<WidthWidget> {
       case typoToolNum:
         data.setTextWeight(value);
         break;
+      case frameWidthNum:
+        data.setFrameWidth(value);
+        break;
       default:
         break;
     }
@@ -1047,6 +1102,8 @@ class _BuildWidthState extends State<WidthWidget> {
         return data.getShapeWidth();
       case typoToolNum:
         return data.getTextWeight().toDouble();
+      case frameWidthNum:
+        return data.frameWidth;
       default:
         break;
     }

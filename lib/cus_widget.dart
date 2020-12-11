@@ -178,6 +178,7 @@ class _RotateControllerWidgetState extends State<RotateControllerWidget>
   @override
   void dispose() {
     ticker.dispose();
+    controller.dispose();
     super.dispose();
   }
 }

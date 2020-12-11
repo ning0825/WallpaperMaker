@@ -12,5 +12,5 @@ void main() {
       ),
     ),
   );
-  debugPrintGestureArenaDiagnostics = true;
+  // debugPrintGestureArenaDiagnostics = true;
 }

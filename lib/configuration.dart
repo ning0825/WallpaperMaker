@@ -32,5 +32,6 @@ class Configuration {
   int typoWeight;
   Color textColor;
 
-  Configuration();
+  Color frameColor;
+  double frameWidth;
 }

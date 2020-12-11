@@ -19,11 +19,8 @@ abstract class Selectable {
   Offset tmpOffset = Offset.zero;
 
   bool isSelected = false;
-  // bool isRot = false;
-  // bool isTrans = false;
 
   Offset offset = Offset.zero;
-  // Offset lastOffset = Offset.zero;
 
   double rotRadians = 0.0;
   double scaleRadioX = 1.0;
@@ -224,7 +221,6 @@ abstract class Selectable {
     bottomControlRect =
         Rect.fromCenter(center: bottomCenterPoint, width: 20, height: 20);
 
-//用以判断触摸是否击中控制点
     tlControlRect =
         Rect.fromCenter(center: Offset(newTLx, newTLy), width: 20, height: 20);
     trControlRect =
@@ -404,8 +400,9 @@ class SelectableTypo extends Selectable {
     _ts = TextSpan(
       text: text,
       style: TextStyle(
-          height: 0.8,
+          // height: 0.8,
           color: textColor,
+          //TODO NI.
           fontSize: 30 + 5 * fontSize,
           fontFamily: fontFamily,
           fontWeight: FontWeight.values[textWeight]),
@@ -462,11 +459,18 @@ class SelectableImage extends Selectable {
   //The name to find image in dir.
   String name;
 
-  SelectableImage({this.img, Offset mOffset, this.width})
+  //frame
+  bool hasFrame;
+  double frameWidth;
+  Color frameColor;
+
+  SelectableImage(
+      {this.img, Offset mOffset, this.width, this.frameColor, this.frameWidth})
       : clipRect = Rect.fromLTRB(
             0.0, 0.0, img.width.toDouble(), img.height.toDouble()) {
     mPaint = Paint();
     offset = mOffset;
+    hasFrame = false;
   }
 
   SelectableImage.empty() {
@@ -497,16 +501,27 @@ class SelectableImage extends Selectable {
   @override
   void draw(Canvas canvas) {
     var clipRatio = clipRect.height / clipRect.width;
+
     rect = Rect.fromCenter(
         center: offset, width: width - 40, height: (width - 40) * clipRatio);
-    selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
+
     canvas.save();
     canvas.translate(rect.center.dx, rect.center.dy);
     canvas.rotate(rotRadians);
     canvas.scale(scaleRadioX, scaleRadioY);
     canvas.translate(-rect.center.dx, -rect.center.dy);
+
+    if (hasFrame) {
+      canvas.drawRect(
+          rect.inflate(frameWidth), Paint()..color = frameColor); //Draw frame.
+    }
+
     canvas.drawImageRect(img, clipRect, rect, mPaint);
     canvas.restore();
+
+    if (hasFrame) rect = rect.inflate(frameWidth);
+
+    selectedPath = toPath(rect, rotRadians, scaleRadioX, scaleRadioY);
   }
 }
 
