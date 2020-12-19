@@ -2,12 +2,16 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wallpaper_maker/cus_widget.dart';
 
 import 'package:wallpaper_maker/inherited_config.dart';
+import 'package:wallpaper_maker/models/file_list.dart';
 import 'package:wallpaper_maker/routes/route_create.dart';
 import 'package:wallpaper_maker/routes/route_detail.dart';
+import 'package:wallpaper_maker/routes/route_settings.dart';
 import 'package:wallpaper_maker/selectable_bean.dart';
 import 'package:wallpaper_maker/utils.dart';
+import 'package:wallpaper_maker/routes/route_feedback.dart';
 
 class LibraryRoute extends StatefulWidget {
   @override
@@ -60,96 +64,91 @@ class _LibraryRouteState extends State<LibraryRoute> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: CustomScrollView(
-          primary: true,
-          physics: BouncingScrollPhysics(),
-          slivers: <Widget>[
-            SliverAppBar(
-              pinned: true,
-              stretch: true,
-              backgroundColor: Colors.white,
-              expandedHeight: 180,
-              flexibleSpace: FlexibleSpaceBar(
-                titlePadding: EdgeInsets.only(
-                  left: 20,
-                  bottom: 20,
-                ),
-                title: TitleWidget(),
-                collapseMode: CollapseMode.pin,
-              ),
-              actions: <Widget>[
-                //Select all button.
-                Offstage(
-                  offstage: !selectMode,
-                  child: Center(
-                    child: IconButton(
-                      onPressed: () {
-                        if (selectMode) {
-                          setState(() {
-                            data.cacheImgFiles.forEach((element) {
-                              element.isSelected = !element.isSelected;
-                            });
-                          });
-                        }
-                      },
-                      icon: Icon(
-                        Icons.select_all,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ),
-                //Delete button.
-                Offstage(
-                  offstage: !selectMode,
-                  child: Center(
-                    child: IconButton(
-                      onPressed: enableDelButton
-                          ? () {
-                              showGeneralDialog(
-                                  context: context,
-                                  pageBuilder: (_, a1, a2) {
-                                    return AlertDialog(
-                                      title: Text('Delete'),
-                                      content: Text(
-                                          'Delete all you have selected? This operation can not be undo.'),
-                                      actions: [
-                                        FlatButton(
-                                            onPressed: () =>
-                                                Navigator.of(_).pop(),
-                                            child: Text('Cancel')),
-                                        FlatButton(
-                                            onPressed: () => _deleteSelected(_),
-                                            child: Text('OK')),
-                                      ],
-                                    );
-                                  });
-                            }
-                          : null,
-                      icon: Icon(
-                        Icons.delete_outline,
-                        color: enableDelButton ? Colors.red : Colors.grey,
-                      ),
-                    ),
-                  ),
-                ),
-                //Edit button
-                Center(
-                  child: IconButton(
-                    onPressed: () {
-                      setState(() {
-                        selectMode = !selectMode;
-                      });
-                    },
-                    icon: Icon(
-                      selectMode ? Icons.done : Icons.edit,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        child: CustomScrollViewWithAppBar(
+          title: 'Library',
+          children: [
             _buildImages(),
+          ],
+          actions: <Widget>[
+            //Select all button.
+            Offstage(
+              offstage: !selectMode,
+              child: Center(
+                child: IconButton(
+                  onPressed: () {
+                    if (selectMode) {
+                      setState(() {
+                        data.cacheImgFiles.forEach((element) {
+                          element.isSelected = !element.isSelected;
+                        });
+                      });
+                    }
+                  },
+                  icon: Icon(
+                    Icons.select_all,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ),
+            //Delete button.
+            Offstage(
+              offstage: !selectMode,
+              child: Center(
+                child: IconButton(
+                  onPressed: enableDelButton
+                      ? () {
+                          showGeneralDialog(
+                              context: context,
+                              pageBuilder: (_, a1, a2) {
+                                return AlertDialog(
+                                  title: Text('Delete'),
+                                  content: Text(
+                                      'Delete all you have selected? This operation can not be undo.'),
+                                  actions: [
+                                    FlatButton(
+                                        onPressed: () => Navigator.of(_).pop(),
+                                        child: Text('Cancel')),
+                                    FlatButton(
+                                        onPressed: () => _deleteSelected(_),
+                                        child: Text('OK')),
+                                  ],
+                                );
+                              });
+                        }
+                      : null,
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: enableDelButton ? Colors.red : Colors.grey,
+                  ),
+                ),
+              ),
+            ),
+            //Edit button
+            Center(
+              child: IconButton(
+                onPressed: () {
+                  setState(() {
+                    selectMode = !selectMode;
+                  });
+                },
+                icon: Icon(
+                  selectMode ? Icons.done : Icons.edit,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.settings,
+                color: Colors.black,
+              ),
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => SettingsRoute(),
+                ));
+              },
+            )
           ],
         ),
       ),
@@ -171,6 +170,13 @@ class _LibraryRouteState extends State<LibraryRoute> {
       ),
     );
   }
+
+  // showFontList() async {
+  //   FontFileList list = await fetchFontList();
+  //   list.results.forEach((element) {
+  //     print('name -> ${element.name}, url -> ${element.url}');
+  //   });
+  // }
 
   _deleteSelected(BuildContext context) async {
     for (var item in data.cacheImgFiles) {
@@ -257,26 +263,6 @@ class _LibraryRouteState extends State<LibraryRoute> {
           );
         }
       },
-    );
-  }
-}
-
-class TitleWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final settings =
-        context.dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
-    //0.0 collapsed
-    //1.0 expanded
-    final t = (settings.currentExtent - settings.minExtent) /
-        (settings.maxExtent - settings.minExtent);
-    var scale = Tween(begin: 1.0, end: 1.5).transform(t);
-    return Text(
-      'Library',
-      textScaleFactor: scale,
-      style: TextStyle(
-        color: Colors.black,
-      ),
     );
   }
 }

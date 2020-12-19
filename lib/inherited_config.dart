@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:wallpaper_maker/models/file_list.dart' as fileList;
 
 import 'package:wallpaper_maker/selectable_bean.dart';
 import 'package:wallpaper_maker/cus_widget.dart';
@@ -127,6 +128,20 @@ class ConfigWidgetState extends State<ConfigWidget>
   bool newCanva;
   bool fromReset = false;
 
+  List<String> fontFiles;
+  List<fileList.Results> results;
+  // bool hasFetchedFontFile = false;
+  final localFonts = [
+    'default',
+    'polingo',
+    'PlayfairDisplay',
+    '方正黑体',
+    '方正宋体',
+    '方正黑体',
+    '轻松体',
+    '优设标题黑'
+  ];
+
   setCurrentMainTool(MainTool mainTool) {
     setState(() {
       currentMainTool = mainTool;
@@ -159,21 +174,11 @@ class ConfigWidgetState extends State<ConfigWidget>
     //selectables = selectableStack.last;
     selectables = selectableStack.last.map((e) => e).toList();
     setState(() {});
-    assert(() {
-      print('selectableStack.length:' + selectableStack.length.toString());
-      print('currentStackIndex:' + stackIndex.toString());
-      return true;
-    }());
   }
 
   pushToStack() {
     selectableStack.add(selectables.map((e) => e).toList());
     stackIndex = selectableStack.length - 1;
-    assert(() {
-      print(
-          'pushToStack: selectableStack.first.length-> ${selectableStack.first.length}');
-      return true;
-    }());
   }
 
   //---------------------------------------------------------------------------------

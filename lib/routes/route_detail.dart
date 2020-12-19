@@ -440,15 +440,6 @@ class ImageGestureRecognizer extends ScaleGestureRecognizer {
 
   @override
   void handleEvent(PointerEvent event) {
-    // if (_shouldAcceptGesture() && event is PointerMoveEvent) {
-    //   resolve(GestureDisposition.accepted);
-    // }
-
-    // if (!_shouldAcceptGesture() && corner.offset.dx.abs() > 1) {
-    //   print('going to reject gesture');
-    //   rejectGesture(event.pointer);
-    // }
-    // scale = 1.0 ->
     if (event is PointerMoveEvent) {
       if (_shouldAcceptGesture()) {
         acceptGesture(event.pointer);
@@ -465,8 +456,6 @@ class ImageGestureRecognizer extends ScaleGestureRecognizer {
   }
 
   bool _shouldAcceptGesture() {
-    print('should -> ${corner.scale}');
-    print('length->' + _pointers.length.toString());
     if (corner.scale == 1.0) {
       return _pointers.length > 1;
     }
@@ -476,13 +465,11 @@ class ImageGestureRecognizer extends ScaleGestureRecognizer {
 
   @override
   void acceptGesture(int pointer) {
-    print('acceptGesture');
     super.acceptGesture(pointer);
   }
 
   @override
   void rejectGesture(int pointer) {
-    print('rejectGesture');
     super.rejectGesture(pointer);
   }
 

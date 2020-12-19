@@ -14,7 +14,7 @@ description: A new Flutter project.
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.1.0 <3.0.0"
+  sdk: ">=2.3.0 <3.0.0"
 
 dependencies:
   flutter:
@@ -27,6 +27,7 @@ dependencies:
   image_picker: ^0.6.6+1
   json_annotation: ^3.0.1
   build_runner: ^1.10.0
+  shared_preferences: ^0.5.12+4
 
 dev_dependencies:
   flutter_test:
@@ -75,25 +76,25 @@ flutter:
   fonts:
     - family: Polingo
       fonts: 
-        - asset: assets/fonts/Pangolin-Regular.ttf
+        - asset: assets/fonts/Pangolin.ttf
     - family: PlayfairDisplay
       fonts:
-        - asset: assets/fonts/PlayfairDisplay-Regular.ttf
-    - family: 方正黑体
+        - asset: assets/fonts/PlayfairDisplay.ttf
+    - family: 方正黑
       fonts:
-        - asset: assets/fonts/fzheiti.ttf
-    - family: 方正楷体
+        - asset: assets/fonts/方正黑.ttf
+    - family: 方正楷
       fonts:
-        - asset: assets/fonts/fzkaiti.ttf
-    - family: 方正宋体
+        - asset: assets/fonts/方正楷.ttf
+    - family: 方正宋
       fonts:
-        - asset: assets/fonts/fzsongti.ttf
-    - family: 轻松体
+        - asset: assets/fonts/方正宋.ttf
+    - family: 轻松
       fonts:
-        - asset: assets/fonts/qingsongti.ttf
+        - asset: assets/fonts/轻松.ttf
     - family: 优设标题黑
       fonts:
-        - asset: assets/fonts/youshebiaotihei.ttf
+        - asset: assets/fonts/优设标题黑.ttf
 #      - asset: assets/fonts/PlayfairDisplay-Italic.ttf
 #        style: italic
 #      - asset: assets/fonts/PlayfairDisplay-Medium.ttf

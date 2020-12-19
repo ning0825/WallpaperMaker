@@ -685,3 +685,97 @@ class CanvasGestureDetector extends StatelessWidget {
     );
   }
 }
+
+class CustomScrollViewWithAppBar extends StatelessWidget {
+  CustomScrollViewWithAppBar(
+      {this.title, this.actions, this.children, this.onBackPressed});
+
+  final String title;
+  final List<Widget> actions;
+
+  ///All [children] should be RenderSliver.
+  final List<Widget> children;
+  final VoidCallback onBackPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget leading;
+    if (onBackPressed != null) {
+      leading = IconButton(
+        icon: Icon(
+          Icons.close,
+          color: Colors.black,
+        ),
+        onPressed: onBackPressed,
+      );
+    }
+
+    return CustomScrollView(
+      primary: true,
+      physics: BouncingScrollPhysics(),
+      slivers: <Widget>[
+        SliverAppBar(
+          leading: leading,
+          pinned: true,
+          stretch: true,
+          backgroundColor: Colors.white,
+          expandedHeight: 180,
+          flexibleSpace: FlexibleSpaceBar(
+            titlePadding: EdgeInsets.only(
+              left: 20,
+              bottom: 20,
+            ),
+            title: TitleWidget(
+              title: title,
+            ),
+            collapseMode: CollapseMode.pin,
+          ),
+          actions: actions,
+        ),
+        ...children,
+      ],
+    );
+  }
+}
+
+class TitleWidget extends StatelessWidget {
+  TitleWidget({this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final settings =
+        context.dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
+    //0.0 - collapsed, 1.0 - expanded
+    final t = (settings.currentExtent - settings.minExtent) /
+        (settings.maxExtent - settings.minExtent);
+    var scale = Tween(begin: 1.0, end: 1.5).transform(t);
+    return Text(
+      title,
+      textScaleFactor: scale,
+      style: TextStyle(
+        color: Colors.black,
+      ),
+    );
+  }
+}
+
+class ProgressPainter extends CustomPainter {
+  ProgressPainter({this.color, this.progress})
+      : painter = Paint()..color = color;
+
+  final Color color;
+  final double progress;
+
+  final Paint painter;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+        Offset.zero & Size(size.width * progress, size.height), painter);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}

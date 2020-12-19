@@ -1,15 +1,37 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:http/http.dart' as http;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wallpaper_maker/models/file_list.dart';
+
+import 'package:wallpaper_maker/models/send_response.dart';
+import 'package:wallpaper_maker/models/thread_response.dart';
+import 'package:wallpaper_maker/models/thread_detail_response.dart';
 
 const herotag_libToCreate = 'tag_libToCreate';
 const app_external_path = '/storage/emulated/0/WallpaperMaker/';
+
+const base_url = 'https://cxnu5i4c.lc-cn-n1-shared.com/1.1';
+const feedback_base_url = '$base_url/feedback';
+const font_files_url = '$base_url/files';
+const headers = {
+  'X-LC-Id': 'Cxnu5I4C5XslUk8gONphiicP-gzGzoHsz',
+  'X-LC-Key': 'YeyF6FxUjRx2Wp4f5maUfsEf',
+  'Content-Type': 'application/json'
+};
+
+var queryHeaders = {
+  'X-LC-Id': 'Cxnu5I4C5XslUk8gONphiicP-gzGzoHsz',
+  'X-LC-Key': 'YeyF6FxUjRx2Wp4f5maUfsEf',
+  'Content-Type': 'application/x-www-form-urlencoded'
+};
 
 Future<void> saveImage(GlobalKey key, double pixelRatio, String name) async {
   RenderRepaintBoundary boundary = key.currentContext.findRenderObject();
@@ -78,6 +100,79 @@ Future<void> showToast(BuildContext context,
       .then((value) => overlayEntry.remove());
 }
 
+//Send feedback using REST API.
+Future<SendResponse> sendFeedback(String content, String contact) async {
+  var request = http.Request('POST', Uri.parse(feedback_base_url));
+  request.body =
+      '{"status": "open", "content": "$content","contact" : "$contact"}';
+  request.headers.addAll(headers);
+
+  http.StreamedResponse response = await request.send();
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    return SendResponse.fromJson(await response.stream
+        .bytesToString()
+        .then((value) => jsonDecode(value)));
+  } else {
+    return null;
+  }
+}
+
+//Get feedback thread info.
+Future<ThreadResponse> getThreadInfo(String threadId) async {
+  var request = http.Request('GET', Uri.parse(feedback_base_url));
+  request.bodyFields = {'where': '{"objectId":"$threadId"}'};
+  request.headers.addAll(queryHeaders);
+  http.StreamedResponse response = await request.send();
+
+  if (response.statusCode == 200) {
+    return ThreadResponse.fromJson(
+        await response.stream.bytesToString().then((value) {
+      return jsonDecode(value);
+    }));
+  } else {
+    await response.stream
+        .bytesToString()
+        .then((value) => print('error response -> ' + value));
+    return null;
+  }
+}
+
+typedef ResponseCallback = void Function(String s);
+
+//Get thread details.
+Future<ThreadDetailResponse> getThreadDetail(String threadId) async {
+  var request =
+      http.Request('GET', Uri.parse(feedback_base_url + '/$threadId/threads'));
+  request.headers.addAll(headers);
+  http.StreamedResponse response = await request.send();
+  if (response.statusCode == 200) {
+    return ThreadDetailResponse.fromJson(
+        await response.stream.bytesToString().then((value) {
+      return jsonDecode(value);
+    }));
+  } else {
+    return null;
+  }
+}
+
+///Append a message to the thread.
+Future<SendResponse> appendMessage(String threadId, String content) async {
+  var request =
+      http.Request('POST', Uri.parse(feedback_base_url + '/$threadId/threads'));
+  request.body = '{"type":"user","content":"$content", "attachment":""}';
+  request.headers.addAll(headers);
+  http.StreamedResponse response = await request.send();
+
+  if (response.statusCode == 201) {
+    return SendResponse.fromJson(await response.stream
+        .bytesToString()
+        .then((value) => jsonDecode(value)));
+  } else {
+    return null;
+  }
+}
+
 ///Set wallpaper.
 ///
 ///TODO User can choose lockscreen wallpaper or wallpaper.
@@ -122,3 +217,64 @@ Future<void> saveJson(String objName, String data) async {
 }
 
 Future<void> delJson(String objName) async {}
+
+///Fetch font file list.
+Future<FontFileList> fetchFontList() async {
+  var client = http.Client();
+  var response = await client.get(Uri.parse(font_files_url), headers: headers);
+
+  if (response.statusCode == 200) {
+    return FontFileList.fromJson(jsonDecode(response.body));
+  } else {
+    print('download fontlist failed, status code -> ${response.statusCode}');
+  }
+  return Future.value(FontFileList(results: []));
+}
+
+typedef OnDownloadDone = void Function();
+typedef OnDownloadError = void Function(int statusCode);
+typedef OnDownloadProgress = void Function(double process);
+
+///Download file.
+download(String url, String fileName,
+    {OnDownloadDone onDone,
+    OnDownloadProgress onProgress,
+    OnDownloadError onError}) async {
+  var localFile = await getExternalStorageDirectory()
+      .then((value) => value.path + '/fonts/$fileName');
+  File file = File(localFile);
+  if (!file.existsSync()) {
+    await file.create();
+  }
+  IOSink sink = file.openWrite();
+
+  http.Request request = http.Request('GET', Uri.parse(url));
+  http.StreamedResponse response = await request.send();
+  var downloadedLength = 0;
+  int contentLength = int.parse(response.headers['content-length']);
+  response.stream.listen((value) {
+    sink.add(value);
+    downloadedLength += value.length;
+    onProgress(downloadedLength / contentLength);
+  })
+    ..onDone(() {
+      sink.close();
+      onDone();
+    })
+    ..onError((e) {
+      print('download: download error, status code -> ${response.statusCode}');
+      onError(response.statusCode);
+    });
+}
+
+///Load font so that it can be used.
+loadFontFromFileSystem(String family) async {
+  print('family -> $family');
+  var loader = FontLoader(family);
+  File file =
+      File((await getExternalStorageDirectory()).path + '/fonts/$family');
+  var raf = await file.open();
+  Uint8List list = await raf.read(await raf.length());
+  loader.addFont(Future.value(ByteData.view(list.buffer)));
+  await loader.load();
+}

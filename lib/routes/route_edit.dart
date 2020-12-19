@@ -1132,39 +1132,71 @@ class TypoFontWidget extends StatefulWidget {
 
 class _TypoFontWidgetState extends State<TypoFontWidget> {
   ConfigWidgetState data;
-  var fontList = [
-    'default',
-    'polingo',
-    'PlayfairDisplay',
-    '方正黑体',
-    '方正宋体',
-    '方正黑体',
-    '轻松体',
-    '优设标题黑'
-  ];
+
   String currentFont;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  // _getFontFileListIfNeeded() async {
+  //   // if (data.hasFetchedFontFile) return;
+
+  //   // var fontList = await fetchFontList();
+  //   // fontList.results.forEach((element) {
+  //   //   data.localFonts.add(element.name);
+  //   // });
+  //   // data.hasFetchedFontFile = true;
+  //   return data.localFonts;
+  // }
 
   @override
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
     currentFont = data.getTextFont();
     return Container(
-      child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: fontList.length,
-          itemBuilder: (_, index) {
-            return ListTile(
-              selected: fontList[index] == data.getTextFont(),
-              title: Text(
-                fontList[index],
-                style:
-                    TextStyle(fontFamily: fontList[index], color: Colors.white),
-              ),
-              onTap: () {
-                data.setTextFont(fontList[index]);
-              },
-            );
-          }),
+      height: MediaQuery.of(context).size.height / 2,
+      child: FutureBuilder(
+        future: Future.value(data.localFonts),
+        builder: (context, snapshot) {
+          return GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, childAspectRatio: 4),
+            itemCount: data.localFonts.length,
+            itemBuilder: (context, index) {
+              return GridTile(
+                child: Container(
+                  decoration: BoxDecoration(border: Border.all()),
+                  margin: EdgeInsets.all(2),
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    data.localFonts[index],
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              );
+            },
+          );
+          // return ListView.builder(
+          //   shrinkWrap: true,
+          //   itemCount: fontList.length,
+          //   itemBuilder: (_, index) {
+          //     return ListTile(
+          //       selected: fontList[index] == data.getTextFont(),
+          //       title: Text(
+          //         fontList[index],
+          //         style: TextStyle(
+          //             fontFamily: fontList[index], color: Colors.white),
+          //       ),
+          //       onTap: () {
+          //         data.setTextFont(fontList[index]);
+          //       },
+          //     );
+          //   },
+          // );
+        },
+      ),
     );
   }
 }
