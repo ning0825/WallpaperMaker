@@ -2,13 +2,13 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-class Configuration {
-  ///0: hand painting
-  ///1: shape
-  ///2: typo
-  ///3: image
-  // int currentMode;
+enum ShapeType {
+  line,
+  rect,
+  circle,
+}
 
+class Configuration {
   //Background color
   Color bgColor;
 

@@ -1,13 +1,21 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:wallpaper_maker/models/file_list.dart' as fileList;
+import 'package:flutter/services.dart';
+import 'package:leancloud_feedback/leancloud_feedback.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:wallpaper_maker/selectable_bean.dart';
+import 'package:wallpaper_maker/models/selectable_bean.dart';
 import 'package:wallpaper_maker/cus_widget.dart';
+import 'package:wallpaper_maker/utils.dart';
 import 'configuration.dart';
+import 'models/file_list.dart';
 
 enum MainTool {
   background,
@@ -128,26 +136,14 @@ class ConfigWidgetState extends State<ConfigWidget>
   bool newCanva;
   bool fromReset = false;
 
-  List<String> fontFiles;
-  List<fileList.Results> results;
-  // bool hasFetchedFontFile = false;
-  final localFonts = [
-    'default',
-    'polingo',
-    'PlayfairDisplay',
-    '方正黑体',
-    '方正宋体',
-    '方正黑体',
-    '轻松体',
-    '优设标题黑'
-  ];
+  List<String> assetFonts = [];
+  List<String> localFonts = [];
+
+  List<OnlineFont> onlineFonts = [];
 
   setCurrentMainTool(MainTool mainTool) {
     setState(() {
       currentMainTool = mainTool;
-
-      // if (mainTool == MainTool.pen) _config.currentMode = 0;
-      // if (mainTool == MainTool.shape) _config.currentMode = 1;
     });
   }
 
@@ -229,6 +225,7 @@ class ConfigWidgetState extends State<ConfigWidget>
   }
 
   removeCurrentSelected() {
+    print('remove selected');
     setState(() {
       selectables[selectedIndex].isSelected = false;
       selectables.removeAt(selectedIndex);
@@ -522,11 +519,21 @@ class ConfigWidgetState extends State<ConfigWidget>
     return isSelectedMode ? (currentSelectable as SelectableTypo).text : '';
   }
 
-  setTextFont(String font) {
+  setTextFont(String font) async {
+    await _loadFontIfNeeded(font);
     setState(() {
       isSelectedMode
           ? (currentSelectable as SelectableTypo).fontFamily = font
           : _config.font = font;
+    });
+  }
+
+  String previewFont = '';
+
+  setPreviewFont(String font) async {
+    await _loadFontIfNeeded(font);
+    setState(() {
+      previewFont = font;
     });
   }
 
@@ -809,7 +816,7 @@ class ConfigWidgetState extends State<ConfigWidget>
   MessageBoxDirection direction = MessageBoxDirection.bottom;
   double position = 20;
 
-  setIndicatorPosition(GlobalKey key) {
+  setIndicatorPositionKey(GlobalKey key) {
     var box = (key.currentContext.findRenderObject()) as RenderBox;
     position = box.localToGlobal(Offset.zero).dx + box.size.width / 2 - 8;
   }
@@ -844,6 +851,123 @@ class ConfigWidgetState extends State<ConfigWidget>
   }
 
   List<SelectableImageFile> cacheImgFiles = [];
+
+  bool needRebuildLocal = false;
+  bool needRebuildOnline = false;
+
+  Future<List<String>> getLocalFonts() async {
+    if (!needRebuildLocal && localFonts.length > 0) return localFonts;
+
+    localFonts = List.from(await _getAssetFonts());
+
+    String fontsPath = await getExternalStorageDirectory()
+        .then((value) => value.path + '/fonts');
+    Directory directory = Directory(fontsPath);
+    if (!directory.existsSync()) {
+      directory.createSync();
+    }
+    await Directory(fontsPath).list().forEach((element) {
+      localFonts.add(element.path.split('/').last);
+    });
+    needRebuildLocal = false;
+    return localFonts;
+  }
+
+  Future<List<String>> _getAssetFonts() async {
+    if (assetFonts.length > 0) return assetFonts;
+
+    String jsonString = await rootBundle.loadString('AssetManifest.json');
+    Map<String, dynamic> map = jsonDecode(jsonString);
+    map.forEach((key, value) {
+      if (key.contains('assets/fonts')) {
+        assetFonts
+            .add(Uri.decodeComponent(key.split('/').last.split('.').first));
+      }
+    });
+    return assetFonts;
+  }
+
+  _loadFontIfNeeded(String font) async {
+    if (assetFonts.contains(font)) return;
+    await loadFontFromFileSystem(font);
+  }
+
+  Future<List<OnlineFont>> getOnlineFonts() async {
+    if (onlineFonts.length > 0 && !needRebuildOnline) {
+      return onlineFonts;
+    }
+    onlineFonts.clear();
+    FontFileList fontList = await fetchFontList();
+    fontList.results.forEach((element) {
+      onlineFonts.add(
+        OnlineFont(
+            element.name,
+            element.url,
+            localFonts.contains(element.name)
+                ? OnlineFontStatus.downloaded
+                : OnlineFontStatus.notDownloaded,
+            (element.metaData.size / 1024).toDouble()),
+      );
+    });
+    needRebuildOnline = false;
+    return onlineFonts;
+  }
+
+  downloadFont(int index) {
+    download(
+      onlineFonts[index].url,
+      onlineFonts[index].name,
+      onDone: () async {
+        onlineFonts[index].downloadProgress = 0;
+        onlineFonts[index].status = OnlineFontStatus.downloaded;
+        localFonts.add(onlineFonts[index].name);
+        needRebuildLocal = true;
+        setState(() {});
+      },
+      onProgress: (process) {
+        onlineFonts[index].downloadProgress = process;
+        setState(() {});
+      },
+      onError: (statusCode) {
+        assert(() {
+          print('download failed, status code -> $statusCode');
+          return false;
+        }());
+      },
+    );
+    onlineFonts[index].status = OnlineFontStatus.downloading;
+  }
+
+  //Feedback states.
+  String get contact => _contact ?? sp.get('contact');
+  set contact(String c) => _contact = c;
+  String _contact;
+
+  String currentThreadId;
+  List<Thread> threads = [];
+  List<Message> messages;
+  SharedPreferences sp;
+  Future threadFetchFuture;
+
+  StreamController<List<Thread>> streamController = StreamController();
+  Stream get threadsStream => streamController.stream;
+
+  refreshThreads() async {
+    print('refresh threads');
+    threads = await fetchThreadsByContact(contact);
+    streamController.add(threads);
+  }
+
+  createFeedback() {}
+
+  Future<void> checkContact(Future<String> Function() onNullContact) async {
+    contact = sp.getString('contact');
+    if (contact == null) {
+      contact = await onNullContact();
+      sp.setString('contact', contact);
+    }
+    refreshThreads();
+  }
 
   @override
   void initState() {
@@ -922,7 +1046,13 @@ class ConfigWidgetState extends State<ConfigWidget>
     selectableStack = [];
     cacheImgFiles = [];
 
+    if (localFonts.length < 1) {
+      getLocalFonts();
+    }
+
     pushToStack();
+
+    SharedPreferences.getInstance().then((value) => sp = value);
   }
 
   @override
@@ -942,4 +1072,23 @@ class InheritedConfig extends InheritedWidget {
 
   @override
   bool updateShouldNotify(InheritedConfig oldWidget) => true;
+}
+
+enum OnlineFontStatus { notDownloaded, downloading, downloaded }
+
+class OnlineFont {
+  OnlineFont(this.name, this.url, this.status, this.size)
+      : downloadProgress = 0;
+
+  OnlineFontStatus status;
+  double downloadProgress;
+  String name;
+  String url;
+  //MB unit.
+  double size;
+
+  @override
+  String toString() {
+    return 'name -> $name, status -> $status';
+  }
 }

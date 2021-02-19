@@ -487,6 +487,9 @@ class SelectableImage extends Selectable {
       'clipRectR': clipRect.right,
       'clipRectB': clipRect.bottom,
       'width': width,
+      'hasFrame': hasFrame,
+      'frameWidth': frameWidth,
+      'frameColor': frameColor.value,
     }..addAll(super.toJson());
   }
 
@@ -495,7 +498,10 @@ class SelectableImage extends Selectable {
       ..clipRect = Rect.fromLTRB(map['clipRectL'], map['clipRectT'],
           map['clipRectR'], map['clipRectB'])
       ..offset = Offset(map['offsetX'], map['offsetY'])
-      ..width = map['width'];
+      ..width = map['width']
+      ..hasFrame = map['hasFrame']
+      ..frameWidth = map['frameWidth']
+      ..frameColor = Color(map['frameColor']);
   }
 
   @override

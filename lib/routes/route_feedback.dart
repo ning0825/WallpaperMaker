@@ -1,180 +1,120 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wallpaper_maker/utils.dart';
-import 'package:wallpaper_maker/models/send_response.dart';
-import 'package:wallpaper_maker/models/thread_response.dart';
-import 'package:wallpaper_maker/models/thread_detail_response.dart';
+import 'package:leancloud_feedback/leancloud_feedback.dart';
+import 'package:wallpaper_maker/inherited_config.dart';
+import 'package:wallpaper_maker/routes/route_feedbackMessage.dart';
 
 class FeedbackRoute extends StatefulWidget {
   @override
   _FeedbackRouteState createState() => _FeedbackRouteState();
 }
 
-class _FeedbackRouteState extends State<FeedbackRoute> {
-  TextEditingController _controller;
-
-  List<FeedbackMessage> messages = [];
-
-  String threadId;
-
-  bool isThreadIdExist = false;
-
-  SharedPreferences sp;
+class _FeedbackRouteState extends State<FeedbackRoute>
+    with WidgetsBindingObserver {
+  TextEditingController _textController;
+  ConfigWidgetState data;
 
   @override
   void initState() {
     super.initState();
+    _textController = TextEditingController();
 
-    _controller = TextEditingController();
-
-    _initThread();
-  }
-
-  _initThread() async {
-    await _getThreadId();
-    if (isThreadIdExist) _getThreadInfo();
-  }
-
-  _sendMessage(String content) async {
-    SendResponse sendResponse;
-    if (isThreadIdExist) {
-      sendResponse = await appendMessage(threadId, content);
-    } else {
-      sendResponse = await sendFeedback(content, 'contact');
-      threadId = sendResponse.objectId;
-      isThreadIdExist = true;
-      _saveThreadId(threadId);
-    }
-    messages.add(FeedbackMessage(content, 'user'));
-    _controller.clear();
-    if (!isThreadIdExist) _saveThreadId(sendResponse.objectId);
-    setState(() {});
-  }
-
-  _saveThreadId(String threadId) async {
-    assert(sp != null);
-    sp.setString('threadId', threadId);
-  }
-
-  _getThreadId() async {
-    if (sp == null) {
-      sp = await SharedPreferences.getInstance();
-    }
-    threadId = sp.get('threadId');
-    isThreadIdExist = threadId != null;
-  }
-
-  _getThreadInfo() async {
-    ThreadResponse threadInfo = await getThreadInfo(threadId);
-    assert(threadInfo.results.length == 1,
-        'Thread info result\'s length expected to be 1, but is ${threadInfo.results.length}');
-    messages.add(FeedbackMessage(threadInfo.results[0].content, 'user'));
-
-    ThreadDetailResponse detail = await getThreadDetail(threadId);
-    detail.results.forEach((element) {
-      messages.add(FeedbackMessage(element.content, element.type));
+    WidgetsFlutterBinding.ensureInitialized().addPostFrameCallback((timeStamp) {
+      data.checkContact(
+        () => showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              content: TextField(
+                controller: _textController,
+              ),
+              actions: [
+                FlatButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('cancel')),
+                FlatButton(
+                    onPressed: () =>
+                        Navigator.of(context).pop(_textController.text),
+                    child: Text('ok')),
+              ],
+            );
+          },
+        ),
+      );
     });
-    setState(() {});
+
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Feedback'),
-      ),
-      body: Container(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                physics: BouncingScrollPhysics(),
-                itemCount: messages.length,
-                itemBuilder: (context, index) {
-                  return DevResponseWidget(
-                    feedbackMessage: messages[index],
-                  );
-                },
-              ),
-            ),
-            Container(
-              padding: EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                    ),
-                  ),
-                  RaisedButton(
-                    child: Text('send'),
-                    onPressed: () {
-                      _sendMessage(_controller.text);
-                    },
-                  )
-                ],
-              ),
-            )
+    data = ConfigWidget.of(context);
+    return Theme(
+      data: ThemeData.light(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('My feedbacks'),
+          backgroundColor: Colors.white,
+          textTheme: ThemeData.light().textTheme,
+          actionsIconTheme: ThemeData.light().iconTheme,
+          iconTheme: ThemeData.light().iconTheme,
+          actions: [
+            IconButton(
+                icon: Icon(Icons.add),
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => FeedbackMessages(),
+                  ));
+                }),
           ],
+        ),
+        body: StreamBuilder<List<Thread>>(
+          stream: data.threadsStream,
+          initialData: [],
+          builder: (context, snapshot) {
+            print(snapshot.connectionState.toString());
+            if (snapshot.connectionState == ConnectionState.active) {
+              if (snapshot.hasData) {
+                return ListView.builder(
+                    itemCount: snapshot.data.length,
+                    itemBuilder: (_, index) {
+                      return ListTile(
+                        title: Text(snapshot.data[index].content),
+                        onTap: () {
+                          Navigator.of(context)
+                              .push(MaterialPageRoute(builder: (_) {
+                            return FeedbackMessages(
+                              threadId: snapshot.data[index].objectId,
+                            );
+                          }));
+                        },
+                      );
+                    });
+              } else if (snapshot.hasError) {
+                print('snapshot.hasError');
+              }
+            } else {
+              return Text('loading');
+            }
+            return Container();
+          },
         ),
       ),
     );
   }
-}
-
-class FeedbackMessage {
-  const FeedbackMessage(this.content, this.type);
-
-  //This field's value is [user] or [dev].
-  final String type;
-
-  final dynamic content;
-}
-
-class DevResponseWidget extends StatelessWidget {
-  DevResponseWidget({this.feedbackMessage});
-
-  final FeedbackMessage feedbackMessage;
 
   @override
-  Widget build(BuildContext context) {
-    Widget result;
-    if (feedbackMessage.type == 'dev') {
-      result = Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.developer_board,
-            size: 50,
-            color: Colors.black,
-          ),
-          Container(
-            constraints: BoxConstraints.loose(Size(300, 1000)),
-            padding: EdgeInsets.all(8),
-            child: Text(feedbackMessage.content),
-            decoration: BoxDecoration(border: Border.all()),
-          ),
-        ],
-      );
-    } else if (feedbackMessage.type == 'user') {
-      result = Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Container(
-            constraints: BoxConstraints.loose(Size(300, 1000)),
-            padding: EdgeInsets.all(8),
-            child: Text(feedbackMessage.content),
-            decoration:
-                BoxDecoration(border: Border.all(), color: Colors.greenAccent),
-          ),
-          Icon(
-            Icons.supervised_user_circle,
-            size: 50,
-            color: Colors.black,
-          ),
-        ],
-      );
-    }
-    return result;
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    print(state.toString() + '/state');
+  }
+
+  @override
+  void dispose() {
+    data.streamController.close();
+    data.streamController = StreamController();
+
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'dart:ui';
 
 import 'package:flutter/gestures.dart';
@@ -486,7 +487,7 @@ class _CanvasPanelState extends State<CanvasPanel> {
 class MyCanvas extends CustomPainter {
   ConfigWidgetState data;
 
-  MyCanvas({this.data});
+  MyCanvas({this.data}) : super();
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -497,14 +498,14 @@ class MyCanvas extends CustomPainter {
           height: size.height),
     );
 
-    //draw background.
+    //Draw background.
     canvas.drawColor(data.getBackroundColor(), BlendMode.src);
 
-    //draw selectables.
+    //Draw selectables.
     for (var item in data.selectables) {
       item.draw(canvas);
     }
-    //draw select frame.
+    //Draw select frame.
     if (data.isSelectedMode) {
       data.currentSelectable?.drawSelected(canvas);
     }
@@ -515,10 +516,14 @@ class MyCanvas extends CustomPainter {
 }
 
 class WidthPicker extends CustomPainter {
-  WidthPicker({this.width, this.color});
+  WidthPicker({this.width, this.color})
+      : painter = Paint()
+          ..color = color
+          ..strokeWidth = width;
 
-  double width;
-  Color color;
+  final double width;
+  final Color color;
+  final Paint painter;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -527,12 +532,7 @@ class WidthPicker extends CustomPainter {
       ..conicTo(size.width / 4, 0, size.width / 2, size.height / 2, 1)
       ..conicTo(
           size.width / 4 * 3, size.height, size.width, size.height / 2, 1);
-    canvas.drawPath(
-        path,
-        Paint()
-          ..color = color
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = width);
+    canvas.drawPath(path, painter);
   }
 
   @override
@@ -772,8 +772,16 @@ class ProgressPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-        Offset.zero & Size(size.width * progress, size.height), painter);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            Offset.zero & Size(size.width * progress, size.height),
+            Radius.circular(3)),
+        painter);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(3)),
+        Paint()
+          ..color = Colors.grey
+          ..style = PaintingStyle.stroke);
   }
 
   @override

@@ -5,7 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' hide Image;
 import 'package:image_picker/image_picker.dart';
-import 'package:wallpaper_maker/selectable_bean.dart';
+import 'package:wallpaper_maker/models/selectable_bean.dart';
 import 'package:wallpaper_maker/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_clip.dart';
 import 'package:wallpaper_maker/cus_widget.dart';
@@ -501,7 +501,7 @@ class _TopToolbarState extends State<TopToolbar> with TickerProviderStateMixin {
             onPressed: () {
               data.setLeafToolTop();
               data.setCurrentLeafTool(LeafTool.backgroundColor);
-              data.setIndicatorPosition(backgroundBtKey);
+              data.setIndicatorPositionKey(backgroundBtKey);
               data.toggleLeafTool();
             },
             icon: Container(
@@ -519,8 +519,7 @@ class _TopToolbarState extends State<TopToolbar> with TickerProviderStateMixin {
               height: 20,
               color: data.isSelectedMode ? Colors.white : Colors.grey,
             ),
-            onPressed: () =>
-                data.isSelectedMode ? data.removeCurrentSelected() : null,
+            onPressed: data.isSelectedMode ? data.removeCurrentSelected : null,
           ),
           //undo
           // IconButton(
@@ -607,17 +606,17 @@ class _BottomToolbarState extends State<BottomToolbar> {
       case MainTool.pen:
         result = [
           SubToolIconWidget(
-            akey: penColorKey,
+            key: penColorKey,
             icon: ColorWidget(data.getPenColor()),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.pen_color);
               data.setLeafToolBottom();
-              data.setIndicatorPosition(penColorKey);
+              data.setIndicatorPositionKey(penColorKey);
               data.toggleLeafTool();
             },
           ),
           SubToolIconWidget(
-            akey: penWidthKey,
+            key: penWidthKey,
             icon: Text(
               data.getPenWidth().toStringAsFixed(1).toString(),
               style: TextStyle(color: Colors.white, fontSize: 20),
@@ -625,7 +624,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.pen_width);
               data.setLeafToolBottom();
-              data.setIndicatorPosition(penWidthKey);
+              data.setIndicatorPositionKey(penWidthKey);
               data.toggleLeafTool();
             },
           )
@@ -642,12 +641,12 @@ class _BottomToolbarState extends State<BottomToolbar> {
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.shape_type);
               data.setLeafToolBottom();
-              data.setIndicatorPosition(shapeTypeKey);
+              data.setIndicatorPositionKey(shapeTypeKey);
               data.toggleLeafTool();
             },
           ),
           SubToolIconWidget(
-            akey: shapeColorKey,
+            key: shapeColorKey,
             icon: Container(
               width: 30,
               height: 30,
@@ -659,12 +658,12 @@ class _BottomToolbarState extends State<BottomToolbar> {
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.shape_color);
               data.setLeafToolBottom();
-              data.setIndicatorPosition(shapeColorKey);
+              data.setIndicatorPositionKey(shapeColorKey);
               data.toggleLeafTool();
             },
           ),
           SubToolIconWidget(
-              akey: shapeFillTypeKey,
+              key: shapeFillTypeKey,
               icon: Container(
                 width: 30,
                 height: 30,
@@ -677,11 +676,11 @@ class _BottomToolbarState extends State<BottomToolbar> {
               onPressed: () {
                 data.setCurrentLeafTool(LeafTool.shape_style);
                 data.setLeafToolBottom();
-                data.setIndicatorPosition(shapeFillTypeKey);
+                data.setIndicatorPositionKey(shapeFillTypeKey);
                 data.toggleLeafTool();
               }),
           SubToolIconWidget(
-            akey: shapeWidthKey,
+            key: shapeWidthKey,
             icon: Text(
               data.getShapeWidth().toStringAsFixed(1).toString(),
               style: TextStyle(color: Colors.white, fontSize: 20),
@@ -689,7 +688,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.shape_width);
               data.setLeafToolBottom();
-              data.setIndicatorPosition(shapeWidthKey);
+              data.setIndicatorPositionKey(shapeWidthKey);
               data.toggleLeafTool();
             },
           ),
@@ -698,17 +697,17 @@ class _BottomToolbarState extends State<BottomToolbar> {
       case MainTool.text:
         result = [
           SubToolIconWidget(
-            akey: typoTextKey,
+            key: typoTextKey,
             icon: Icon(Icons.space_bar),
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.text_text);
               data.setLeafToolBottom();
-              data.setIndicatorPosition(typoTextKey);
+              data.setIndicatorPositionKey(typoTextKey);
               data.toggleLeafTool();
             },
           ),
           SubToolIconWidget(
-            akey: typoFontKey,
+            key: typoFontKey,
             icon: Text(
               'F',
               style: TextStyle(
@@ -720,12 +719,12 @@ class _BottomToolbarState extends State<BottomToolbar> {
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.text_font);
               data.setLeafToolBottom();
-              data.setIndicatorPosition(typoFontKey);
+              data.setIndicatorPositionKey(typoFontKey);
               data.toggleLeafTool();
             },
           ),
           SubToolIconWidget(
-            akey: typoFontWeightKey,
+            key: typoFontWeightKey,
             icon: Text(
               data.getTextWeight().toString(),
               style: TextStyle(color: Colors.white, fontSize: 20),
@@ -733,12 +732,12 @@ class _BottomToolbarState extends State<BottomToolbar> {
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.text_weight);
               data.setLeafToolBottom();
-              data.setIndicatorPosition(typoFontWeightKey);
+              data.setIndicatorPositionKey(typoFontWeightKey);
               data.toggleLeafTool();
             },
           ),
           SubToolIconWidget(
-            akey: typoColorKey,
+            key: typoColorKey,
             icon: Container(
               width: 30,
               height: 30,
@@ -750,7 +749,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
             onPressed: () {
               data.setCurrentLeafTool(LeafTool.text_color);
               data.setLeafToolBottom();
-              data.setIndicatorPosition(typoColorKey);
+              data.setIndicatorPositionKey(typoColorKey);
               data.toggleLeafTool();
             },
           ),
@@ -796,19 +795,19 @@ class _BottomToolbarState extends State<BottomToolbar> {
             onPressed: data.switchHasFrame,
           ),
           SubToolIconWidget(
-            akey: frameColorKey,
+            key: frameColorKey,
             icon: _getColorIcon(data.frameColor),
             onPressed: data.isSelectedMode
                 ? () {
                     data.setCurrentLeafTool(LeafTool.frameColor);
                     data.setLeafToolBottom();
-                    data.setIndicatorPosition(frameColorKey);
+                    data.setIndicatorPositionKey(frameColorKey);
                     data.toggleLeafTool();
                   }
                 : null,
           ),
           SubToolIconWidget(
-            akey: frameWidthKey,
+            key: frameWidthKey,
             icon: Text(
               data.frameWidth.toStringAsFixed(1).toString(),
               style: TextStyle(color: Colors.white, fontSize: 20),
@@ -817,7 +816,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
                 ? () {
                     data.setCurrentLeafTool(LeafTool.frameWidth);
                     data.setLeafToolBottom();
-                    data.setIndicatorPosition(frameWidthKey);
+                    data.setIndicatorPositionKey(frameWidthKey);
                     data.toggleLeafTool();
                   }
                 : null,
@@ -829,7 +828,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
     }
     result.addAll([
       SubToolIconWidget(
-          akey: alignBtKey,
+          key: alignBtKey,
           icon: Icon(
             Icons.format_align_center,
             size: 30,
@@ -838,12 +837,12 @@ class _BottomToolbarState extends State<BottomToolbar> {
               ? () {
                   data.setLeafToolBottom();
                   data.setCurrentLeafTool(LeafTool.align);
-                  data.setIndicatorPosition(alignBtKey);
+                  data.setIndicatorPositionKey(alignBtKey);
                   data.toggleLeafTool();
                 }
               : null),
       SubToolIconWidget(
-          akey: rotBtKey,
+          key: rotBtKey,
           icon: Icon(
             Icons.rotate_90_degrees_ccw,
             size: 30,
@@ -852,7 +851,7 @@ class _BottomToolbarState extends State<BottomToolbar> {
               ? () {
                   data.setLeafToolBottom();
                   data.setCurrentLeafTool(LeafTool.rotate);
-                  data.setIndicatorPosition(rotBtKey);
+                  data.setIndicatorPositionKey(rotBtKey);
                   data.toggleLeafTool();
                 }
               : null),
@@ -1140,17 +1139,6 @@ class _TypoFontWidgetState extends State<TypoFontWidget> {
     super.initState();
   }
 
-  // _getFontFileListIfNeeded() async {
-  //   // if (data.hasFetchedFontFile) return;
-
-  //   // var fontList = await fetchFontList();
-  //   // fontList.results.forEach((element) {
-  //   //   data.localFonts.add(element.name);
-  //   // });
-  //   // data.hasFetchedFontFile = true;
-  //   return data.localFonts;
-  // }
-
   @override
   Widget build(BuildContext context) {
     data = ConfigWidget.of(context);
@@ -1165,16 +1153,27 @@ class _TypoFontWidgetState extends State<TypoFontWidget> {
                 crossAxisCount: 2, childAspectRatio: 4),
             itemCount: data.localFonts.length,
             itemBuilder: (context, index) {
-              return GridTile(
-                child: Container(
-                  decoration: BoxDecoration(border: Border.all()),
-                  margin: EdgeInsets.all(2),
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    data.localFonts[index],
-                    style: TextStyle(color: Colors.white),
+              return InkWell(
+                child: GridTile(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey[800]),
+                      ),
+                    ),
+                    margin: EdgeInsets.all(2),
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      data.localFonts[index].split('.').first,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontFamily: data.localFonts[index],
+                      ),
+                    ),
                   ),
                 ),
+                onTap: () => data.setTextFont(data.localFonts[index]),
               );
             },
           );
@@ -1202,15 +1201,16 @@ class _TypoFontWidgetState extends State<TypoFontWidget> {
 }
 
 class SubToolIconWidget extends StatelessWidget {
-  SubToolIconWidget({this.icon, this.onPressed, this.akey});
+  SubToolIconWidget({this.icon, this.onPressed, Key key}) : mKey = key;
 
   final Widget icon;
   final VoidCallback onPressed;
-  final GlobalKey akey;
+  final GlobalKey mKey;
+
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      key: akey,
+      key: mKey,
       icon: icon,
       onPressed: onPressed,
       color: Colors.white,

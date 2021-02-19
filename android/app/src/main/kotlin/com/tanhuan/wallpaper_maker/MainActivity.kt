@@ -1,4 +1,4 @@
-package com.example.wallpaper_maker
+package com.tanhuan.wallpaper_maker
 
 import android.app.WallpaperManager
 import android.content.Intent
@@ -14,7 +14,7 @@ import io.flutter.plugins.GeneratedPluginRegistrant
 import java.io.File
 
 class MainActivity : FlutterActivity() {
-    private val METHOD_CHANNEL = "example.wallpaper_maker/wallpaper"
+    private val METHOD_CHANNEL = "tanhuan.wallpaper_maker/wallpaper"
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         GeneratedPluginRegistrant.registerWith(flutterEngine)
@@ -26,6 +26,11 @@ class MainActivity : FlutterActivity() {
                 result.success(call.argument<String>("path")?.let { refreshMedia(it) })
             }
         })
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.e("TAG", "onResume: " );
     }
 
     private fun setAsWallpaper(path: String?): Boolean {
@@ -48,7 +53,7 @@ class MainActivity : FlutterActivity() {
 //        startActivity(intent);
 
         // pass image to system wallpaper setter
-        var uri = FileProvider.getUriForFile(context.applicationContext, "com.example.wallpaper_maker.fileprovider", File(path))
+        var uri = FileProvider.getUriForFile(context.applicationContext, "com.tanhuan.wallpaper_maker.fileprovider", File(path))
         var intent = WallpaperManager.getInstance(this).getCropAndSetWallpaperIntent(uri)
         startActivity(intent)
         return true

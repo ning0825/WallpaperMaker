@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -9,28 +10,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:wallpaper_maker/models/file_list.dart';
 
-import 'package:wallpaper_maker/models/send_response.dart';
-import 'package:wallpaper_maker/models/thread_response.dart';
-import 'package:wallpaper_maker/models/thread_detail_response.dart';
+import 'models/file_list.dart';
 
 const herotag_libToCreate = 'tag_libToCreate';
 const app_external_path = '/storage/emulated/0/WallpaperMaker/';
 
+//Font url.
 const base_url = 'https://cxnu5i4c.lc-cn-n1-shared.com/1.1';
-const feedback_base_url = '$base_url/feedback';
 const font_files_url = '$base_url/files';
 const headers = {
   'X-LC-Id': 'Cxnu5I4C5XslUk8gONphiicP-gzGzoHsz',
   'X-LC-Key': 'YeyF6FxUjRx2Wp4f5maUfsEf',
   'Content-Type': 'application/json'
-};
-
-var queryHeaders = {
-  'X-LC-Id': 'Cxnu5I4C5XslUk8gONphiicP-gzGzoHsz',
-  'X-LC-Key': 'YeyF6FxUjRx2Wp4f5maUfsEf',
-  'Content-Type': 'application/x-www-form-urlencoded'
 };
 
 Future<void> saveImage(GlobalKey key, double pixelRatio, String name) async {
@@ -100,91 +92,18 @@ Future<void> showToast(BuildContext context,
       .then((value) => overlayEntry.remove());
 }
 
-//Send feedback using REST API.
-Future<SendResponse> sendFeedback(String content, String contact) async {
-  var request = http.Request('POST', Uri.parse(feedback_base_url));
-  request.body =
-      '{"status": "open", "content": "$content","contact" : "$contact"}';
-  request.headers.addAll(headers);
-
-  http.StreamedResponse response = await request.send();
-
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return SendResponse.fromJson(await response.stream
-        .bytesToString()
-        .then((value) => jsonDecode(value)));
-  } else {
-    return null;
-  }
-}
-
-//Get feedback thread info.
-Future<ThreadResponse> getThreadInfo(String threadId) async {
-  var request = http.Request('GET', Uri.parse(feedback_base_url));
-  request.bodyFields = {'where': '{"objectId":"$threadId"}'};
-  request.headers.addAll(queryHeaders);
-  http.StreamedResponse response = await request.send();
-
-  if (response.statusCode == 200) {
-    return ThreadResponse.fromJson(
-        await response.stream.bytesToString().then((value) {
-      return jsonDecode(value);
-    }));
-  } else {
-    await response.stream
-        .bytesToString()
-        .then((value) => print('error response -> ' + value));
-    return null;
-  }
-}
-
-typedef ResponseCallback = void Function(String s);
-
-//Get thread details.
-Future<ThreadDetailResponse> getThreadDetail(String threadId) async {
-  var request =
-      http.Request('GET', Uri.parse(feedback_base_url + '/$threadId/threads'));
-  request.headers.addAll(headers);
-  http.StreamedResponse response = await request.send();
-  if (response.statusCode == 200) {
-    return ThreadDetailResponse.fromJson(
-        await response.stream.bytesToString().then((value) {
-      return jsonDecode(value);
-    }));
-  } else {
-    return null;
-  }
-}
-
-///Append a message to the thread.
-Future<SendResponse> appendMessage(String threadId, String content) async {
-  var request =
-      http.Request('POST', Uri.parse(feedback_base_url + '/$threadId/threads'));
-  request.body = '{"type":"user","content":"$content", "attachment":""}';
-  request.headers.addAll(headers);
-  http.StreamedResponse response = await request.send();
-
-  if (response.statusCode == 201) {
-    return SendResponse.fromJson(await response.stream
-        .bytesToString()
-        .then((value) => jsonDecode(value)));
-  } else {
-    return null;
-  }
-}
-
 ///Set wallpaper.
 ///
 ///TODO User can choose lockscreen wallpaper or wallpaper.
 Future<void> setAswallPaper(BuildContext context, String path) async {
-  const platform = MethodChannel('example.wallpaper_maker/wallpaper');
+  const platform = MethodChannel('tanhuan.wallpaper_maker/wallpaper');
   await platform.invokeMethod('setAsWallpaper', {'path': path});
   showToast(context, 'set success');
 }
 
 ///Save the image to internal storage
 ///
-///This function copy the image from /storage/emulated/0/Android/data/com.example.wallpaper_maker/files/example.png
+///This function copy the image from /storage/emulated/0/Android/data/com.tanhuan.wallpaper_maker/files/example.png
 ///to /storage/emulated/0/WallpaperMaker/example.png
 Future<void> saveImage2Local(BuildContext context, String path) async {
   File file = File(path);
@@ -199,7 +118,7 @@ Future<void> saveImage2Local(BuildContext context, String path) async {
 
 //Refresh system media library to make image visiable in the gallery.
 void refreshMedia(String path) {
-  const platform = MethodChannel('example.wallpaper_maker/wallpaper');
+  const platform = MethodChannel('tanhuan.wallpaper_maker/wallpaper');
   platform.invokeMethod('refreshMedia', {'path': path});
 }
 
@@ -228,7 +147,7 @@ Future<FontFileList> fetchFontList() async {
   } else {
     print('download fontlist failed, status code -> ${response.statusCode}');
   }
-  return Future.value(FontFileList(results: []));
+  return FontFileList(results: []);
 }
 
 typedef OnDownloadDone = void Function();

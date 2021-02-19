@@ -5,13 +5,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:wallpaper_maker/cus_widget.dart';
 
 import 'package:wallpaper_maker/inherited_config.dart';
-import 'package:wallpaper_maker/models/file_list.dart';
 import 'package:wallpaper_maker/routes/route_create.dart';
 import 'package:wallpaper_maker/routes/route_detail.dart';
 import 'package:wallpaper_maker/routes/route_settings.dart';
-import 'package:wallpaper_maker/selectable_bean.dart';
+import 'package:wallpaper_maker/models/selectable_bean.dart';
 import 'package:wallpaper_maker/utils.dart';
-import 'package:wallpaper_maker/routes/route_feedback.dart';
 
 class LibraryRoute extends StatefulWidget {
   @override
@@ -61,7 +59,7 @@ class _LibraryRouteState extends State<LibraryRoute> {
     data = ConfigWidget.of(context);
     enableDelButton = _hasImageSelected();
 
-    return Scaffold(
+    var result = Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: CustomScrollViewWithAppBar(
@@ -77,10 +75,30 @@ class _LibraryRouteState extends State<LibraryRoute> {
                 child: IconButton(
                   onPressed: () {
                     if (selectMode) {
+                      bool hasPartSelected() {
+                        var tmp;
+                        for (var i = 0; i < data.cacheImgFiles.length; i++) {
+                          if (i == 0) {
+                            tmp = data.cacheImgFiles[0].isSelected;
+                            continue;
+                          }
+                          if (data.cacheImgFiles[i].isSelected != tmp) {
+                            return true;
+                          }
+                        }
+                        return false;
+                      }
+
                       setState(() {
-                        data.cacheImgFiles.forEach((element) {
-                          element.isSelected = !element.isSelected;
-                        });
+                        if (hasPartSelected()) {
+                          data.cacheImgFiles.forEach((element) {
+                            element.isSelected = true;
+                          });
+                        } else {
+                          data.cacheImgFiles.forEach((element) {
+                            element.isSelected = !element.isSelected;
+                          });
+                        }
                       });
                     }
                   },
@@ -130,6 +148,8 @@ class _LibraryRouteState extends State<LibraryRoute> {
                 onPressed: () {
                   setState(() {
                     selectMode = !selectMode;
+                    data.cacheImgFiles
+                        .forEach((element) => element.isSelected = false);
                   });
                 },
                 icon: Icon(
@@ -169,14 +189,8 @@ class _LibraryRouteState extends State<LibraryRoute> {
         ),
       ),
     );
+    return result;
   }
-
-  // showFontList() async {
-  //   FontFileList list = await fetchFontList();
-  //   list.results.forEach((element) {
-  //     print('name -> ${element.name}, url -> ${element.url}');
-  //   });
-  // }
 
   _deleteSelected(BuildContext context) async {
     for (var item in data.cacheImgFiles) {

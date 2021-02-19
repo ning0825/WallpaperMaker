@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wallpaper_maker/cus_widget.dart';
+import 'package:wallpaper_maker/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_feedback.dart';
 import 'package:wallpaper_maker/routes/route_font_mgr.dart';
 
@@ -9,6 +10,8 @@ class SettingsRoute extends StatefulWidget {
 }
 
 class _SettingsRouteState extends State<SettingsRoute> {
+  ConfigWidgetState data;
+
   Widget itemWidget(String name, VoidCallback callback) {
     return InkWell(
       child: Container(
@@ -22,6 +25,7 @@ class _SettingsRouteState extends State<SettingsRoute> {
 
   @override
   Widget build(BuildContext context) {
+    data = ConfigWidget.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -32,7 +36,9 @@ class _SettingsRouteState extends State<SettingsRoute> {
             SliverFixedExtentList(
               itemExtent: 60.0,
               delegate: SliverChildListDelegate([
-                itemWidget('General', () {
+                itemWidget('Font management', () {
+                  data.needRebuildLocal = true;
+                  data.needRebuildOnline = true;
                   Navigator.push(
                       context,
                       MaterialPageRoute(

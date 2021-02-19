@@ -5,7 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:wallpaper_maker/selectable_bean.dart';
+import 'package:wallpaper_maker/models/selectable_bean.dart';
 import 'package:wallpaper_maker/inherited_config.dart';
 import 'package:wallpaper_maker/routes/route_edit.dart';
 import 'package:wallpaper_maker/utils.dart';
@@ -410,6 +410,12 @@ class _DetailToolState extends State<DetailTool> {
   }
 }
 
+enum ImageGestureState {
+  ready,
+  possible,
+  started,
+}
+
 class ImageGestureRecognizer extends ScaleGestureRecognizer {
   ImageGestureRecognizer({
     @required this.screenSize,
@@ -440,42 +446,29 @@ class ImageGestureRecognizer extends ScaleGestureRecognizer {
 
   @override
   void handleEvent(PointerEvent event) {
-    if (event is PointerMoveEvent) {
-      if (_shouldAcceptGesture()) {
-        acceptGesture(event.pointer);
-      } else {
-        rejectGesture(event.pointer);
-      }
+    super.handleEvent(event);
+    if (event is PointerDownEvent && _shouldAcceptGesture()) {
+      resolve(GestureDisposition.accepted);
     }
 
     if (event is PointerUpEvent) {
       _pointers.remove(event.pointer);
     }
-
-    super.handleEvent(event);
   }
 
   bool _shouldAcceptGesture() {
+    print('pointers length -> ${_pointers.length}');
     if (corner.scale == 1.0) {
       return _pointers.length > 1;
     }
     double extraHalfWidth = imageSize.width * (corner.scale - 1) / 2;
-    return corner.offset.dx.abs() * corner.scale < extraHalfWidth;
-  }
-
-  @override
-  void acceptGesture(int pointer) {
-    super.acceptGesture(pointer);
-  }
-
-  @override
-  void rejectGesture(int pointer) {
-    super.rejectGesture(pointer);
+    var result = corner.offset.dx.abs() * corner.scale < extraHalfWidth;
+    print('shouldAcceptGesture -> $result');
+    return result;
   }
 
   @override
   void didStopTrackingLastPointer(int pointer) {
-    _pointers.remove(pointer);
     super.didStopTrackingLastPointer(pointer);
   }
 }

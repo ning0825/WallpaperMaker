@@ -1,28 +1,261 @@
-import 'dart:convert';
-import 'dart:io';
+import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:wallpaper_maker/cus_widget.dart';
-import 'package:wallpaper_maker/models/file_list.dart';
-import 'package:wallpaper_maker/utils.dart';
-
-enum OnlineFontStatus { notDownloaded, downloading, downloaded }
-
-class OnlineFont {
-  OnlineFont(this.name, this.url, this.status, this.size)
-      : downloadProgress = 0;
-
-  OnlineFontStatus status;
-  double downloadProgress;
-  String name;
-  String url;
-  //MB unit.
-  double size;
-}
+import 'package:wallpaper_maker/inherited_config.dart';
 
 class FontMgrRoute extends StatefulWidget {
+  @override
+  _FontMgrRouteState createState() => _FontMgrRouteState();
+}
+
+class _FontMgrRouteState extends State<FontMgrRoute>
+    with TickerProviderStateMixin {
+  ConfigWidgetState data;
+  TextEditingController controller;
+
+  AnimationController animationController;
+  Animation animation;
+
+  TabController tabController;
+  // PageController pageController;
+
+  Future onlineFuture;
+
+  @override
+  void initState() {
+    super.initState();
+
+    controller = TextEditingController(text: 'Input to preview.');
+
+    animationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 2000),
+    );
+    animation = animationController.view;
+    animationController.repeat(reverse: true);
+
+    tabController = TabController(
+      vsync: this,
+      length: 2,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    data = ConfigWidget.of(context);
+    onlineFuture = data.getOnlineFonts();
+    super.didChangeDependencies();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    animationController.dispose();
+    tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: true,
+        backgroundColor: Colors.white,
+        title: Text('Font management'),
+        iconTheme: IconThemeData(color: Colors.black),
+        textTheme: TextTheme(headline6: TextStyle(color: Colors.black)),
+      ),
+      body: Column(
+        children: [
+          AnimatedBuilder(
+            animation: animation,
+            builder: (context, child) {
+              return Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                      colors: [
+                        Colors.greenAccent,
+                        Colors.purple[100],
+                        Colors.yellowAccent[100]
+                      ],
+                      begin: Alignment(-1.0, -1.0),
+                      end: Alignment.bottomRight,
+                      stops: [0.0, animation.value, 1.0]),
+                ),
+                alignment: Alignment.center,
+                margin: EdgeInsets.all(10),
+                height: 200,
+                width: double.maxFinite,
+                child: TextField(
+                  controller: controller,
+                  style: TextStyle(fontFamily: data.previewFont, fontSize: 50),
+                  textAlign: TextAlign.center,
+                  cursorColor: Colors.black,
+                  decoration: InputDecoration(
+                    focusedBorder: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    border: InputBorder.none,
+                  ),
+                ),
+              );
+            },
+          ),
+          TabBar(
+            tabs: [
+              Padding(
+                padding: EdgeInsets.all(8),
+                child: Text(
+                  'local',
+                  style: TextStyle(color: Colors.black),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(8),
+                child: Text(
+                  'online',
+                  style: TextStyle(color: Colors.black),
+                ),
+              ),
+            ],
+            controller: tabController,
+          ),
+          SizedBox(
+            height: 20,
+          ),
+          Expanded(
+            child: TabBarView(
+              physics: BouncingScrollPhysics(),
+              controller: tabController,
+              children: [
+                FutureBuilder(
+                  future: data.getLocalFonts(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return ListView.builder(
+                        physics: BouncingScrollPhysics(),
+                        itemCount: data.localFonts.length,
+                        itemBuilder: (context, index) {
+                          return Container(
+                            padding:
+                                EdgeInsets.only(left: 20, bottom: 8, right: 20),
+                            // margin: EdgeInsets.all(10),
+                            child: Row(
+                              children: [
+                                Text(
+                                  data.localFonts[index].split('.').first,
+                                  style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                Spacer(),
+                                OutlineButton(
+                                    onPressed: () {
+                                      data.setPreviewFont(
+                                          data.localFonts[index]);
+                                      FocusScope.of(context)
+                                          .requestFocus(FocusNode());
+                                      setState(() {});
+                                    },
+                                    child: Text('preview'))
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    } else {
+                      return Center(child: Text('loading'));
+                    }
+                  },
+                ),
+                FutureBuilder(
+                  future: onlineFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return ListView.builder(
+                        physics: BouncingScrollPhysics(),
+                        primary: true,
+                        itemCount: data.onlineFonts.length,
+                        itemBuilder: (context, index) {
+                          return Container(
+                            padding:
+                                EdgeInsets.only(left: 20, bottom: 8, right: 20),
+                            child: Row(
+                              children: [
+                                Text(
+                                  data.onlineFonts[index].name.split('.').first,
+                                  style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                Spacer(),
+                                Text(
+                                  (data.onlineFonts[index].size / 1000)
+                                          .toStringAsFixed(2) +
+                                      'MB',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                                SizedBox(
+                                  width: 10,
+                                ),
+                                Container(
+                                  constraints: BoxConstraints.expand(
+                                      width: 100, height: 40),
+                                  child: () {
+                                    if (data.onlineFonts[index].status ==
+                                        OnlineFontStatus.downloading) {
+                                      return CustomPaint(
+                                        painter: ProgressPainter(
+                                            progress: data.onlineFonts[index]
+                                                .downloadProgress,
+                                            color: Colors.greenAccent),
+                                        size: Size(100, 40),
+                                      );
+                                    } else {
+                                      return OutlineButton(
+                                        onPressed: () {
+                                          if (data.onlineFonts[index].status ==
+                                              OnlineFontStatus.notDownloaded) {
+                                            data.downloadFont(index);
+                                          } else if (data
+                                                  .onlineFonts[index].status ==
+                                              OnlineFontStatus.downloaded) {
+                                            data.setPreviewFont(
+                                                data.onlineFonts[index].name);
+                                          }
+                                        },
+                                        child: Text(
+                                            data.onlineFonts[index].status ==
+                                                    OnlineFontStatus.downloaded
+                                                ? 'preview'
+                                                : 'download'),
+                                      );
+                                    }
+                                  }(),
+                                )
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    } else {
+                      return Center(
+                        child: Text('loading'),
+                      );
+                    }
+                  },
+                )
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+/*class FontMgrRoute extends StatefulWidget {
   @override
   _FontMgrRouteState createState() => _FontMgrRouteState();
 }
@@ -40,6 +273,10 @@ class _FontMgrRouteState extends State<FontMgrRoute> {
 
   final node = FocusNode();
 
+  bool needRefreshLocal = true;
+
+
+
   @override
   void initState() {
     super.initState();
@@ -54,41 +291,11 @@ class _FontMgrRouteState extends State<FontMgrRoute> {
     }
   }
 
-  Future<List<String>> _getLocalFonts() async {
-    if (localFonts.length > 0) {
-      return localFonts;
-    }
-    localFonts = List.from(await _getAssetFonts());
-    String fontsPath = await getExternalStorageDirectory()
-        .then((value) => value.path + '/fonts');
-    await Directory(fontsPath).list().forEach((element) {
-      localFonts.add(element.path.split('/').last);
-    });
-    return localFonts;
-  }
-
-  Future<List<String>> _getAssetFonts() async {
-    if (assetFonts.length > 0) return assetFonts;
-    String jsonString = await rootBundle.loadString('AssetManifest.json');
-    Map<String, dynamic> map = jsonDecode(jsonString);
-    map.forEach((key, value) {
-      if (key.contains('assets/fonts')) {
-        assetFonts
-            .add(Uri.decodeComponent(key.split('/').last.split('.').first));
-      }
-    });
-    print('assetFonts -> $assetFonts');
-    return assetFonts;
-  }
-
   Future<List<OnlineFont>> _getOnlineFonts() async {
-    print('get online fonts');
-    print(localFonts.toString());
     if (onlineFonts.length > 0) return onlineFonts;
 
     FontFileList fontList = await fetchFontList();
     fontList.results.forEach((element) {
-      print(element.name);
       onlineFonts.add(
         OnlineFont(
             element.name,
@@ -103,9 +310,7 @@ class _FontMgrRouteState extends State<FontMgrRoute> {
   }
 
   _loadFontIfNeeded(String font) async {
-    print('font -> $font');
-    print((await _getAssetFonts()).toString());
-    if ((await _getAssetFonts()).contains(font)) return;
+    if (().contains(font)) return;
     await loadFontFromFileSystem(font);
   }
 
@@ -115,17 +320,25 @@ class _FontMgrRouteState extends State<FontMgrRoute> {
       listView = ListView.builder(
         itemCount: localFonts.length,
         itemBuilder: (context, index) {
-          return InkWell(
-            onTap: () async {
-              await _loadFontIfNeeded(localFonts[index]);
-              previewFont = localFonts[index];
-              FocusScope.of(context).requestFocus(node);
-              setState(() {});
-            },
-            child: Container(
-              padding: EdgeInsets.all(10),
-              margin: EdgeInsets.all(10),
-              child: Text(localFonts[index].split('.').first),
+          return Container(
+            padding: EdgeInsets.only(left: 20, bottom: 8, right: 20),
+            // margin: EdgeInsets.all(10),
+            child: Row(
+              children: [
+                Text(
+                  localFonts[index].split('.').first,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                Spacer(),
+                OutlineButton(
+                    onPressed: () async {
+                      await _loadFontIfNeeded(localFonts[index]);
+                      previewFont = localFonts[index];
+                      FocusScope.of(context).requestFocus(node);
+                      setState(() {});
+                    },
+                    child: Text('preview'))
+              ],
             ),
           );
         },
@@ -134,37 +347,46 @@ class _FontMgrRouteState extends State<FontMgrRoute> {
       listView = ListView.builder(
         itemCount: onlineFonts.length,
         itemBuilder: (context, index) {
-          return InkWell(
-            onTap: () {},
-            child: Container(
-              margin: EdgeInsets.all(10),
-              child: CustomPaint(
-                painter: ProgressPainter(
-                    color: Colors.red,
-                    progress: onlineFonts[index].downloadProgress),
-                child: Container(
-                  padding: EdgeInsets.all(10),
-                  height: 60,
-                  decoration: BoxDecoration(
-                      border: Border.all(
-                          color: onlineFonts[index].status ==
-                                  OnlineFontStatus.downloaded
-                              ? Colors.green
-                              : Colors.red)),
-                  child: Row(
-                    children: [
-                      Text(
-                        onlineFonts[index].name,
-                      ),
-                      Spacer(),
-                      Text(onlineFonts[index].size.toString()),
-                      FlatButton(
-                          onPressed: () {
+          return Container(
+            padding: EdgeInsets.only(left: 20, bottom: 8, right: 20),
+            height: 60,
+            child: Row(
+              children: [
+                Text(
+                  onlineFonts[index].name,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                Spacer(),
+                Text(
+                    (onlineFonts[index].size / 1000).toStringAsFixed(2) + 'MB'),
+                SizedBox(
+                  width: 10,
+                ),
+                Container(
+                  constraints: BoxConstraints.expand(width: 100, height: 40),
+                  child: () {
+                    if (onlineFonts[index].status ==
+                        OnlineFontStatus.downloading) {
+                      return CustomPaint(
+                        painter: ProgressPainter(
+                            progress: onlineFonts[index].downloadProgress,
+                            color: Colors.greenAccent),
+                        size: Size(100, 40),
+                      );
+                    } else {
+                      return OutlineButton(
+                        onPressed: () {
+                          if (onlineFonts[index].status ==
+                              OnlineFontStatus.notDownloaded) {
                             download(
                               onlineFonts[index].url,
                               onlineFonts[index].name,
                               onDone: () {
-                                //TODO refresh local
+                                onlineFonts[index].downloadProgress = 0;
+                                onlineFonts[index].status =
+                                    OnlineFontStatus.downloaded;
+                                needRefreshLocal = true;
+                                setState(() {});
                               },
                               onProgress: (process) {
                                 onlineFonts[index].downloadProgress = process;
@@ -172,15 +394,61 @@ class _FontMgrRouteState extends State<FontMgrRoute> {
                               },
                               onError: (statusCode) {},
                             );
-                          },
-                          child: Text(onlineFonts[index].status ==
-                                  OnlineFontStatus.downloaded
-                              ? '已下载'
-                              : '下载'))
-                    ],
-                  ),
-                ),
-              ),
+                            onlineFonts[index].status =
+                                OnlineFontStatus.downloading;
+                          }
+                        },
+                        child: Text(onlineFonts[index].status ==
+                                OnlineFontStatus.downloaded
+                            ? 'preview'
+                            : 'download'),
+                      );
+                    }
+                  }(),
+                  // child: OutlineButton(onPressed: () {
+                  //   if (onlineFonts[index].status ==
+                  //       OnlineFontStatus.notDownloaded) {
+                  //     download(
+                  //       onlineFonts[index].url,
+                  //       onlineFonts[index].name,
+                  //       onDone: () {
+                  //         onlineFonts[index].downloadProgress = 0;
+                  //         onlineFonts[index].status =
+                  //             OnlineFontStatus.downloaded;
+                  //         setState(() {});
+                  //       },
+                  //       onProgress: (process) {
+                  //         onlineFonts[index].downloadProgress = process;
+                  //         setState(() {});
+                  //       },
+                  //       onError: (statusCode) {},
+                  //     );
+                  //     onlineFonts[index].status = OnlineFontStatus.downloading;
+                  //   }
+                  // }, child: () {
+                  //   return CustomPaint(
+                  //     painter: ProgressPainter(progress: 1, color: Colors.red),
+                  //     size: Size(100, 40),
+                  //   );
+                  // switch (onlineFonts[index].status) {
+                  //   case OnlineFontStatus.notDownloaded:
+                  //   case OnlineFontStatus.downloaded:
+                  //     return Text(onlineFonts[index].status ==
+                  //             OnlineFontStatus.downloaded
+                  //         ? '已下载'
+                  //         : '下载');
+                  //     break;
+                  //   case OnlineFontStatus.downloading:
+                  //     return CustomPaint(
+                  //       painter: ProgressPainter(progress: onlineFonts[index].downloadProgress),
+                  //       size: Size(80, 20),
+                  //     );
+                  //     break;
+                  //   default:
+                  // }
+                  // }()),
+                )
+              ],
             ),
           );
         },
@@ -254,3 +522,4 @@ class _FontMgrRouteState extends State<FontMgrRoute> {
     );
   }
 }
+*/
